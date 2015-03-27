@@ -1,6 +1,8 @@
 *.class
 bin/
 target/
+.idea/
+socialtsquery.iml
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
