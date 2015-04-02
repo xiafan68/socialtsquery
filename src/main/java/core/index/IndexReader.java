@@ -2,8 +2,9 @@ package core.index;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +15,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import core.index.IndexWriter.DirEntry;
 public class IndexReader {
 	private static final Logger logger = LoggerFactory
 			.getLogger(IndexReader.class);
-	
+
 	// 记录每个keyword所在的partition
 	HashMap<String, List<Integer>> partMeta = new HashMap<String, List<Integer>>();
 	HashMap<Integer, IndexFileGroupReader> readerMeta = new HashMap<Integer, IndexFileGroupReader>();
@@ -49,6 +49,11 @@ public class IndexReader {
 				addPartition(meta, status.getPath(), conf);
 			}
 		}
+		Collections.sort(partitions, new Comparator<PartitionMeta>() {
+			public int compare(PartitionMeta arg0, PartitionMeta arg1) {
+				return Integer.compare(arg1.partIdx, arg0.partIdx);
+			}
+		});
 		logger.info("loading partitions is completed");
 	}
 

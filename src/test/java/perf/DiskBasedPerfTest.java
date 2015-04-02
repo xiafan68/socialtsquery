@@ -1,6 +1,5 @@
 package perf;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -132,7 +131,7 @@ public class DiskBasedPerfTest {
 				TempKeywordQuery tQuery = new TempKeywordQuery(
 						query.arg0.toArray(new String[query.arg0.size()]),
 						window, k);
-				Profile.instance.start("query");
+				// Profile.instance.start("query");
 				newExec();
 				Profile.instance.start(Profile.TOTAL_TIME);
 				indexExec.query(tQuery);
@@ -160,58 +159,6 @@ public class DiskBasedPerfTest {
 		}
 		System.gc();
 		return counter;
-	}
-
-	/**
-	 * 在inverted index上面执行一边所有选取的查询
-	 * 
-	 * @param offset
-	 * @param width
-	 * @param k
-	 * @return
-	 * @throws IOException
-	 */
-	private void testAllKeywords(String conf, String logFile, int offset,
-			int width, int k) throws IOException {
-		loadIndex(new Path(conf));
-		OutputStream os = new DataOutputStream(new FileOutputStream(logFile,
-				true));
-		gen.resetCur();
-		// List<String> logs = new ArrayList<String>();
-		while (gen.hasNext()) {
-			Pair<List<String>, Integer> query = gen.nextQuery();
-			List<String> keywords = query.arg0;
-			int start = query.arg1 + offset;
-			try {
-				Interval window = new Interval(1, start, start + width, 1);
-				TempKeywordQuery tQuery = new TempKeywordQuery(
-						query.arg0.toArray(new String[query.arg0.size()]),
-						window, k);
-				Profile.instance.start("query");
-				newExec();
-				indexExec.query(tQuery);
-				Iterator<Interval> res = indexExec.getAnswer();
-			} catch (Exception ex) {
-				logger.error(k + " " + start + " " + (start + width) + " "
-						+ keywords.size());
-			}
-			JSONObject perf = Profile.instance.toJSON();
-
-			perf.put("width", width);
-			perf.put("words", 2);
-			perf.put("k", k);
-			perf.put("offset", offset);
-			os.write((StringUtils.join(keywords, "\t") + "\t" + perf.toString() + "\n")
-					.getBytes());
-			// logs.add(perf.toString());
-			Profile.instance.reset();
-			Runtime.getRuntime().exec(
-					"sync && echo 1 > /proc/sys/vm/drop_caches");
-			System.gc();
-		}
-		os.close();
-		// for (String log : logs)
-		// StreamLogUtils.log(os, log);
 	}
 
 	public void selectResult(String conf, String oFile) throws ParseException,
@@ -306,7 +253,7 @@ public class DiskBasedPerfTest {
 	}
 
 	static final String[] COUNTER_FIELDS = new String[] { Profile.ATOMIC_IO,
-			Profile.TOPK, Profile.CAND, Profile.WASTED_REC };
+			Profile.TOPK, Profile.CAND, Profile.WASTED_REC, Profile.TWASTED_REC };
 	static final String[] IOTimeFields = new String[] {
 			Profile.toTimeTag(Profile.ATOMIC_IO), Profile.TOTAL_TIME,
 			Profile.UPDATE_STATE };
@@ -404,12 +351,12 @@ public class DiskBasedPerfTest {
 		DiskBasedPerfTest test = new DiskBasedPerfTest();
 		test.loadQuery(querySeed);
 
-		String[] formats = new String[] { //"invindex_o%dw.txt",
+		String[] formats = new String[] { "invindex_o%dw.txt",
 				"minvindex_o%dw.txt" };
 		// test.testAllKeywords(conf, oDir + formats[i++], 0, 12, 50);
-		String[] iDirs = new String[] {// "/home/xiafan/temp/invindex",
+		String[] iDirs = new String[] { "/home/xiafan/temp/invindex",
 				"/home/xiafan/temp/invindex_parts" };
-		 test.multiPart = true;
+		// test.multiPart = true;
 		for (int i = 0; i < formats.length; i++) {
 			test.test(iDirs[i], oDir, formats[i]);
 			test.multiPart = !test.multiPart;

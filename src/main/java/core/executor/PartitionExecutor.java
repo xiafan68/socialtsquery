@@ -157,7 +157,14 @@ public class PartitionExecutor extends IQueryExecutor {
 		return ret;
 	}
 
-	private void updateCandState(int idx, MidSegment midseg, float iWeight) {
+	/**
+	 * 
+	 * @param idx
+	 * @param midseg
+	 * @param iWeight
+	 * @return true if the current item is a possible topk
+	 */
+	private boolean updateCandState(int idx, MidSegment midseg, float iWeight) {
 		MergedMidSeg preSeg = null;
 		MergedMidSeg newSeg = null;
 		Long mid = midseg.mid;
@@ -172,6 +179,7 @@ public class PartitionExecutor extends IQueryExecutor {
 		//update the map with the new mergedseg
 		map.put(mid, newSeg);
 
+		boolean ret = true;
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
@@ -188,10 +196,13 @@ public class PartitionExecutor extends IQueryExecutor {
 		} else if (preSeg != null) {
 			cand.remove(preSeg);
 			map.remove(preSeg.getMid());
+			ret = false;
 		} else {
 			map.remove(mid);
+			ret = false;
 			Profile.instance.updateCounter(Profile.WASTED_REC);
 		}
+		return ret;
 	}
 
 	@Override
@@ -213,11 +224,12 @@ public class PartitionExecutor extends IQueryExecutor {
 			cursors[idx] = null;
 			bestScores[idx] = 0.0f;
 		}
-
+		
+		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
-		updateCandState(idx, midseg, 1.0f);
+		ret = updateCandState(idx, midseg, 1.0f);
 		Profile.instance.end(Profile.UPDATE_STATE);
-		return true;
+		return ret;
 	}
 
 	@Override

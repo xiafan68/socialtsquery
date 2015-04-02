@@ -22,6 +22,7 @@ public class Profile {
 	public static final String TOPK = "topk";
 	public static final String CAND = "cand";
 	public static final String WASTED_REC = "waste";
+	public static final String TWASTED_REC = "twaste";
 	
 	private static Logger logger = LoggerFactory.getLogger(Profile.class);
 

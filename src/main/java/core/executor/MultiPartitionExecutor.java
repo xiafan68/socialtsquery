@@ -41,14 +41,15 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 		Iterator<PartitionExecutor> iter = executors.iterator();
 		while (iter.hasNext()) {
 			PartitionExecutor cur = iter.next();
-			cur.advance();
+			for (int i = 0; i < 1 && cur.advance(); i++)
+				;
 			if (cur.isTerminated()) {
 				iter.remove();
 			}
 		}
 		return true;
 	}
-	
+
 	@Override
 	public void query(TempKeywordQuery query) throws IOException {
 		this.query = query;

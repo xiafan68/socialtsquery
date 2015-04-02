@@ -1,6 +1,7 @@
 package core.index;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -13,6 +14,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import segmentation.Interval;
+import core.index.IndexWriter.BlockMeta;
 import core.index.IndexWriter.DirEntry;
 import core.io.LinuxSeekableDirectIO;
 import core.io.SeekableDirectIO;
@@ -30,6 +32,7 @@ public class IndexFileGroupReader {
 	Configuration conf;
 	// RandomAccessFile idxInput;
 	SeekableDirectIO idxInput;
+	SeekableDirectIO bMetaInput;
 	/*
 	 * 每个词在索引文件中对应的位置。
 	 */
@@ -61,7 +64,7 @@ public class IndexFileGroupReader {
 	protected void openDir() throws IOException {
 		dirMap = new HashMap<String, IndexWriter.DirEntry>();
 		FileSystem fs = FileSystem.get(URI.create(dir.toString()), conf);
-		Path path = new Path(dir, part + ".dir");
+		Path path = new Path(dir, part + "." + IndexWriter.DIR_SUFFIX);
 		DataInputStream dis = new DataInputStream(new BufferedInputStream(
 				fs.open(path)));
 
@@ -74,11 +77,13 @@ public class IndexFileGroupReader {
 		// System.out.println(i);
 		dis.close();
 
-		path = new Path(dir, part + ".idx");
+		path = new Path(dir, part + "." + IndexWriter.IDX_SUFFIX);
 		// RandomAccessFile randomAccessFile = new
 		// RandomAccessFile(path.toUri().getPath(), "r");
 		// idxInput = randomAccessFile;
 		idxInput = new LinuxSeekableDirectIO(path.toUri().getPath());
+		path = new Path(dir, part + "." + IndexWriter.BMETA_SUFFIX);
+		bMetaInput = new LinuxSeekableDirectIO(path.toUri().getPath());
 	}
 
 	/**
@@ -114,10 +119,19 @@ public class IndexFileGroupReader {
 	}
 
 	public void loadBlock(Block block, long offset) throws IOException {
-		//idxInput.getChannel().position(offset);
+		// idxInput.getChannel().position(offset);
 		idxInput.position(offset);
 		idxInput.read(block.getBytes());
 		block.init();
+	}
+
+	public BlockMeta loadBMeta(long offset) throws IOException {
+		bMetaInput.position(offset);
+		byte[] data = new byte[12];
+		bMetaInput.read(data);
+		BlockMeta ret = new BlockMeta(0, 0, 0);
+		ret.read(new DataInputStream(new ByteArrayInputStream(data)));
+		return ret;
 	}
 
 	public Iterator<Entry<String, DirEntry>> iterDir() {
@@ -133,6 +147,7 @@ public class IndexFileGroupReader {
 
 	public void close() throws IOException {
 		idxInput.close();
+		bMetaInput.close();
 	}
 
 	//

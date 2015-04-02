@@ -21,28 +21,33 @@ import org.apache.log4j.Logger;
  * 
  */
 public class IndexWriter {
+	public static final String IDX_SUFFIX = "idx";
+	public static final String BMETA_SUFFIX = "bmeta";
+	public static final String DIR_SUFFIX = "dir";
+
 	private static final Logger logger = Logger.getLogger(IndexWriter.class);
 
 	protected FSDataOutputStream directoryWriter;
 	protected FSDataOutputStream invIndexWriter;
 	protected FSDataOutputStream metaBlockWriter;
 
-	// 记录posting list每个block中的数据的其实时间，结束时间以及元素个数
-	protected int startTime = Integer.MAX_VALUE;
-	protected int endTime = 0;
-	protected ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	// 当前使用的block
 	protected Block block = new Block();
+	// 记录posting list每个block中的数据的其实时间，结束时间以及元素个数
+	protected BlockMeta curBMeta = new BlockMeta(0, Integer.MAX_VALUE, 0);
+
 	protected DirEntry curEntry;
+
+	protected ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 	public void open(Configuration conf, Path dir, String part)
 			throws IOException {
 		invIndexWriter = FileSystem.get(conf).create(
-				new Path(dir, part + ".idx"), true);
+				new Path(dir, part + "." + IDX_SUFFIX), true);
 		metaBlockWriter = FileSystem.get(conf).create(
-				new Path(dir, part + ".bmeta"), true);
+				new Path(dir, part + "." + BMETA_SUFFIX), true);
 		directoryWriter = FileSystem.get(conf).create(
-				new Path(dir, part + ".dir"), true);
+				new Path(dir, part + "." + DIR_SUFFIX), true);
 	}
 
 	public static class DirEntry {
@@ -81,6 +86,43 @@ public class IndexWriter {
 
 	}
 
+	public static class BlockMeta {
+		public int recNum;
+		public int startTime;
+		public int endTime;
+
+		public BlockMeta(int recNum, int startTime, int endTime) {
+			super();
+			this.recNum = recNum;
+			this.startTime = startTime;
+			this.endTime = endTime;
+		}
+
+		public void write(DataOutput output) throws IOException {
+			output.writeInt(recNum);
+			output.writeInt(startTime);
+			output.write(endTime);
+		}
+
+		public void read(DataInput input) throws IOException {
+			recNum = input.readInt();
+			startTime = input.readInt();
+			endTime = input.readInt();
+		}
+
+		@Override
+		public String toString() {
+			return "BlockMeta [recNum=" + recNum + ", startTime=" + startTime
+					+ ", endTime=" + endTime + "]";
+		}
+
+		public void init() {
+			recNum = 0;
+			startTime = Integer.MAX_VALUE;
+			endTime = 0;
+		}
+	}
+
 	public void newTerm(String keyword) throws IOException {
 		curEntry = new DirEntry();
 		curEntry.keyword = keyword;
@@ -106,11 +148,11 @@ public class IndexWriter {
 		} catch (IOException e) {
 		}
 
-		if (value.getStart() < startTime) {
-			startTime = value.getStart();
+		if (value.getStart() < curBMeta.startTime) {
+			curBMeta.startTime = value.getStart();
 		}
-		if (value.getEndTime() > endTime) {
-			endTime = value.getEndTime();
+		if (value.getEndTime() > curBMeta.endTime) {
+			curBMeta.endTime = value.getEndTime();
 		}
 	}
 
@@ -130,17 +172,18 @@ public class IndexWriter {
 		writeDirEntry();
 	}
 
+	/**
+	 * TODO:metaBLockWriter文件应该也要以block的方式组织数据，这样便于扩展和管理
+	 * @throws IOException
+	 */
 	private void writeBlock() throws IOException {
 		// write block level meta
 		if (block.getRecs() != 0) {
-			metaBlockWriter.writeInt(block.getRecs());
-			metaBlockWriter.writeInt(startTime);
-			metaBlockWriter.writeInt(endTime);
+			curBMeta.write(metaBlockWriter);
 			block.write(invIndexWriter);
 			curEntry.blockNum++;
 
-			startTime = Integer.MAX_VALUE;
-			endTime = 0;
+			curBMeta.init();
 			block.reset();
 		}
 	}

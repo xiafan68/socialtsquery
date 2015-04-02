@@ -2,10 +2,13 @@ package core.index;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-import Util.Profile;
 import segmentation.Interval;
+import Util.Profile;
+import core.index.IndexWriter.BlockMeta;
 import core.index.IndexWriter.DirEntry;
 
 /**
@@ -19,8 +22,9 @@ public class PostingListCursor implements Iterator<MidSegment> {
 	int postingIdx = 0;// 当前读到第几个MidSegment
 	int blockIdx = 0;
 	long curOffset = 0;
-
+	
 	Block curBlock = new Block();
+	List<BlockMeta> bMetas = new ArrayList<BlockMeta>();
 	DataInputStream curInpuStream;
 	MidSegment cur = null;
 
@@ -41,6 +45,7 @@ public class PostingListCursor implements Iterator<MidSegment> {
 
 	private void loadNextBlock() throws IOException {
 		Profile.instance.updateCounter(Profile.ATOMIC_IO);
+		Profile.instance.updateCounter(Profile.ATOMIC_IO+ reader.getMeta().partIdx);
 		Profile.instance.start(Profile.toTimeTag(Profile.ATOMIC_IO));
 		reader.loadBlock(curBlock, curOffset);
 		Profile.instance.end(Profile.toTimeTag(Profile.ATOMIC_IO));
@@ -73,6 +78,8 @@ public class PostingListCursor implements Iterator<MidSegment> {
 					// 相交，查找成功。
 					cur = seg;
 					break;
+				} else {
+					Profile.instance.updateCounter(Profile.TWASTED_REC);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

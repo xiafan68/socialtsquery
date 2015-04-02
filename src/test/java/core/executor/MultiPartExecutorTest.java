@@ -24,9 +24,9 @@ public class MultiPartExecutorTest {
 			indexReader.addPartitions(dir, conf);
 			MultiPartitionExecutor executor = new MultiPartitionExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
-			String keyword[] = new String[] { "城管", "暴力" };
-			Interval window = new Interval(1, 749782, 750493, 1);
-			TempKeywordQuery query = new TempKeywordQuery(keyword, window, 10);
+			String keyword[] = new String[] { "伦敦","奥运会"};
+			Interval window = new Interval(1, 747056, 748056, 1);
+			TempKeywordQuery query = new TempKeywordQuery(keyword, window, 400);
 			executor.query(query);
 			Iterator<Interval> res = executor.getAnswer();
 			while (res.hasNext())
