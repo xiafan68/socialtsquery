@@ -4,14 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 public class BlockTest {
 	@Test
 	public void serializeTest() throws IOException {
-		Block b = new Block();
+		Block b = new Block(Block.DATA_BLOCK);
 		b.cur = 8;
 		b.recs = 10010;
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -20,5 +19,6 @@ public class BlockTest {
 		Block a = new Block(bos.toByteArray());
 		Assert.assertEquals(b.cur, a.cur);
 		Assert.assertEquals(b.recs, a.recs);
+		Assert.assertEquals(Block.DATA_BLOCK, b.getType());
 	}
 }

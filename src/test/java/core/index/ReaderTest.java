@@ -6,10 +6,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
-import junit.framework.Assert;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.junit.Assert;
 import org.junit.Test;
 
 import segmentation.Interval;
@@ -18,9 +17,9 @@ import core.index.IndexWriter.DirEntry;
 public class ReaderTest {
 	@Test
 	public void loadDir() throws IOException {
-		DataInputStream dis = new DataInputStream(
-				new BufferedInputStream(new FileInputStream(
-						"/Users/xiafan/temp/output/-2072498975.dir")));
+		DataInputStream dis = new DataInputStream(new BufferedInputStream(
+				new FileInputStream(
+						"/home/xiafan/文档/dataset/output/-320907233.dir")));
 
 		int i = 0;
 		while (dis.available() > 0) {
@@ -35,8 +34,8 @@ public class ReaderTest {
 
 	@Test
 	public void postingListCursorTest() throws IOException {
-		Path dir = new Path("/Users/xiafan/temp/output/");
-		String part = "389375622";
+		Path dir = new Path("/home/xiafan/文档/dataset/output");
+		String part = "1155842157";
 		Configuration conf = new Configuration();
 		IndexFileGroupReader indexReader = new IndexFileGroupReader(
 				new PartitionMeta(0));
@@ -69,7 +68,7 @@ public class ReaderTest {
 					System.out.println(count + " --- " + cur);
 					count++;
 				}
-				Assert.assertEquals(entry.size, count);
+				Assert.assertEquals(entry.recNum, count);
 				System.out.println("=============" + count);
 			}
 			indexReader.close();

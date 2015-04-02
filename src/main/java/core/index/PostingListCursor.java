@@ -2,9 +2,9 @@ package core.index;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import segmentation.Interval;
 import Util.Profile;
@@ -19,12 +19,14 @@ public class PostingListCursor implements Iterator<MidSegment> {
 	IndexFileGroupReader reader;
 	Interval window;
 
-	int postingIdx = 0;// 当前读到第几个MidSegment
-	int blockIdx = 0;
-	long curOffset = 0;
-	
-	Block curBlock = new Block();
-	List<BlockMeta> bMetas = new ArrayList<BlockMeta>();
+	int postingReadRecs = 0;// 当前读到第几个MidSegment
+	int blockReadedRecs = 0;// 记录读到当前block的第几个MidSegment
+	int readedBlockNum = 0;
+	int curDataBlockIdx = 0;
+
+	Block curBlock = null;
+	BlockMeta curBlockMeta = null;
+	Queue<BlockMeta> bMetas = new LinkedList<BlockMeta>();
 	DataInputStream curInpuStream;
 	MidSegment cur = null;
 
@@ -32,7 +34,7 @@ public class PostingListCursor implements Iterator<MidSegment> {
 			Interval window) {
 		this.reader = reader;
 		this.entry = entry;
-		this.curOffset = entry.indexPos;
+		this.curDataBlockIdx = entry.dataBlockIdx;
 		this.window = window;
 	}
 
@@ -43,15 +45,74 @@ public class PostingListCursor implements Iterator<MidSegment> {
 		loadNextBlock();
 	}
 
+	/**
+	 * 跳到一个包含有效数据的block
+	 * 
+	 * @throws IOException
+	 */
+	private void locateDataBlock() throws IOException {
+		boolean found = false;
+		while (readedBlockNum < entry.blockNum) {
+			if (bMetas.isEmpty()) {
+				loadBMetas();
+			}
+
+			while (!bMetas.isEmpty() && readedBlockNum < entry.blockNum) {
+				curBlockMeta = bMetas.poll();
+				readedBlockNum++;
+				if (curBlockMeta.startTime > window.getEnd()
+						|| curBlockMeta.endTime < window.getStart()) {
+					postingReadRecs += curBlockMeta.recNum;
+					curDataBlockIdx = IndexWriter
+							.nextDataBlockIdx(curDataBlockIdx);
+				} else {
+					found = true;
+					break;
+				}
+			}
+		}
+		if (!found) {
+			curDataBlockIdx = -1;
+		}
+	}
+
+	/**
+	 * 加载从当前待读取的data block的meta block
+	 * 
+	 * @throws IOException
+	 */
+	private void loadBMetas() throws IOException {
+		int metaBlockIdx = IndexWriter.bMetaBlockIdx(curDataBlockIdx);
+		Block block = reader.loadBlock(metaBlockIdx);
+		assert block.getType() == Block.META_BLOCK;
+
+		int idx = (curDataBlockIdx - metaBlockIdx);
+		DataInputStream dis = block.readByStream();
+		for (int i = 0; i < block.getRecs(); i++) {
+			BlockMeta meta = new BlockMeta(0, 0, 0);
+			meta.read(dis);
+			if (i < idx) {
+				continue;
+			}
+			bMetas.add(meta);
+		}
+	}
+
 	private void loadNextBlock() throws IOException {
+		locateDataBlock();
 		Profile.instance.updateCounter(Profile.ATOMIC_IO);
-		Profile.instance.updateCounter(Profile.ATOMIC_IO+ reader.getMeta().partIdx);
+		Profile.instance.updateCounter(Profile.ATOMIC_IO
+				+ reader.getMeta().partIdx);
 		Profile.instance.start(Profile.toTimeTag(Profile.ATOMIC_IO));
-		reader.loadBlock(curBlock, curOffset);
+		curBlock = new Block(Block.DATA_BLOCK);
+		reader.loadBlock(curBlock, curDataBlockIdx);
 		Profile.instance.end(Profile.toTimeTag(Profile.ATOMIC_IO));
-		curOffset += Block.SIZE;
+
+		assert curBlock.getRecs() == curBlockMeta.recNum;
+
+		curDataBlockIdx = IndexWriter.nextDataBlockIdx(curDataBlockIdx);
 		curInpuStream = curBlock.readByStream();
-		blockIdx = 0;
+		blockReadedRecs = 0;
 		Profile.instance.updateCounter(entry.keyword);
 	}
 
@@ -64,13 +125,15 @@ public class PostingListCursor implements Iterator<MidSegment> {
 
 	private void advance() {
 		MidSegment seg = new MidSegment();
-		while (postingIdx++ < entry.size && cur == null) {
+		while (postingReadRecs < entry.recNum && cur == null) {
 			try {
-				if (blockIdx++ == curBlock.recs) {
+				if (blockReadedRecs++ == curBlock.recs) {
 					loadNextBlock();
 					// loadNextBlock重置了blockIdx，这里需要重新加1!!!!!
-					blockIdx++;
+					// blockReadedRecs++;
+					continue;
 				}
+				postingReadRecs++;
 				seg.readFields(curInpuStream);
 				// TODO 判断seg是否和window相交
 				if (seg.getStart() <= window.getEnd()

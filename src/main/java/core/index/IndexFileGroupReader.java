@@ -82,8 +82,6 @@ public class IndexFileGroupReader {
 		// RandomAccessFile(path.toUri().getPath(), "r");
 		// idxInput = randomAccessFile;
 		idxInput = new LinuxSeekableDirectIO(path.toUri().getPath());
-		path = new Path(dir, part + "." + IndexWriter.BMETA_SUFFIX);
-		bMetaInput = new LinuxSeekableDirectIO(path.toUri().getPath());
 	}
 
 	/**
@@ -112,15 +110,15 @@ public class IndexFileGroupReader {
 		return ret;
 	}
 
-	public Block loadBlock(long offset) throws IOException {
-		Block ret = new Block();
-		loadBlock(ret, offset);
+	public Block loadBlock(int blockID) throws IOException {
+		Block ret = new Block(Block.DATA_BLOCK);
+		loadBlock(ret, blockID);
 		return ret;
 	}
 
-	public void loadBlock(Block block, long offset) throws IOException {
+	public void loadBlock(Block block, int blockID) throws IOException {
 		// idxInput.getChannel().position(offset);
-		idxInput.position(offset);
+		idxInput.position(blockID * Block.SIZE);
 		idxInput.read(block.getBytes());
 		block.init();
 	}

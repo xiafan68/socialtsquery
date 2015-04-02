@@ -11,14 +11,18 @@ import common.IntegerUtil;
 public class Block {
 	// typical setting for page size, 4Kb
 	public static final int SIZE = 1024 * 4;
+	public static final int META_BLOCK = 1;
+	public static final int DATA_BLOCK = 2;
+	public static final int HEADER_BLOCK = 4;
 
 	// header fields
+	int type;
 	int recs = 0;
-
 	byte[] bytes;
 	int cur = 8;
 
-	public Block() {
+	public Block(int type) {
+		this.type = type;
 		bytes = new byte[SIZE];
 	}
 
@@ -33,6 +37,8 @@ public class Block {
 	 */
 	public void init() {
 		recs = IntegerUtil.readInt(bytes, 0);
+		type = recs & 0xff;
+		recs = recs >> 8;
 		cur = IntegerUtil.readInt(bytes, 4);
 	}
 
@@ -45,6 +51,7 @@ public class Block {
 
 	/**
 	 * 以datainputstream的方式读取当前block中的数据
+	 * 
 	 * @return
 	 */
 	public DataInputStream readByStream() {
@@ -96,17 +103,24 @@ public class Block {
 	 * @throws IOException
 	 */
 	public void write(DataOutput output) throws IOException {
-		IntegerUtil.writeInt(recs, bytes, 0);
+		int data = (recs << 8) | type;
+		IntegerUtil.writeInt(data, bytes, 0);
 		IntegerUtil.writeInt(cur, bytes, 4);
 		output.write(bytes);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
 		return "Block [recs=" + recs + ", bytes=" + Arrays.toString(bytes)
 				+ ", cur=" + cur + "]";
+	}
+
+	public int getType() {
+		return type;
 	}
 }
