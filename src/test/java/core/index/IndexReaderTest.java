@@ -2,10 +2,9 @@ package core.index;
 
 import java.io.IOException;
 
-import junit.framework.Assert;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.junit.Assert;
 import org.junit.Test;
 
 import segmentation.Interval;

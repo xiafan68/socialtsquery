@@ -1,7 +1,10 @@
 package core.index;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Iterator;
@@ -34,8 +37,10 @@ public class ReaderTest {
 
 	@Test
 	public void postingListCursorTest() throws IOException {
-		Path dir = new Path("/home/xiafan/文档/dataset/output");
-		String part = "1155842157";
+		// "/Users/xiafan/temp/output2"
+		// "/home/xiafan/文档/dataset/output"
+		Path dir = new Path("/Users/xiafan/temp/output2");
+		String part = "-1329430501";
 		Configuration conf = new Configuration();
 		IndexFileGroupReader indexReader = new IndexFileGroupReader(
 				new PartitionMeta(0));
@@ -75,5 +80,20 @@ public class ReaderTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void testArrayInputOutput() throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream memoryOutput = new DataOutputStream(baos);
+		for (int i = 0; i < 10; i++)
+			memoryOutput.writeInt(1);
+		System.out.println(baos.toByteArray().length);
+		baos.reset();
+		memoryOutput.writeInt(2);
+		System.out.println(baos.toByteArray().length);
+		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
+				baos.toByteArray()));
+		Assert.assertEquals(2, dis.readInt());
 	}
 }

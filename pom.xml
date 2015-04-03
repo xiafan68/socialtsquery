@@ -14,7 +14,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<hadoop-version>1.2.1</hadoop-version>
 	</properties>
-
+	<repositories>
+		<repository>
+			<id>repo</id>
+			<url>file://${user.home}/repo</url>
+		</repository>
+	</repositories>
+	
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -41,29 +47,21 @@
 			<groupId>fan</groupId>
 			<artifactId>fanlib</artifactId>
 			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/fanlib1.0.0.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>fan</groupId>
 			<artifactId>segutil</artifactId>
 			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/segutil1.0.0.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>fan</groupId>
 			<artifactId>weibo</artifactId>
 			<version>1.0.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/weibo1.0.0.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>ikanalyzer</groupId>
 			<artifactId>ikanalyzer</artifactId>
 			<version>2012_u6</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/IKAnalyzer2012_u6.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>

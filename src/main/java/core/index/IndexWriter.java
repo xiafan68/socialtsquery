@@ -127,7 +127,7 @@ public class IndexWriter {
 		public void write(DataOutput output) throws IOException {
 			output.writeInt(recNum);
 			output.writeInt(startTime);
-			output.write(endTime);
+			output.writeInt(endTime);
 		}
 
 		public void read(DataInput input) throws IOException {
@@ -156,7 +156,7 @@ public class IndexWriter {
 	 * @return
 	 */
 	public static int bMetaBlockIdx(int dataBlockIdx) {
-		return dataBlockIdx / (numOfMetasPerBlock() + 1)
+		return (dataBlockIdx - 1) / (numOfMetasPerBlock() + 1)
 				* (numOfMetasPerBlock() + 1) + 1;
 	}
 
@@ -166,7 +166,7 @@ public class IndexWriter {
 	 * @throws IOException
 	 */
 	private int newDataBlock() throws IOException {
-		if (curBlockIdx % (numOfMetasPerBlock() + 1) == 0) {
+		if ((curBlockIdx - 1) % (numOfMetasPerBlock() + 1) == 0) {
 			curBlockIdx++;
 		}
 		dataBlock = new Block(Block.DATA_BLOCK);
@@ -175,7 +175,7 @@ public class IndexWriter {
 
 	public static int nextDataBlockIdx(int blockIdx) {
 		blockIdx++;
-		if (blockIdx % (numOfMetasPerBlock() + 1) == 0) {
+		if ((blockIdx - 1) % (numOfMetasPerBlock() + 1) == 0) {
 			blockIdx++;
 		}
 		return blockIdx;

@@ -52,17 +52,17 @@ public class PostingListCursor implements Iterator<MidSegment> {
 	 */
 	private void locateDataBlock() throws IOException {
 		boolean found = false;
-		while (readedBlockNum < entry.blockNum) {
+		while (readedBlockNum < entry.blockNum && !found) {
 			if (bMetas.isEmpty()) {
 				loadBMetas();
 			}
 
 			while (!bMetas.isEmpty() && readedBlockNum < entry.blockNum) {
 				curBlockMeta = bMetas.poll();
-				readedBlockNum++;
 				if (curBlockMeta.startTime > window.getEnd()
 						|| curBlockMeta.endTime < window.getStart()) {
 					postingReadRecs += curBlockMeta.recNum;
+					readedBlockNum++;
 					curDataBlockIdx = IndexWriter
 							.nextDataBlockIdx(curDataBlockIdx);
 				} else {
@@ -86,7 +86,7 @@ public class PostingListCursor implements Iterator<MidSegment> {
 		Block block = reader.loadBlock(metaBlockIdx);
 		assert block.getType() == Block.META_BLOCK;
 
-		int idx = (curDataBlockIdx - metaBlockIdx);
+		int idx = (curDataBlockIdx - metaBlockIdx) - 1;
 		DataInputStream dis = block.readByStream();
 		for (int i = 0; i < block.getRecs(); i++) {
 			BlockMeta meta = new BlockMeta(0, 0, 0);
@@ -110,6 +110,7 @@ public class PostingListCursor implements Iterator<MidSegment> {
 
 		assert curBlock.getRecs() == curBlockMeta.recNum;
 
+		readedBlockNum++;
 		curDataBlockIdx = IndexWriter.nextDataBlockIdx(curDataBlockIdx);
 		curInpuStream = curBlock.readByStream();
 		blockReadedRecs = 0;
