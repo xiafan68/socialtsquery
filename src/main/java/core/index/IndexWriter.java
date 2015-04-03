@@ -156,8 +156,10 @@ public class IndexWriter {
 	 * @return
 	 */
 	public static int bMetaBlockIdx(int dataBlockIdx) {
-		return (dataBlockIdx - 1) / (numOfMetasPerBlock() + 1)
-				* (numOfMetasPerBlock() + 1) + 1;
+		int idx = (dataBlockIdx + numOfMetasPerBlock())
+				/ (numOfMetasPerBlock() + 1);
+
+		return (idx - 1) * (numOfMetasPerBlock() + 1) + 1;
 	}
 
 	/**
@@ -242,7 +244,7 @@ public class IndexWriter {
 	}
 
 	public static int numOfMetasPerBlock() {
-		return Block.SIZE / BlockMeta.SIZE;
+		return (Block.SIZE - 8) / BlockMeta.SIZE;
 	}
 
 	/**
@@ -253,7 +255,7 @@ public class IndexWriter {
 	private void writeBlock() throws IOException {
 		// write block level meta
 		if (dataBlock.getRecs() != 0) {
-			curBMeta.recNum = curEntry.recNum;
+			curBMeta.recNum = dataBlock.getRecs();
 			curBMeta.write(memoryOutput);
 			metaBlock.write(baos.toByteArray());
 			baos.reset();
@@ -263,7 +265,7 @@ public class IndexWriter {
 
 			curBMeta.init();
 
-			if (curBlockIdx % (numOfMetasPerBlock() + 1) == 0) {
+			if ((curBlockIdx - 1) % (numOfMetasPerBlock() + 1) == 0) {
 				flush();
 			}
 		}

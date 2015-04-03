@@ -252,10 +252,11 @@ public class DiskBasedPerfTest {
 		return obj.getDouble("totalTime") / obj.getDouble("count");
 	}
 
-	static final String[] COUNTER_FIELDS = new String[] { Profile.ATOMIC_IO,
-			Profile.TOPK, Profile.CAND, Profile.WASTED_REC, Profile.TWASTED_REC };
+	static final String[] COUNTER_FIELDS = new String[] { Profile.DATA_BLOCK,
+			Profile.META_BLOCK, Profile.SKIPPED_BLOCK, Profile.TOPK,
+			Profile.CAND, Profile.WASTED_REC, Profile.TWASTED_REC };
 	static final String[] IOTimeFields = new String[] {
-			Profile.toTimeTag(Profile.ATOMIC_IO), Profile.TOTAL_TIME,
+			Profile.toTimeTag(Profile.DATA_BLOCK), Profile.TOTAL_TIME,
 			Profile.UPDATE_STATE };
 
 	/**
@@ -354,7 +355,7 @@ public class DiskBasedPerfTest {
 		String[] formats = new String[] { "invindex_o%dw.txt",
 				"minvindex_o%dw.txt" };
 		// test.testAllKeywords(conf, oDir + formats[i++], 0, 12, 50);
-		String[] iDirs = new String[] { "/home/xiafan/temp/invindex",
+		String[] iDirs = new String[] { "/home/xiafan/文档/dataset/output",
 				"/home/xiafan/temp/invindex_parts" };
 		// test.multiPart = true;
 		for (int i = 0; i < formats.length; i++) {

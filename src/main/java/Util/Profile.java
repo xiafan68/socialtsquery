@@ -18,12 +18,16 @@ public class Profile {
 	public static final String UPDATE_STATE = "update";
 
 	// IO
-	public static final String ATOMIC_IO = "atomic";
+	public static final String DATA_BLOCK = "atomic";
+	public static final String META_BLOCK = "meta block";
+	public static final String SKIPPED_BLOCK = "skip block";
+	
 	public static final String TOPK = "topk";
 	public static final String CAND = "cand";
 	public static final String WASTED_REC = "waste";
 	public static final String TWASTED_REC = "twaste";
-	
+
+		
 	private static Logger logger = LoggerFactory.getLogger(Profile.class);
 
 	public static Profile instance = new Profile();

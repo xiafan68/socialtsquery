@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import segmentation.Interval;
 import Util.Profile;
 import core.index.IndexWriter.BlockMeta;
@@ -15,6 +18,9 @@ import core.index.IndexWriter.DirEntry;
  * 倒排记录Cursor
  */
 public class PostingListCursor implements Iterator<MidSegment> {
+	private static final Logger logger = LoggerFactory
+			.getLogger(PostingListCursor.class);
+
 	DirEntry entry;
 	IndexFileGroupReader reader;
 	Interval window;
@@ -61,10 +67,13 @@ public class PostingListCursor implements Iterator<MidSegment> {
 				curBlockMeta = bMetas.poll();
 				if (curBlockMeta.startTime > window.getEnd()
 						|| curBlockMeta.endTime < window.getStart()) {
+					logger.debug("skip block " + curBlockMeta + " block id "
+							+ curDataBlockIdx);
 					postingReadRecs += curBlockMeta.recNum;
 					readedBlockNum++;
 					curDataBlockIdx = IndexWriter
 							.nextDataBlockIdx(curDataBlockIdx);
+					Profile.instance.updateCounter(Profile.SKIPPED_BLOCK);
 				} else {
 					found = true;
 					break;
@@ -96,23 +105,28 @@ public class PostingListCursor implements Iterator<MidSegment> {
 			}
 			bMetas.add(meta);
 		}
+		Profile.instance.updateCounter(Profile.META_BLOCK);
 	}
 
 	private void loadNextBlock() throws IOException {
 		locateDataBlock();
-		Profile.instance.updateCounter(Profile.ATOMIC_IO);
-		Profile.instance.updateCounter(Profile.ATOMIC_IO
-				+ reader.getMeta().partIdx);
-		Profile.instance.start(Profile.toTimeTag(Profile.ATOMIC_IO));
-		curBlock = new Block(Block.DATA_BLOCK);
-		reader.loadBlock(curBlock, curDataBlockIdx);
-		Profile.instance.end(Profile.toTimeTag(Profile.ATOMIC_IO));
+		if (curDataBlockIdx != -1) {
+			Profile.instance.updateCounter(Profile.DATA_BLOCK);
+			Profile.instance.updateCounter(Profile.DATA_BLOCK
+					+ reader.getMeta().partIdx);
+			Profile.instance.start(Profile.toTimeTag(Profile.DATA_BLOCK));
+			curBlock = new Block(Block.DATA_BLOCK);
+			logger.debug("read data block " + curDataBlockIdx);
+			reader.loadBlock(curBlock, curDataBlockIdx);
+			Profile.instance.end(Profile.toTimeTag(Profile.DATA_BLOCK));
 
-		assert curBlock.getRecs() == curBlockMeta.recNum;
+			assert curBlock.getRecs() == curBlockMeta.recNum;
 
-		readedBlockNum++;
-		curDataBlockIdx = IndexWriter.nextDataBlockIdx(curDataBlockIdx);
-		curInpuStream = curBlock.readByStream();
+			readedBlockNum++;
+			curDataBlockIdx = IndexWriter.nextDataBlockIdx(curDataBlockIdx);
+			curInpuStream = curBlock.readByStream();
+		}
+
 		blockReadedRecs = 0;
 		Profile.instance.updateCounter(entry.keyword);
 	}

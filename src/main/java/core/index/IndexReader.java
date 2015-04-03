@@ -81,6 +81,7 @@ public class IndexReader {
 		for (FileStatus status : statuses) {
 			addPartFile(meta, status.getPath(), conf);
 		}
+		logger.info("loading partition " + meta.toString() + " is completed");
 	}
 
 	/**

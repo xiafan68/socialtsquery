@@ -17,7 +17,7 @@ public class PartitionExecutorTest {
 	@Test
 	public void test() {
 		Path dir = new Path("/Users/xiafan/temp/output/");
-		dir = new Path("/home/xiafan/temp/invindex");
+		dir = new Path("/home/xiafan/文档/dataset/output");
 		Configuration conf = new Configuration();
 
 		IndexReader indexReader = new IndexReader();

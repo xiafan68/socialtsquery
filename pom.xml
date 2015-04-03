@@ -17,10 +17,13 @@
 	<repositories>
 		<repository>
 			<id>repo</id>
-			<url>file://${user.home}/repo</url>
+			<url>file://${user.home}/repo/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>

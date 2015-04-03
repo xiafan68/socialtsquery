@@ -39,8 +39,8 @@ public class ReaderTest {
 	public void postingListCursorTest() throws IOException {
 		// "/Users/xiafan/temp/output2"
 		// "/home/xiafan/文档/dataset/output"
-		Path dir = new Path("/Users/xiafan/temp/output2");
-		String part = "-1329430501";
+		Path dir = new Path("/home/xiafan/文档/dataset/output");
+		String part = "209952810";
 		Configuration conf = new Configuration();
 		IndexFileGroupReader indexReader = new IndexFileGroupReader(
 				new PartitionMeta(0));
@@ -53,7 +53,56 @@ public class ReaderTest {
 			while (dis.available() > 0) {
 				DirEntry entry = new DirEntry();
 				entry.read(dis);
-				Interval window = new Interval(1, 0, 100000000, 1);
+				Interval window = new Interval(1, 0, 10000000, 1);
+				Iterator<MidSegment> res = indexReader.cursor(entry.keyword,
+						window);
+				int count = 0;
+				MidSegment pre = null;
+				while (res.hasNext()) {
+					MidSegment cur = res.next();
+					if (pre != null) {
+						int preMax = Math.max(pre.getStartCount(),
+								pre.getEndCount());
+						int curMax = Math.max(cur.getStartCount(),
+								cur.getEndCount());
+						// System.out.println(pre.compareTo(cur));
+						Assert.assertTrue(preMax >= curMax);
+					}
+					pre = cur;
+					// System.out.println(count + " --- " + cur);
+					count++;
+				}
+				Assert.assertEquals(entry.recNum, count);
+				if (entry.recNum > 1000) {
+					System.out.println(entry);
+					System.out.println("=============" + count);
+				}
+			}
+			indexReader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Test
+	public void postingListCursorWindowTest() throws IOException {
+		// "/Users/xiafan/temp/output2"
+		// "/home/xiafan/文档/dataset/output"
+		Path dir = new Path("/home/xiafan/文档/dataset/output");
+		String part = "209952810";
+		Configuration conf = new Configuration();
+		IndexFileGroupReader indexReader = new IndexFileGroupReader(
+				new PartitionMeta(0));
+		try {
+			indexReader.open(dir, part, conf);
+			DataInputStream dis = new DataInputStream(
+					new BufferedInputStream(new FileInputStream(new Path(dir,
+							part + ".dir").toString())));
+
+			while (dis.available() > 0) {
+				DirEntry entry = new DirEntry();
+				entry.read(dis);
+				Interval window = new Interval(1, 0, 10000000, 1);
 				Iterator<MidSegment> res = indexReader.cursor(entry.keyword,
 						window);
 				int count = 0;
@@ -70,7 +119,7 @@ public class ReaderTest {
 						Assert.assertTrue(preMax >= curMax);
 					}
 					pre = cur;
-					System.out.println(count + " --- " + cur);
+					// System.out.println(count + " --- " + cur);
 					count++;
 				}
 				Assert.assertEquals(entry.recNum, count);

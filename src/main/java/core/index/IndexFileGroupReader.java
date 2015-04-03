@@ -32,7 +32,7 @@ public class IndexFileGroupReader {
 	Configuration conf;
 	// RandomAccessFile idxInput;
 	SeekableDirectIO idxInput;
-	SeekableDirectIO bMetaInput;
+
 	/*
 	 * 每个词在索引文件中对应的位置。
 	 */
@@ -118,18 +118,9 @@ public class IndexFileGroupReader {
 
 	public void loadBlock(Block block, int blockID) throws IOException {
 		// idxInput.getChannel().position(offset);
-		idxInput.position(blockID * Block.SIZE);
+		idxInput.position(((long) blockID) * Block.SIZE);// fuck!!!之前没有强制long转换，导致乘积越界
 		idxInput.read(block.getBytes());
 		block.init();
-	}
-
-	public BlockMeta loadBMeta(long offset) throws IOException {
-		bMetaInput.position(offset);
-		byte[] data = new byte[12];
-		bMetaInput.read(data);
-		BlockMeta ret = new BlockMeta(0, 0, 0);
-		ret.read(new DataInputStream(new ByteArrayInputStream(data)));
-		return ret;
 	}
 
 	public Iterator<Entry<String, DirEntry>> iterDir() {
@@ -145,7 +136,6 @@ public class IndexFileGroupReader {
 
 	public void close() throws IOException {
 		idxInput.close();
-		bMetaInput.close();
 	}
 
 	//
