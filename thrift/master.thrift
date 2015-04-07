@@ -40,7 +40,7 @@ struct TweetTuple{
 	2: list<list<i32>> points
 }
 struct Tweets{
-	1: map<string, TweetTuple> tweetMap,
+	1: map<i64, TweetTuple> tweetMap,
 }
 
 /**

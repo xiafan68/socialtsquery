@@ -43,7 +43,7 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
     schemes.put(TupleScheme.class, new TweetsTupleSchemeFactory());
   }
 
-  public Map<String,TweetTuple> tweetMap; // required
+  public Map<Long,TweetTuple> tweetMap; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -109,7 +109,7 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.TWEET_MAP, new org.apache.thrift.meta_data.FieldMetaData("tweetMap", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64), 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TweetTuple.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Tweets.class, metaDataMap);
@@ -119,7 +119,7 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
   }
 
   public Tweets(
-    Map<String,TweetTuple> tweetMap)
+    Map<Long,TweetTuple> tweetMap)
   {
     this();
     this.tweetMap = tweetMap;
@@ -130,13 +130,13 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
    */
   public Tweets(Tweets other) {
     if (other.isSetTweetMap()) {
-      Map<String,TweetTuple> __this__tweetMap = new HashMap<String,TweetTuple>(other.tweetMap.size());
-      for (Map.Entry<String, TweetTuple> other_element : other.tweetMap.entrySet()) {
+      Map<Long,TweetTuple> __this__tweetMap = new HashMap<Long,TweetTuple>(other.tweetMap.size());
+      for (Map.Entry<Long, TweetTuple> other_element : other.tweetMap.entrySet()) {
 
-        String other_element_key = other_element.getKey();
+        Long other_element_key = other_element.getKey();
         TweetTuple other_element_value = other_element.getValue();
 
-        String __this__tweetMap_copy_key = other_element_key;
+        Long __this__tweetMap_copy_key = other_element_key;
 
         TweetTuple __this__tweetMap_copy_value = new TweetTuple(other_element_value);
 
@@ -159,18 +159,18 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
     return (this.tweetMap == null) ? 0 : this.tweetMap.size();
   }
 
-  public void putToTweetMap(String key, TweetTuple val) {
+  public void putToTweetMap(long key, TweetTuple val) {
     if (this.tweetMap == null) {
-      this.tweetMap = new HashMap<String,TweetTuple>();
+      this.tweetMap = new HashMap<Long,TweetTuple>();
     }
     this.tweetMap.put(key, val);
   }
 
-  public Map<String,TweetTuple> getTweetMap() {
+  public Map<Long,TweetTuple> getTweetMap() {
     return this.tweetMap;
   }
 
-  public Tweets setTweetMap(Map<String,TweetTuple> tweetMap) {
+  public Tweets setTweetMap(Map<Long,TweetTuple> tweetMap) {
     this.tweetMap = tweetMap;
     return this;
   }
@@ -196,7 +196,7 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
       if (value == null) {
         unsetTweetMap();
       } else {
-        setTweetMap((Map<String,TweetTuple>)value);
+        setTweetMap((Map<Long,TweetTuple>)value);
       }
       break;
 
@@ -347,12 +347,12 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
                 org.apache.thrift.protocol.TMap _map32 = iprot.readMapBegin();
-                struct.tweetMap = new HashMap<String,TweetTuple>(2*_map32.size);
+                struct.tweetMap = new HashMap<Long,TweetTuple>(2*_map32.size);
                 for (int _i33 = 0; _i33 < _map32.size; ++_i33)
                 {
-                  String _key34;
+                  long _key34;
                   TweetTuple _val35;
-                  _key34 = iprot.readString();
+                  _key34 = iprot.readI64();
                   _val35 = new TweetTuple();
                   _val35.read(iprot);
                   struct.tweetMap.put(_key34, _val35);
@@ -382,10 +382,10 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
       if (struct.tweetMap != null) {
         oprot.writeFieldBegin(TWEET_MAP_FIELD_DESC);
         {
-          oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, struct.tweetMap.size()));
-          for (Map.Entry<String, TweetTuple> _iter36 : struct.tweetMap.entrySet())
+          oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I64, org.apache.thrift.protocol.TType.STRUCT, struct.tweetMap.size()));
+          for (Map.Entry<Long, TweetTuple> _iter36 : struct.tweetMap.entrySet())
           {
-            oprot.writeString(_iter36.getKey());
+            oprot.writeI64(_iter36.getKey());
             _iter36.getValue().write(oprot);
           }
           oprot.writeMapEnd();
@@ -417,9 +417,9 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
       if (struct.isSetTweetMap()) {
         {
           oprot.writeI32(struct.tweetMap.size());
-          for (Map.Entry<String, TweetTuple> _iter37 : struct.tweetMap.entrySet())
+          for (Map.Entry<Long, TweetTuple> _iter37 : struct.tweetMap.entrySet())
           {
-            oprot.writeString(_iter37.getKey());
+            oprot.writeI64(_iter37.getKey());
             _iter37.getValue().write(oprot);
           }
         }
@@ -432,13 +432,13 @@ public class Tweets implements org.apache.thrift.TBase<Tweets, Tweets._Fields>, 
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TMap _map38 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.tweetMap = new HashMap<String,TweetTuple>(2*_map38.size);
+          org.apache.thrift.protocol.TMap _map38 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I64, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.tweetMap = new HashMap<Long,TweetTuple>(2*_map38.size);
           for (int _i39 = 0; _i39 < _map38.size; ++_i39)
           {
-            String _key40;
+            long _key40;
             TweetTuple _val41;
-            _key40 = iprot.readString();
+            _key40 = iprot.readI64();
             _val41 = new TweetTuple();
             _val41.read(iprot);
             struct.tweetMap.put(_key40, _val41);
