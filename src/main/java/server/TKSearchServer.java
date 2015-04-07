@@ -99,7 +99,7 @@ public class TKSearchServer implements TweetService.Iface {
 		return ret;
 	}
 
-	private void readContent(Map<String, TweetTuple> tweetMap, List<Long> tids) {
+	private void readContent(Map<Long, TweetTuple> tweetMap, List<Long> tids) {
 		TweetDao dao = new TweetDao(jdbc);
 		Map<Long, String> contents;
 		try {
@@ -110,7 +110,7 @@ public class TKSearchServer implements TweetService.Iface {
 					curTuple = tweetMap.get(entry.getKey());
 				} else {
 					curTuple = new TweetTuple();
-					tweetMap.put(entry.getKey().toString(), curTuple);
+					tweetMap.put(entry.getKey(), curTuple);
 				}
 				curTuple.setContent(entry.getValue());
 			}
@@ -119,7 +119,7 @@ public class TKSearchServer implements TweetService.Iface {
 		}
 	}
 
-	public void readTimeSeries(Map<String, TweetTuple> tweetMap, List<Long> tids)
+	public void readTimeSeries(Map<Long, TweetTuple> tweetMap, List<Long> tids)
 			throws SQLException {
 		TimeSeriesDao seriesDao = new TimeSeriesDao(jdbc);
 		Map<Long, List<List<Integer>>> tsData = seriesDao.getTimeSeries(tids);
@@ -129,6 +129,7 @@ public class TKSearchServer implements TweetService.Iface {
 				curTuple = tweetMap.get(entry.getKey());
 			} else {
 				curTuple = new TweetTuple();
+				tweetMap.put(entry.getKey(), curTuple);
 			}
 			curTuple.setPoints(entry.getValue());
 		}
@@ -138,7 +139,7 @@ public class TKSearchServer implements TweetService.Iface {
 	public Tweets fetchTweets(FetchTweetQuery query) throws InvalidJob,
 			TException {
 		Tweets tweets = new Tweets();
-		Map<String, TweetTuple> tweetMap = new HashMap<String, TweetTuple>();
+		Map<Long, TweetTuple> tweetMap = new HashMap<Long, TweetTuple>();
 		try {
 			readContent(tweetMap, query.getTids());
 			readTimeSeries(tweetMap, query.getTids());
