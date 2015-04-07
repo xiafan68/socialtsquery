@@ -23,6 +23,7 @@ public class TimeSeriesDao {
 		Map<Long, List<List<Integer>>> ret = new HashMap<Long, List<List<Integer>>>();
 		String inCond = StringUtils.join(mids, ",");
 		Connection con = jdbc.getCon();
+		con.setCatalog("tseries");
 		Statement stmt = con.createStatement();
 		ResultSet set = stmt
 				.executeQuery("select id, time, freq from tseries where id in ("

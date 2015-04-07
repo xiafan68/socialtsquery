@@ -21,12 +21,13 @@ public class TweetDao {
 		Map<Long, String> ret = new HashMap<Long, String>();
 		String inCond = StringUtils.join(mids, ",");
 		Connection con = jdbc.getCon();
+		con.setCatalog("microblogs");
 		Statement stmt = con.createStatement();
 		ResultSet set = stmt
-				.executeQuery("select * from micrblog where mid in (" + inCond
+				.executeQuery("select * from microblog where mid in (" + inCond
 						+ ");");
 		while (set.next()) {
-			ret.put(set.getLong("id"), set.getString("content"));
+			ret.put(set.getLong("mid"), set.getString("content"));
 		}
 		return ret;
 	}

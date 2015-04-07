@@ -29,6 +29,7 @@ import searchapi.TweetTuple;
 import searchapi.Tweets;
 import segmentation.Interval;
 import Util.Profile;
+import core.executor.MultiPartitionExecutor;
 import core.executor.PartitionExecutor;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
@@ -44,12 +45,13 @@ public class TKSearchServer implements TweetService.Iface {
 
 	public void start() {
 		Path dir = new Path("/Users/xiafan/temp/output/");
-		// dir = new Path("/home/xiafan/文档/dataset/output");
+		dir = new Path("/home/xiafan/temp/invindex_parts");
 		Configuration conf = new Configuration();
 
 		indexReader = new IndexReader();
 		try {
-			indexReader.addPartition(new PartitionMeta(16), dir, conf);
+			indexReader.addPartitions(dir, conf);
+			;
 		} catch (IOException e) {
 			e.printStackTrace();
 			indexReader = null;
@@ -74,8 +76,9 @@ public class TKSearchServer implements TweetService.Iface {
 	@Override
 	public List<Long> search(TKeywordQuery query) throws TException {
 		List<Long> ret = new ArrayList<Long>();
-		PartitionExecutor executor = new PartitionExecutor(indexReader);
-		executor.setMaxLifeTime((int) Math.pow(2, 16));
+		MultiPartitionExecutor executor = new MultiPartitionExecutor(
+				indexReader);
+		executor.setMaxLifeTime((int) Math.pow(2, 31));
 		Interval window = new Interval(1, query.startTime, query.endTime, 1);
 		String[] keywords = new String[query.keywords.size()];
 		query.keywords.toArray(keywords);
@@ -93,8 +96,6 @@ public class TKSearchServer implements TweetService.Iface {
 		}
 
 		System.out.println(Profile.instance.toJSON());
-		for (int i = 0; i < 10; i++)
-			ret.add((long) i);
 		return ret;
 	}
 
@@ -109,6 +110,7 @@ public class TKSearchServer implements TweetService.Iface {
 					curTuple = tweetMap.get(entry.getKey());
 				} else {
 					curTuple = new TweetTuple();
+					tweetMap.put(entry.getKey().toString(), curTuple);
 				}
 				curTuple.setContent(entry.getValue());
 			}
