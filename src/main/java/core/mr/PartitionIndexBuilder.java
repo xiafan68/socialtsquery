@@ -47,11 +47,15 @@ public class PartitionIndexBuilder {
 		for (FileStatus status : statuses) {
 			final FileStatus curStatus = status;
 			if (status.isDir()) {
-				if (status.getPath().getName().length() != 5) {
+				/*if (status.getPath().getName().length() != 5) {
 					System.out.println("skip " + status.getPath().toString());
 					continue;
-				}
-				exec.execute(new Runnable() {
+				}*/
+				InvertedIndexBuilder.main(new String[] {
+						curStatus.getPath().toString(),
+						new Path(output, curStatus.getPath()
+								.getName()).toString() });
+				/*exec.execute(new Runnable() {
 					public void run() {
 						for (int i = 0; i < 3; i++) {
 							try {
@@ -65,7 +69,7 @@ public class PartitionIndexBuilder {
 							}
 						}// end of for
 					}
-				});
+				});*/
 			}
 		}
 	}
