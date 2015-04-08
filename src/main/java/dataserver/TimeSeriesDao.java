@@ -27,7 +27,7 @@ public class TimeSeriesDao {
 		Statement stmt = con.createStatement();
 		ResultSet set = stmt
 				.executeQuery("select id, time, freq from tseries where id in ("
-						+ inCond + ");");
+						+ inCond + ") order by id, time;");
 		while (set.next()) {
 			long mid = set.getLong("id");
 			List<Integer> tuple = new ArrayList<Integer>();
@@ -38,6 +38,7 @@ public class TimeSeriesDao {
 				cur = ret.get(mid);
 			} else {
 				cur = new ArrayList<List<Integer>>();
+				ret.put(mid, cur);
 			}
 			cur.add(tuple);
 		}
