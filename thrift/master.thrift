@@ -25,7 +25,9 @@
 namespace java searchapi
 
 struct FetchTweetQuery {
-	1: list<i64> tids
+	1: list<i64> tids,
+	2: i32 startTime, 
+	3: i32 endTime
 }
 
 struct TKeywordQuery {

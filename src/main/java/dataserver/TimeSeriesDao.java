@@ -18,16 +18,17 @@ public class TimeSeriesDao {
 		this.jdbc = jdbc;
 	}
 
-	public Map<Long, List<List<Integer>>> getTimeSeries(List<Long> mids)
-			throws SQLException {
+	public Map<Long, List<List<Integer>>> getTimeSeries(List<Long> mids,
+			int start, int end) throws SQLException {
 		Map<Long, List<List<Integer>>> ret = new HashMap<Long, List<List<Integer>>>();
 		String inCond = StringUtils.join(mids, ",");
 		Connection con = jdbc.getCon();
 		con.setCatalog("tseries");
 		Statement stmt = con.createStatement();
 		ResultSet set = stmt
-				.executeQuery("select id, time, freq from tseries where id in ("
-						+ inCond + ") order by id, time;");
+				.executeQuery(String
+						.format("select id, time, freq from tseries where id in (%s)  and time >= %d and time <= %d order by id, time;",
+								inCond, start, end));
 		while (set.next()) {
 			long mid = set.getLong("id");
 			List<Integer> tuple = new ArrayList<Integer>();

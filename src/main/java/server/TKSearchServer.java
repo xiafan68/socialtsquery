@@ -119,10 +119,11 @@ public class TKSearchServer implements TweetService.Iface {
 		}
 	}
 
-	public void readTimeSeries(Map<Long, TweetTuple> tweetMap, List<Long> tids)
-			throws SQLException {
+	public void readTimeSeries(Map<Long, TweetTuple> tweetMap,
+			FetchTweetQuery query) throws SQLException {
 		TimeSeriesDao seriesDao = new TimeSeriesDao(jdbc);
-		Map<Long, List<List<Integer>>> tsData = seriesDao.getTimeSeries(tids);
+		Map<Long, List<List<Integer>>> tsData = seriesDao.getTimeSeries(
+				query.tids, query.startTime / 2, query.endTime / 2);
 		for (Entry<Long, List<List<Integer>>> entry : tsData.entrySet()) {
 			TweetTuple curTuple = null;
 			if (tweetMap.containsKey(entry.getKey())) {
@@ -142,7 +143,7 @@ public class TKSearchServer implements TweetService.Iface {
 		Map<Long, TweetTuple> tweetMap = new HashMap<Long, TweetTuple>();
 		try {
 			readContent(tweetMap, query.getTids());
-			readTimeSeries(tweetMap, query.getTids());
+			readTimeSeries(tweetMap, query);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

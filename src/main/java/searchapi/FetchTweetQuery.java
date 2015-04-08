@@ -36,6 +36,8 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("FetchTweetQuery");
 
   private static final org.apache.thrift.protocol.TField TIDS_FIELD_DESC = new org.apache.thrift.protocol.TField("tids", org.apache.thrift.protocol.TType.LIST, (short)1);
+  private static final org.apache.thrift.protocol.TField START_TIME_FIELD_DESC = new org.apache.thrift.protocol.TField("startTime", org.apache.thrift.protocol.TType.I32, (short)2);
+  private static final org.apache.thrift.protocol.TField END_TIME_FIELD_DESC = new org.apache.thrift.protocol.TField("endTime", org.apache.thrift.protocol.TType.I32, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -44,10 +46,14 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
   }
 
   public List<Long> tids; // required
+  public int startTime; // required
+  public int endTime; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    TIDS((short)1, "tids");
+    TIDS((short)1, "tids"),
+    START_TIME((short)2, "startTime"),
+    END_TIME((short)3, "endTime");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -64,6 +70,10 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
       switch(fieldId) {
         case 1: // TIDS
           return TIDS;
+        case 2: // START_TIME
+          return START_TIME;
+        case 3: // END_TIME
+          return END_TIME;
         default:
           return null;
       }
@@ -104,12 +114,19 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
   }
 
   // isset id assignments
+  private static final int __STARTTIME_ISSET_ID = 0;
+  private static final int __ENDTIME_ISSET_ID = 1;
+  private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.TIDS, new org.apache.thrift.meta_data.FieldMetaData("tids", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64))));
+    tmpMap.put(_Fields.START_TIME, new org.apache.thrift.meta_data.FieldMetaData("startTime", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.END_TIME, new org.apache.thrift.meta_data.FieldMetaData("endTime", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(FetchTweetQuery.class, metaDataMap);
   }
@@ -118,20 +135,29 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
   }
 
   public FetchTweetQuery(
-    List<Long> tids)
+    List<Long> tids,
+    int startTime,
+    int endTime)
   {
     this();
     this.tids = tids;
+    this.startTime = startTime;
+    setStartTimeIsSet(true);
+    this.endTime = endTime;
+    setEndTimeIsSet(true);
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public FetchTweetQuery(FetchTweetQuery other) {
+    __isset_bitfield = other.__isset_bitfield;
     if (other.isSetTids()) {
       List<Long> __this__tids = new ArrayList<Long>(other.tids);
       this.tids = __this__tids;
     }
+    this.startTime = other.startTime;
+    this.endTime = other.endTime;
   }
 
   public FetchTweetQuery deepCopy() {
@@ -141,6 +167,10 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
   @Override
   public void clear() {
     this.tids = null;
+    setStartTimeIsSet(false);
+    this.startTime = 0;
+    setEndTimeIsSet(false);
+    this.endTime = 0;
   }
 
   public int getTidsSize() {
@@ -182,6 +212,52 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
     }
   }
 
+  public int getStartTime() {
+    return this.startTime;
+  }
+
+  public FetchTweetQuery setStartTime(int startTime) {
+    this.startTime = startTime;
+    setStartTimeIsSet(true);
+    return this;
+  }
+
+  public void unsetStartTime() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __STARTTIME_ISSET_ID);
+  }
+
+  /** Returns true if field startTime is set (has been assigned a value) and false otherwise */
+  public boolean isSetStartTime() {
+    return EncodingUtils.testBit(__isset_bitfield, __STARTTIME_ISSET_ID);
+  }
+
+  public void setStartTimeIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __STARTTIME_ISSET_ID, value);
+  }
+
+  public int getEndTime() {
+    return this.endTime;
+  }
+
+  public FetchTweetQuery setEndTime(int endTime) {
+    this.endTime = endTime;
+    setEndTimeIsSet(true);
+    return this;
+  }
+
+  public void unsetEndTime() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __ENDTIME_ISSET_ID);
+  }
+
+  /** Returns true if field endTime is set (has been assigned a value) and false otherwise */
+  public boolean isSetEndTime() {
+    return EncodingUtils.testBit(__isset_bitfield, __ENDTIME_ISSET_ID);
+  }
+
+  public void setEndTimeIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __ENDTIME_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case TIDS:
@@ -192,6 +268,22 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
       }
       break;
 
+    case START_TIME:
+      if (value == null) {
+        unsetStartTime();
+      } else {
+        setStartTime((Integer)value);
+      }
+      break;
+
+    case END_TIME:
+      if (value == null) {
+        unsetEndTime();
+      } else {
+        setEndTime((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -199,6 +291,12 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
     switch (field) {
     case TIDS:
       return getTids();
+
+    case START_TIME:
+      return Integer.valueOf(getStartTime());
+
+    case END_TIME:
+      return Integer.valueOf(getEndTime());
 
     }
     throw new IllegalStateException();
@@ -213,6 +311,10 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
     switch (field) {
     case TIDS:
       return isSetTids();
+    case START_TIME:
+      return isSetStartTime();
+    case END_TIME:
+      return isSetEndTime();
     }
     throw new IllegalStateException();
   }
@@ -239,6 +341,24 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
         return false;
     }
 
+    boolean this_present_startTime = true;
+    boolean that_present_startTime = true;
+    if (this_present_startTime || that_present_startTime) {
+      if (!(this_present_startTime && that_present_startTime))
+        return false;
+      if (this.startTime != that.startTime)
+        return false;
+    }
+
+    boolean this_present_endTime = true;
+    boolean that_present_endTime = true;
+    if (this_present_endTime || that_present_endTime) {
+      if (!(this_present_endTime && that_present_endTime))
+        return false;
+      if (this.endTime != that.endTime)
+        return false;
+    }
+
     return true;
   }
 
@@ -261,6 +381,26 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
     }
     if (isSetTids()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.tids, other.tids);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetStartTime()).compareTo(other.isSetStartTime());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetStartTime()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.startTime, other.startTime);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetEndTime()).compareTo(other.isSetEndTime());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetEndTime()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.endTime, other.endTime);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -292,6 +432,14 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
       sb.append(this.tids);
     }
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("startTime:");
+    sb.append(this.startTime);
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("endTime:");
+    sb.append(this.endTime);
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -311,6 +459,8 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
+      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -353,6 +503,22 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 2: // START_TIME
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.startTime = iprot.readI32();
+              struct.setStartTimeIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 3: // END_TIME
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.endTime = iprot.readI32();
+              struct.setEndTimeIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -380,6 +546,12 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
         }
         oprot.writeFieldEnd();
       }
+      oprot.writeFieldBegin(START_TIME_FIELD_DESC);
+      oprot.writeI32(struct.startTime);
+      oprot.writeFieldEnd();
+      oprot.writeFieldBegin(END_TIME_FIELD_DESC);
+      oprot.writeI32(struct.endTime);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -401,7 +573,13 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
       if (struct.isSetTids()) {
         optionals.set(0);
       }
-      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetStartTime()) {
+        optionals.set(1);
+      }
+      if (struct.isSetEndTime()) {
+        optionals.set(2);
+      }
+      oprot.writeBitSet(optionals, 3);
       if (struct.isSetTids()) {
         {
           oprot.writeI32(struct.tids.size());
@@ -411,12 +589,18 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
           }
         }
       }
+      if (struct.isSetStartTime()) {
+        oprot.writeI32(struct.startTime);
+      }
+      if (struct.isSetEndTime()) {
+        oprot.writeI32(struct.endTime);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, FetchTweetQuery struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(1);
+      BitSet incoming = iprot.readBitSet(3);
       if (incoming.get(0)) {
         {
           org.apache.thrift.protocol.TList _list5 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I64, iprot.readI32());
@@ -429,6 +613,14 @@ public class FetchTweetQuery implements org.apache.thrift.TBase<FetchTweetQuery,
           }
         }
         struct.setTidsIsSet(true);
+      }
+      if (incoming.get(1)) {
+        struct.startTime = iprot.readI32();
+        struct.setStartTimeIsSet(true);
+      }
+      if (incoming.get(2)) {
+        struct.endTime = iprot.readI32();
+        struct.setEndTimeIsSet(true);
       }
     }
   }

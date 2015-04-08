@@ -11,6 +11,13 @@ import xiafan.util.Progress;
 
 import common.Tweet;
 
+/**
+ * CREATE TABLE `tseries`.`new_table` ( `id` BIGINT NOT NULL , `point` INT NULL
+ * , `freq` INT NULL , INDEX `idIndex` USING HASH (`id` ASC) );
+ * 
+ * @author xiafan
+ * 
+ */
 public class TweetLoader {
 	ITSeriesDB db;
 
