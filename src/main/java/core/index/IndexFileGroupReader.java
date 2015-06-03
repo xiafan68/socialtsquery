@@ -1,7 +1,6 @@
 package core.index;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -10,11 +9,11 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import segmentation.Interval;
-import core.index.IndexWriter.BlockMeta;
 import core.index.IndexWriter.DirEntry;
 import core.io.LinuxSeekableDirectIO;
 import core.io.SeekableDirectIO;
@@ -31,7 +30,9 @@ public class IndexFileGroupReader {
 	String part;
 	Configuration conf;
 	// RandomAccessFile idxInput;
+	boolean dfs = true;
 	SeekableDirectIO idxInput;
+	FSDataInputStream fsInput;
 
 	/*
 	 * 每个词在索引文件中对应的位置。
@@ -81,7 +82,10 @@ public class IndexFileGroupReader {
 		// RandomAccessFile randomAccessFile = new
 		// RandomAccessFile(path.toUri().getPath(), "r");
 		// idxInput = randomAccessFile;
-		idxInput = new LinuxSeekableDirectIO(path.toUri().getPath());
+		if (dfs)
+			fsInput = fs.open(path);
+		else
+			idxInput = new LinuxSeekableDirectIO(path.toUri().getPath());
 	}
 
 	/**
@@ -118,8 +122,13 @@ public class IndexFileGroupReader {
 
 	public void loadBlock(Block block, int blockID) throws IOException {
 		// idxInput.getChannel().position(offset);
-		idxInput.position(((long) blockID) * Block.SIZE);// fuck!!!之前没有强制long转换，导致乘积越界
-		idxInput.read(block.getBytes());
+		if (dfs) {
+			fsInput.seek(((long) blockID) * Block.SIZE);// fuck!!!之前没有强制long转换，导致乘积越界
+			fsInput.read(block.getBytes());
+		} else {
+			idxInput.position(((long) blockID) * Block.SIZE);// fuck!!!之前没有强制long转换，导致乘积越界
+			idxInput.read(block.getBytes());
+		}
 		block.init();
 	}
 
@@ -135,7 +144,10 @@ public class IndexFileGroupReader {
 	}
 
 	public void close() throws IOException {
-		idxInput.close();
+		if (dfs)
+			fsInput.close();
+		else
+			idxInput.close();
 	}
 
 	//

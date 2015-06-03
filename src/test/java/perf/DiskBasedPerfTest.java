@@ -355,7 +355,7 @@ public class DiskBasedPerfTest {
 		String[] formats = new String[] { "invindex_o%dw.txt",
 				"minvindex_o%dw.txt" };
 		// test.testAllKeywords(conf, oDir + formats[i++], 0, 12, 50);
-		String[] iDirs = new String[] { "/home/xiafan/文档/dataset/output",
+		String[] iDirs = new String[] { "/home/xiafan/temp/sindex",
 				"/home/xiafan/temp/invindex_parts" };
 		// test.multiPart = true;
 		for (int i = 0; i < formats.length; i++) {

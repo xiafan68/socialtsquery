@@ -142,6 +142,23 @@ public class IndexReader {
 		return ret;
 	}
 
+	/**
+	 * 获取Keyword对应于每个partition的meta信息
+	 * @param keyword
+	 * @return
+	 * @throws IOException
+	 */
+	public List<DirEntry> getEntries(String keyword) throws IOException {
+		List<DirEntry> ret = new ArrayList<DirEntry>();
+		if (partMeta.containsKey(keyword)) {
+			List<Integer> parts = partMeta.get(keyword);
+			for (int part : parts) {
+				ret.add(readerMeta.get(part).getDirEntry(keyword));
+			}
+		}
+		return ret;
+	}
+
 	public Iterator<String> keywordsIter() {
 		return partMeta.keySet().iterator();
 	}

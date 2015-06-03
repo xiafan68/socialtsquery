@@ -188,6 +188,13 @@ public class PostingListCursor implements Iterator<MidSegment> {
 		return ret;
 	}
 
+	// 读下一条记录。
+	public MidSegment peek() {
+		if (cur == null)
+			advance();
+		return cur;
+	}
+
 	public void remove() {
 		throw new RuntimeException("not implemented");
 	}
