@@ -8,18 +8,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import common.MidSegment;
 import segmentation.Interval;
 import Util.MyMath;
 import Util.Profile;
+import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortBestscore;
 import core.executor.domain.SortWorstscore;
 import core.index.IndexReader;
-import core.index.MidSegment;
 import core.index.PartitionMeta;
 import core.index.PostingListCursor;
-import core.index.TempKeywordQuery;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询

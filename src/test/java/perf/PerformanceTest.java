@@ -13,10 +13,10 @@ import segmentation.Interval;
 import xiafan.util.Pair;
 import Util.MyFile;
 import Util.Profile;
+import core.commom.TempKeywordQuery;
 import core.executor.PartitionExecutor;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
 import expr.QueryGen;
 
 public class PerformanceTest {

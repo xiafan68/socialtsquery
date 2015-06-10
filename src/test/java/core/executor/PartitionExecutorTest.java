@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import Util.Profile;
 import segmentation.Interval;
+import core.commom.TempKeywordQuery;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
 
 public class PartitionExecutorTest {
 	@Test

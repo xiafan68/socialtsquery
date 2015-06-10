@@ -9,11 +9,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
+import common.MidSegment;
+
 import segmentation.Segment;
 import xiafan.file.DirLineReader;
 import xiafan.util.Pair;
 import xiafan.util.Triple;
-import core.index.MidSegment;
 import extract.common.MRDataFormat;
 
 /**

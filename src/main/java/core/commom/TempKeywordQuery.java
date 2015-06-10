@@ -1,4 +1,4 @@
-package core.index;
+package core.commom;
 
 import java.util.Arrays;
 

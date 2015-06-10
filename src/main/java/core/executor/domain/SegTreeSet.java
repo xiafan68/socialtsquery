@@ -10,10 +10,11 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import common.MidSegment;
+
 import segmentation.Segment;
 import Util.MyFile;
 //import com.sun.scenario.effect.Merge;
-import core.index.MidSegment;
 
 /**
  * Created by teisei on 15-3-24.

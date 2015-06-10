@@ -31,12 +31,12 @@ import xiafan.util.StreamLogUtils;
 import xiafan.util.StreamUtils;
 import xiafan.util.collection.DefaultedPutMap;
 import Util.Profile;
+import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.MultiPartitionExecutor;
 import core.executor.PartitionExecutor;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
 import expr.QueryGen;
 
 public class DiskBasedPerfTest {

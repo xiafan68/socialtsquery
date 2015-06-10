@@ -3,7 +3,7 @@ package core.executor.domain;
 import java.util.Comparator;
 import java.util.Iterator;
 
-import core.index.MidSegment;
+import common.MidSegment;
 
 /**
  * 

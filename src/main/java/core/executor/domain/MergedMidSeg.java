@@ -6,8 +6,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import common.MidSegment;
+
 import core.executor.ExecContext;
-import core.index.MidSegment;
 
 /**
  * 用以在内存中维护每个item已经读到的entries，利用这些信息用于计算当前元素的最好和最差分值

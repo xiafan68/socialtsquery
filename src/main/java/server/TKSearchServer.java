@@ -21,6 +21,7 @@ import org.apache.thrift.transport.TTransportException;
 //李超
 //13661912248
 
+
 import searchapi.FetchTweetQuery;
 import searchapi.InvalidJob;
 import searchapi.TKeywordQuery;
@@ -29,11 +30,11 @@ import searchapi.TweetTuple;
 import searchapi.Tweets;
 import segmentation.Interval;
 import Util.Profile;
+import core.commom.TempKeywordQuery;
 import core.executor.MultiPartitionExecutor;
 import core.executor.PartitionExecutor;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
 import dataserver.JDBC;
 import dataserver.TimeSeriesDao;
 import dataserver.TweetDao;

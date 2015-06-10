@@ -9,6 +9,8 @@ import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import common.MidSegment;
+
 import segmentation.Interval;
 import Util.Profile;
 import core.index.IndexWriter.BlockMeta;

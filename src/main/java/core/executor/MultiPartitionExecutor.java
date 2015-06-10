@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Map;
 
 import segmentation.Interval;
+import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortWorstscore;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
 
 /**
  * <p>

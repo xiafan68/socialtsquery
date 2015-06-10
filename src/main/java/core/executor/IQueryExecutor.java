@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import segmentation.Interval;
-import core.index.TempKeywordQuery;
+import core.commom.TempKeywordQuery;
 
 /**
  * 定义查询算法的接口,接受一个temporal keyword query，返回topk最受欢迎的items，当前类主要是定义了threhold

@@ -4,12 +4,12 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import common.MidSegment;
 import segmentation.Interval;
 import segmentation.Segment;
+import core.commom.TempKeywordQuery;
 import core.executor.ExecContext;
 import core.executor.domain.MergedMidSeg;
-import core.index.MidSegment;
-import core.index.TempKeywordQuery;
 
 /**
  * 

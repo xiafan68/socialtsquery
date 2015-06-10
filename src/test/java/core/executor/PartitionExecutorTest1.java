@@ -1,12 +1,14 @@
 package core.executor;
 
 import Util.MyFile;
+import core.commom.TempKeywordQuery;
 import core.index.IndexReader;
 import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+
 import segmentation.Interval;
 
 import java.io.IOException;

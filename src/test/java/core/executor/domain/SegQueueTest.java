@@ -4,13 +4,14 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import common.MidSegment;
+
 import segmentation.Segment;
 import core.executor.ExecContext;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SegQueue;
 import core.executor.domain.SortBestscore;
 import core.executor.domain.SortWorstscore;
-import core.index.MidSegment;
 
 /**
  * 

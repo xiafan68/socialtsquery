@@ -1,4 +1,4 @@
-package core.index;
+package common;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
 
+import core.commom.Point;
 import segmentation.Segment;
 
 /**
@@ -48,6 +49,11 @@ public class MidSegment extends Segment implements
 			}
 		}
 		return ret;
+	}
+
+	public Point getPoint() {
+		return new Point(this.getStart(), this.getEndTime(), Math.max(
+				this.getStartCount(), this.getEndCount()));
 	}
 
 	/* (non-Javadoc)

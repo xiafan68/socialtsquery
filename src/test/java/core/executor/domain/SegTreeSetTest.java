@@ -4,9 +4,10 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import common.MidSegment;
+
 import segmentation.Segment;
 import core.executor.ExecContext;
-import core.index.MidSegment;
 
 /**
  * 

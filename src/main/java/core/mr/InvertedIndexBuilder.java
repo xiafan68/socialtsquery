@@ -31,9 +31,9 @@ import shingle.StopWordFilter;
 import shingle.TextShingle;
 import xiafan.util.Histogram;
 import xiafan.util.Pair;
+import common.MidSegment;
 import common.Tweet;
 import core.index.IndexWriter;
-import core.index.MidSegment;
 import extract.TimeSeriesMRJob;
 import extract.common.MRDataFormat;
 

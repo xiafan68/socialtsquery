@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
+import common.MidSegment;
+
 import segmentation.Segment;
 import Util.MyFile;
-import core.index.MidSegment;
 
 /**
  * 仅仅负责维护items的队列，不涉及items的状态更新逻辑, 用作topk队列时，需要维护整个队列里面的最大值，最小值
