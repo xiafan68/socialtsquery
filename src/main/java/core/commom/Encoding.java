@@ -20,8 +20,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	private int[] encodes = new int[3];
 
-	public Encoding(int endBit) {
-		this.endBit = endBit;
+	public Encoding() {
 	}
 
 	public Encoding(Point p, int endBit) {
@@ -108,6 +107,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
+		endBit = arg0.readInt();
 		for (int i = 0; i < 3; i++)
 			encodes[i] = arg0.readInt();
 		decode();
@@ -115,6 +115,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public void write(DataOutput arg0) throws IOException {
+		arg0.writeInt(endBit);
 		for (int code : encodes)
 			arg0.writeInt(code);
 	}
@@ -152,9 +153,13 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream dao = new DataOutputStream(baos);
 		data.write(dao);
-		Encoding newData = new Encoding(2);
+		Encoding newData = new Encoding();
 		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos
 				.toByteArray())));
 		System.out.println(newData);
+	}
+
+	public int getEdgeLen() {
+		return endBit;
 	}
 }

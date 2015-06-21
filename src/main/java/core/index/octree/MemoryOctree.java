@@ -1,6 +1,6 @@
 package core.index.octree;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.IntegerUtil;
 import common.MidSegment;
@@ -17,10 +17,16 @@ import core.index.LogStructureOctree.OctreeMeta;
 public class MemoryOctree {
 	private static int size_threshold = 10;
 	OctreeMeta meta;
-	OctreeNode root;
+	OctreeNode root = null;
+	// once true, no data can be inserted any further
+	private AtomicBoolean immutable = new AtomicBoolean(false);
 
 	public MemoryOctree(OctreeMeta meta) {
 		this.meta = meta;
+	}
+
+	public void immutable() {
+		immutable.set(true);
 	}
 
 	public OctreeMeta getMeta() {
@@ -31,7 +37,17 @@ public class MemoryOctree {
 		return meta.size;
 	}
 
-	public void insert(Point point, MidSegment seg) {
+	/**
+	 * 
+	 * @param point
+	 * @param seg
+	 * @return true if insert success
+	 * false if current tree is immutable
+	 */
+	public boolean insert(Point point, MidSegment seg) {
+		if (immutable.get()) {
+			return false;
+		}
 		meta.size++;
 		if (root == null || !root.contains(point)) {
 			OctreeNode preRoot = root;
@@ -56,6 +72,7 @@ public class MemoryOctree {
 		if (leaf.size() > size_threshold) {
 			leaf.split();
 		}
+		return true;
 	}
 
 	public void visit(OctreeVisitor visit) {

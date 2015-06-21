@@ -1,8 +1,14 @@
 package core.index.octree;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+/**
+ * an iterator visiting a memory octree
+ * @author xiafan
+ *
+ */
 public class OctreeIterator implements IOctreeIterator {
 
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
@@ -49,9 +55,12 @@ public class OctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public void remove() {
-		throw new RuntimeException(
-				"remove is not implemented for OctreeIterator!!!");
+	public void close() {
+
 	}
 
+	@Override
+	public void open() throws IOException {
+
+	}
 }

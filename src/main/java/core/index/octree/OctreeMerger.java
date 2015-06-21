@@ -1,5 +1,6 @@
 package core.index.octree;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
@@ -26,7 +27,7 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public boolean hasNext() {
+	public boolean hasNext() throws IOException {
 		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext()
 				|| rhs.hasNext();
 	}
@@ -34,17 +35,17 @@ public class OctreeMerger implements IOctreeIterator {
 	OctreeNode lnode;
 	OctreeNode rnode;
 
-	private void nextLNode() {
+	private void nextLNode() throws IOException {
 		if (lnode == null && lhs.hasNext())
 			lnode = lhs.next();
 	}
 
-	private void nextRNode() {
+	private void nextRNode() throws IOException {
 		if (rnode == null && rhs.hasNext())
 			rnode = rhs.next();
 	}
 
-	private void advance() {
+	private void advance() throws IOException {
 		while (curNode == null) {
 			nextLNode();
 			nextRNode();
@@ -85,7 +86,7 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() {
+	public OctreeNode next() throws IOException {
 		OctreeNode ret = null;
 		advance();
 		if (!splittedNodes.isEmpty()) {
@@ -107,12 +108,22 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public void remove() {
-		throw new RuntimeException("remove is not implemented for OctreeMerger");
+	public void addNode(OctreeNode node) {
+		splittedNodes.add(node);
 	}
 
 	@Override
-	public void addNode(OctreeNode node) {
-		splittedNodes.add(node);
+	public void close() throws IOException {
+		if (lhs != null)
+			lhs.close();
+		if (rhs != null)
+			rhs.close();
+
+	}
+
+	@Override
+	public void open() throws IOException {
+		lhs.open();
+		rhs.open();
 	}
 }

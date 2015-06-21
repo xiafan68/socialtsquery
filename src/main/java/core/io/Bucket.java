@@ -1,7 +1,9 @@
 package core.io;
 
 import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,8 +66,37 @@ public class Bucket {
 		}
 	}
 
-	public int blockIdx() {
-		return blockIdx;
+	public static class BucketID {
+		int blockID;
+		short offset;
+
+		public BucketID(int blockID, short offset) {
+			this.blockID = blockID;
+			this.offset = offset;
+		}
+
+		public void write(DataOutputStream output) throws IOException {
+			output.writeInt(blockID);
+			output.writeShort(offset);
+		}
+
+		public void read(DataInputStream dis) throws IOException {
+			blockID = dis.readInt();
+			offset = dis.readShort();
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "BucketID [blockID=" + blockID + ", offset=" + offset + "]";
+		}
+
+	}
+
+	public BucketID blockIdx() {
+		return new BucketID(blockIdx, (short) octants.size());
 	}
 
 	public boolean canStore(int length) {
@@ -77,5 +108,10 @@ public class Bucket {
 			return true;
 		}
 		return false;
+	}
+
+	public byte[] getOctree(int i) {
+		assert i < octants.size();
+		return octants.get(i);
 	}
 }

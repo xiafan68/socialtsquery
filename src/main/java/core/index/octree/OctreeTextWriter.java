@@ -56,8 +56,8 @@ public class OctreeTextWriter implements OctreeVisitor {
 				cur = new Bucket(blockIdx * Bucket.BLOCK_SIZE);
 			}
 
-			System.out.println(String.format("leaf node: %s, id:%d;",
-					octreeNode.getEncoding(), cur.blockIdx()));
+			System.out.println(String.format("leaf node: %s, id:%s;",
+					octreeNode.getEncoding(), cur.blockIdx().toString()));
 			cur.storeOctant(data);
 		}
 	}

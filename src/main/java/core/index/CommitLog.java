@@ -8,36 +8,36 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import common.MidSegment;
 
 /**
- * used to record data, for each posting list, there is a operation log file for each in-memory octree.
- * @author xiafan
+ *TODO: how to grantuee the thread safety of preVersions
+ * only one log file is working at any time.
+ *  * @author xiafan
  *
  */
-public class OperationLog {
+public class CommitLog {
 	DataOutputStream dos = null;
 	File dir;
+	int curVersion = -1;
 
-	public OperationLog(String dir) {
+	// log files that are not deleted
+	List<Integer> preVersions = new ArrayList<Integer>();
+
+	// the set of words appearing in this log segment
+	ConcurrentSkipListSet<String> words = new ConcurrentSkipListSet<String>();
+
+	public CommitLog(String dir) {
 		this.dir = new File(dir);
-	}
-
-	/**
-	 * when the corresponding octree has been writen out.
-	 * @param word
-	 * @param version
-	 */
-	public void evictLog(int version) {
-		File logFile = versionFile(version);
-		if (logFile.exists()) {
-			logFile.delete();
-		}
 	}
 
 	private File versionFile(int version) {
@@ -46,10 +46,14 @@ public class OperationLog {
 
 	/**
 	 * flush the previous log for word, create a new version for word
+	 * @not_thread_safe
 	 * @param word
 	 */
 	public void openNewLog(int version) {
 		if (dos != null) {
+			if (curVersion != -1) {
+				preVersions.add(curVersion);
+			}
 			try {
 				dos.close();
 			} catch (IOException e) {
@@ -64,8 +68,10 @@ public class OperationLog {
 		}
 	}
 
-	public void write(MidSegment seg) {
+	public void write(String word, MidSegment seg) {
+		words.add(word);
 		try {
+			dos.writeUTF(word);
 			seg.write(dos);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -75,7 +81,7 @@ public class OperationLog {
 	private final static Pattern RLOG_FILE_PATTERN = Pattern
 			.compile("^[0-9]+.rlog$");
 
-	public void recover(LogStructureOctree tree) throws IOException {
+	public void recover(LSMOInvertedIndex tree) throws IOException {
 		File[] files = dir.listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -98,13 +104,41 @@ public class OperationLog {
 		}
 	}
 
-	private void redo(File file, LogStructureOctree tree) throws IOException {
+	private void redo(File file, LSMOInvertedIndex tree) throws IOException {
 		DataInputStream dis = new DataInputStream(new FileInputStream(file));
 		while (dis.available() > 0) {
 			MidSegment seg = new MidSegment();
+			String word = dis.readUTF();
 			seg.read(dis);
-			tree.insert(seg);
+			tree.insert(word, seg);
 		}
-		tree.flushMemOctree();
+		tree.flushMemtable();
+	}
+
+	/**
+	 * delete all logs with version not greater than version
+	 * @param version
+	 */
+	public void deleteLogs(int version) {
+		// TODO Auto-generated method stub
+		Iterator<Integer> iter = preVersions.iterator();
+		while (iter.hasNext()) {
+			int cur = iter.next();
+			if (cur <= version) {
+				deleteLog(cur);
+			}
+		}
+	}
+
+	/**
+	 * when the corresponding octree has been writen out.
+	 * @param word
+	 * @param version
+	 */
+	public void deleteLog(int version) {
+		File logFile = versionFile(version);
+		if (logFile.exists()) {
+			logFile.delete();
+		}
 	}
 }

@@ -1,86 +1,132 @@
 package core.index;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import common.MidSegment;
 
 import core.commom.Point;
+import core.index.octree.IOctreeIterator;
 import core.index.octree.MemoryOctree;
+import core.index.octree.OctreeIterator;
+import core.index.octree.OctreeMerger;
+import core.index.octree.OctreeZOrderBinaryWriter;
 
+/**
+ * the thread safety of this class is guaranteed by the client
+ * @author xiafan
+ *
+ */
 public class LogStructureOctree {
-	// load from manifest file, but need to be verified against actual data
-	public static class LSMOMeta {
-		String word;
-		int maxVersion = 0;
-		int maxEdgeLen = 1;
-		List<OctreeMeta> metas;
+	// this field need to be loaded when coming into memory
+	String keyword;
+	VersionSet curVersion;
+	MemoryOctree curTree;
+	AtomicInteger ref = new AtomicInteger(0);
+	CommitLog opLog;
 
-		public void serialize(DataOutput output) {
+	public LogStructureOctree() {
 
-		}
-
-		public void deserialize(DataInput input) {
-
-		}
 	}
 
 	public static class OctreeMeta {
 		// octant meta
 		public int version = 0;
+		public int fileSeq = 0;
 		public Point cornerPoint = new Point(0, 0, 0);
 		public int edgeLen = 1;
-		public int size = 0;// number of items
+		public int size = 0;
+		public int minTime = 0;
+		public int maxTime = 0;
+		// number of items
 		// runtime state
-		public AtomicInteger ref = new AtomicInteger(0);// reference for disk
-														// file
-		public AtomicBoolean del = new AtomicBoolean(false);// whether the disk
-															// file has been
-															// marked as
-		// deleted
-		// after compaction
-	}
+		// reference for disk file
+		public AtomicInteger ref = new AtomicInteger(0);
+		// whether the disk file has been marked as deleted after compaction
+		public AtomicBoolean markAsDel = new AtomicBoolean(false);
 
-	LSMOMeta meta;
-	MemoryOctree curTree;
-	AtomicInteger ref = new AtomicInteger(0);
-	// the set of
-	public ConcurrentSkipListSet<OctreeMeta> diskTreeMetas = new ConcurrentSkipListSet<OctreeMeta>();
-	public List<MemoryOctree> flushingTrees = new LinkedList<MemoryOctree>();
-	OperationLog opLog;
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + fileSeq;
+			result = prime * result + version;
+			return result;
+		}
 
-	public void insert(MidSegment seg) {
-		curTree.insert(seg.getPoint(), seg);
-		if (curTree.size() > 100000) {
-			flushMemOctree();
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			OctreeMeta other = (OctreeMeta) obj;
+			if (version != other.version)
+				return false;
+			if (fileSeq != other.fileSeq)
+				return false;
+			return true;
 		}
 	}
 
 	/**
-	 * 将当前的memory octree写入到磁盘
+	 * record the current memory tree, flushing memory tree and disk trees
+	 * @author xiafan
+	 *
 	 */
-	public void flushMemOctree() {
-		synchronized (flushingTrees) {
-			if (curTree.getMeta().version == meta.maxVersion) {
-				flushingTrees.add(curTree);
-				OctreeMeta ometa = new OctreeMeta();
-				ometa.version = meta.maxVersion++;
-				curTree = new MemoryOctree(ometa);
-			}
+	public static class VersionSet {
+		public MemoryOctree curTree;
+		public List<MemoryOctree> flushingTrees = new ArrayList<MemoryOctree>();
+
+		public List<OctreeMeta> diskTreeMetas = new ArrayList<OctreeMeta>();
+
+		// public HashMap<OctreeMeta>
+
+		/**
+		 * client grantuee thread safe, used when flushing current octree
+		 * @param newTree
+		 */
+		public void newMemTree(MemoryOctree newTree) {
+			curTree.immutable();
+			flushingTrees.add(curTree);
+			curTree = newTree;
+		}
+
+		/**
+		 * used when a set of memory octree are flushed to disk as one single unit
+		 * @param versions
+		 * @param newMeta
+		 */
+		public void flush(List<Integer> versions, OctreeMeta newMeta) {
+
+		}
+
+		/**
+		 * used when a set of version a compacted
+		 * @param versions
+		 * @param newMeta
+		 */
+		public void compact(List<Integer> versions, OctreeMeta newMeta) {
+
 		}
 	}
 
-	public List<MemoryOctree> getFlushTrees() {
-		return new LinkedList<MemoryOctree>();
-	}
-
-	public void flushedTrees(int num) {
-
+	public void insert(MidSegment seg) {
+		opLog.write(keyword, seg);
+		curTree.insert(seg.getPoint(), seg);
 	}
 
 	/**
@@ -110,5 +156,56 @@ public class LogStructureOctree {
 	 */
 	public boolean release() {
 		return ref.compareAndSet(0, Integer.MIN_VALUE);
+	}
+
+	public File getDataDir() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	/**
+	 * 将当前的memory octree写入到磁盘
+	 */
+	public void flushMemOctree(int newVersion) {
+		OctreeMeta ometa = new OctreeMeta();
+		ometa.version = newVersion;
+		curTree = new MemoryOctree(ometa);
+		curVersion.newMemTree(curTree);
+	}
+
+	public void flushedTrees() {
+		try {
+			List<MemoryOctree> trees = new LinkedList<MemoryOctree>(
+					curVersion.flushingTrees);
+			IOctreeIterator treeIter = null;
+
+			int version = 0;
+			for (MemoryOctree curTree : trees) {
+				version = Math.max(curTree.getMeta().version, version);
+			}
+
+			if (trees.size() == 1) {
+				treeIter = new OctreeIterator(trees.get(0));
+			} else if (trees.size() >= 2) {
+				treeIter = new OctreeIterator(trees.get(0));
+				for (MemoryOctree curTree : trees.subList(1, trees.size())) {
+					treeIter = new OctreeMerger(treeIter, new OctreeIterator(
+							curTree));
+				}
+			}
+			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(
+					getDataDir(), version, treeIter);
+			writer.open();
+			try {
+				writer.write();
+				// TODO synchronization here
+				curVersion.flushingTrees.subList(0, trees.size()).clear();
+				opLog.markFlushed(version);
+			} finally {
+				writer.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
