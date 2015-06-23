@@ -36,4 +36,13 @@ public class Configuration {
 	public File getTmpDir() {
 		return new File(props.getProperty("tmpdir", "/tmp"));
 	}
+
+	public File getCommitLogDir() {
+		return new File(props.getProperty("oplogdir", "/tmp/oplog"));
+	}
+
+	public int getFlushLimit() {
+		return Integer.parseInt(props.getProperty("memtable_size_limit",
+				"2000000"));
+	}
 }

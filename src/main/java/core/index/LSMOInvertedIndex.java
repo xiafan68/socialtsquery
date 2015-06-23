@@ -1,14 +1,18 @@
 package core.index;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import Util.Configuration;
 
 import common.MidSegment;
+
+import core.index.MemTable.SSTableMeta;
 
 /**
  * 
@@ -21,40 +25,21 @@ public class LSMOInvertedIndex {
 	AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
 
-	// locks for posting list
-	ReadWriteLock[] locks;
-	// locks for flushing
-	ReadWriteLock flushLock;
-	CommitLog opLog;
-	Map<String, LogStructureOctree> memtable;
-	AtomicInteger totalSegs = new AtomicInteger(0);
+	MemTable curTable;
+	VersionSet version = new VersionSet();
 	int maxVersion;
 
 	FlushService flushService;
+	CompactService compactService;
+	Configuration conf;
 
-	public LSMOInvertedIndex() {
-
+	public LSMOInvertedIndex(Configuration conf) {
+		this.conf = conf;
 	}
 
 	public void init() {
-		// critical to the parallelism
-		locks = new ReadWriteLock[1024];
-		flushLock = new ReentrantReadWriteLock();
-		for (int i = 0; i < 1024; i++) {
-			locks[i] = new ReentrantReadWriteLock();
-		}
 		flushService = new FlushService(this);
 		flushService.start();
-
-	}
-
-	/**
-	 * get the lock for word
-	 * @param word
-	 * @return
-	 */
-	public ReadWriteLock getLock(String word) {
-		return locks[Math.abs(word.hashCode()) % locks.length];
 	}
 
 	public LogStructureOctree getPostingList(String word) {
@@ -65,29 +50,26 @@ public class LSMOInvertedIndex {
 		return ret;
 	}
 
+	private int getKeywordCode(String keyword) {
+		return 0;
+	}
+
 	public void insert(List<String> keywords, MidSegment seg) {
-		flushLock.readLock().lock();
+		LockManager.instance.versionReadLock();
 		try {
 			for (String keyword : keywords) {
-				ReadWriteLock lock = getLock(keyword);
-				lock.writeLock().lock();
+				int code = getKeywordCode(keyword);
+				LockManager.instance.postWriteLock(code);
 				try {
-					LogStructureOctree postinglist;
-					if (memtable.containsKey(keyword)) {
-						postinglist = memtable.get(keyword);
-					} else {
-						postinglist = new LogStructureOctree();
-						memtable.put(keyword, postinglist);
-					}
-					postinglist.insert(seg);
+					curTable.insert(code, seg);
 				} finally {
-					lock.writeLock().unlock();
+					LockManager.instance.postWriteUnLock(code);
 				}
 			}
-			maySwitchMemtable();
 		} finally {
-			flushLock.readLock().unlock();
+			LockManager.instance.versionReadLock();
 		}
+		maySwitchMemtable();
 	}
 
 	public void insert(String keywords, MidSegment seg) {
@@ -96,28 +78,31 @@ public class LSMOInvertedIndex {
 
 	// TODO check whether we need to switch the memtable
 	private void maySwitchMemtable() {
-		boolean violated = false;
-		if (violated) {
-			flushLock.writeLock().lock();
+		MemTable tmp = curTable;
+		if (tmp.size() > conf.getFlushLimit()) {
+			LockManager.instance.versionWriteLock();
 			try {
-				// check violation again
-				// open new log
-				opLog.openNewLog(maxVersion++);
-				flushMemtable();
+				// check for violation again
+				if (tmp == curTable) {
+					// open new log
+					CommitLog.instance.openNewLog(maxVersion++);
+					SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
+					tmp = new MemTable(meta);
+					version = version.clone();
+					version.newMemTable(tmp);
+					curTable = tmp;
+				}
 			} finally {
-				flushLock.writeLock().unlock();
+				LockManager.instance.versionWriteUnLock();
 			}
 		}
 	}
 
-	/**
-	 * 写出当前memtable
-	 */
-	public void flushMemtable() {
-		int curV = maxVersion++;
-		for (LogStructureOctree posting : memtable.values()) {
-			posting.flushMemOctree(curV);
-		}
+	public void flushTables(Set<Integer> versions, SSTableMeta newMeta) {
+		LockManager.instance.versionWriteLock();
+		version = version.clone();
+		version.flush(versions, newMeta);
+		LockManager.instance.versionWriteUnLock();
 	}
 
 	public int getCompactNum() {
@@ -127,5 +112,83 @@ public class LSMOInvertedIndex {
 	public int getFlushNum() {
 		// TODO Auto-generated method stub
 		return 1;
+	}
+
+	public VersionSet getVersion() {
+		return version;
+	}
+
+	public int getStep() {
+		return conf.getIndexStep();
+	}
+
+	public Configuration getConf() {
+		return conf;
+	}
+
+	/**
+	 * record the current memory tree, flushing memory tree and disk trees
+	 * @author xiafan
+	 *
+	 */
+	public static class VersionSet {
+		public MemTable curTable = null;
+		public List<MemTable> flushingTables = new ArrayList<MemTable>();
+		public List<SSTableMeta> diskTreeMetas = new ArrayList<SSTableMeta>();
+
+		// public HashMap<OctreeMeta>
+
+		/**
+		 * client grantuee thread safe, used when flushing current octree
+		 * @param newTree
+		 */
+		public void newMemTable(MemTable newTable) {
+			if (curTable != null) {
+				curTable.freeze();
+				flushingTables.add(curTable);
+			}
+			curTable = newTable;
+		}
+
+		/**
+		 * used when a set of memory octree are flushed to disk as one single unit
+		 * @param versions
+		 * @param newMeta
+		 */
+		public void flush(Set<Integer> versions, SSTableMeta newMeta) {
+			Iterator<MemTable> iter = flushingTables.iterator();
+			while (iter.hasNext()) {
+				MemTable table = iter.next();
+				if (versions.contains(table.getMeta().version)) {
+					iter.remove();
+				}
+			}
+			diskTreeMetas.add(newMeta);
+		}
+
+		/**
+		 * used when a set of version a compacted
+		 * @param versions
+		 * @param newMeta
+		 */
+		public void compact(Set<Integer> versions, SSTableMeta newMeta) {
+			Iterator<SSTableMeta> iter = diskTreeMetas.iterator();
+			while (iter.hasNext()) {
+				SSTableMeta meta = iter.next();
+				if (versions.contains(meta.version)) {
+					iter.remove();
+				}
+			}
+			diskTreeMetas.add(newMeta);
+		}
+
+		@Override
+		public VersionSet clone() {
+			VersionSet ret = new VersionSet();
+			ret.curTable = curTable;
+			ret.flushingTables.addAll(flushingTables);
+			ret.diskTreeMetas.addAll(diskTreeMetas);
+			return ret;
+		}
 	}
 }

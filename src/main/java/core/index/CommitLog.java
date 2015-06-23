@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import Util.Configuration;
+
 import common.MidSegment;
 
 /**
@@ -26,6 +28,7 @@ import common.MidSegment;
  *
  */
 public class CommitLog {
+	public static CommitLog instance = new CommitLog();
 	DataOutputStream dos = null;
 	File dir;
 	int curVersion = -1;
@@ -36,8 +39,11 @@ public class CommitLog {
 	// the set of words appearing in this log segment
 	ConcurrentSkipListSet<String> words = new ConcurrentSkipListSet<String>();
 
-	public CommitLog(String dir) {
-		this.dir = new File(dir);
+	public void init(Configuration conf) {
+		dir = conf.getCommitLogDir();
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
 	}
 
 	private File versionFile(int version) {

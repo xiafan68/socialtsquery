@@ -10,7 +10,7 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import core.commom.Encoding;
-import core.index.LogStructureOctree.OctreeMeta;
+import core.index.octree.MemoryOctree.OctreeMeta;
 import core.io.Bucket;
 
 /**

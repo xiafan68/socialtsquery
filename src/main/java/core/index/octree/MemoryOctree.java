@@ -6,7 +6,6 @@ import common.IntegerUtil;
 import common.MidSegment;
 
 import core.commom.Point;
-import core.index.LogStructureOctree.OctreeMeta;
 
 /**
  * the in-memory implementation of octree:
@@ -20,6 +19,15 @@ public class MemoryOctree {
 	OctreeNode root = null;
 	// once true, no data can be inserted any further
 	private AtomicBoolean immutable = new AtomicBoolean(false);
+
+	public static class OctreeMeta {
+		// octant meta
+		public Point cornerPoint = new Point(0, 0, 0);
+		public int edgeLen = 1;
+		public int size = 0;
+		public int minTime = 0;
+		public int maxTime = 0;
+	}
 
 	public MemoryOctree(OctreeMeta meta) {
 		this.meta = meta;

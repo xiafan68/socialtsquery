@@ -1,72 +1,64 @@
 package core.index;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.Set;
+
+import Util.Configuration;
 
 /**
  * responsible for write data to disk
  * @author xiafan
  *
  */
-public class FlushService {
+public class FlushService extends Thread {
 	LSMOInvertedIndex index;
-	List<FlushWorker> workers = new ArrayList<FlushWorker>();
-	ConcurrentSkipListSet<String> pendingWords = new ConcurrentSkipListSet<String>();
-	ConcurrentSkipListSet<String> flushingWords = new ConcurrentSkipListSet<String>();
+	Configuration conf;
 
 	public FlushService(LSMOInvertedIndex index) {
+		super("flush worker");
 		this.index = index;
+		conf = index.getConf();
 	}
 
-	public void start() {
-		for (int i = 0; i < index.getFlushNum(); i++) {
-			FlushWorker worker = new FlushWorker();
-			worker.start();
-			workers.add(worker);
-		}
-	}
-
-	public void stop() {
-		while (!workers.isEmpty()) {
-			FlushWorker worker = workers.get(0);
+	@Override
+	public void run() {
+		while (index.running.get()) {
+			LockManager.instance.versionReadLock();
+			List<MemTable> flushingTables = new ArrayList<MemTable>(
+					index.getVersion().flushingTables);
+			LockManager.instance.versionReadUnLock();
+			SSTableWriter writer = new SSTableWriter(flushingTables,
+					index.getStep());
 			try {
-				worker.join();
-				workers.remove(0);
-			} catch (Exception e) {
-			}
-		}
-	}
+				writer.write(conf.getTmpDir());
+				writer.close();
+				// write succeed, now move file to the right place, update the
+				// versionset and commitlog
 
-	private class FlushWorker extends Thread {
-		public FlushWorker() {
-			super("flush worker");
-		}
-
-		@Override
-		public void run() {
-			while (index.running.get()) {
-				Iterator<String> iter = pendingWords.iterator();
-				while (iter.hasNext()) {
-					String word = iter.next();
-					iter.remove();
-					if (flushingWords.add(word)) {
-						LogStructureOctree tree = index.getPostingList(word);
-						if (tree != null) {
-							flushingWords.remove(word);
-						}
-					}
+				File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
+						writer.getMeta()));
+				tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(),
+						writer.getMeta()));
+				tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
+						writer.getMeta()));
+				Set<Integer> versions = new HashSet<Integer>();
+				for (MemTable table : flushingTables) {
+					versions.add(table.getMeta().version);
 				}
+				index.flushTables(versions, writer.getMeta());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
-		}
-
-		/**
-		 * an indication that posting list of word need to be flushed
-		 * @param word
-		 */
-		public void register(String word) {
-			pendingWords.add(word);
 		}
 	}
 }

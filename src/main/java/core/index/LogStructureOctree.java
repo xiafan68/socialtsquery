@@ -34,54 +34,6 @@ public class LogStructureOctree {
 
 	}
 
-	public static class OctreeMeta {
-		// octant meta
-		public int version = 0;
-		public int fileSeq = 0;
-		public Point cornerPoint = new Point(0, 0, 0);
-		public int edgeLen = 1;
-		public int size = 0;
-		public int minTime = 0;
-		public int maxTime = 0;
-		// number of items
-		// runtime state
-		// reference for disk file
-		public AtomicInteger ref = new AtomicInteger(0);
-		// whether the disk file has been marked as deleted after compaction
-		public AtomicBoolean markAsDel = new AtomicBoolean(false);
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#hashCode()
-		 */
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + fileSeq;
-			result = prime * result + version;
-			return result;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#equals(java.lang.Object)
-		 */
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			OctreeMeta other = (OctreeMeta) obj;
-			if (version != other.version)
-				return false;
-			if (fileSeq != other.fileSeq)
-				return false;
-			return true;
-		}
-	}
-
 	/**
 	 * record the current memory tree, flushing memory tree and disk trees
 	 * @author xiafan
