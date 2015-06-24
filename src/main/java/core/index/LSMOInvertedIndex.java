@@ -1,11 +1,16 @@
 package core.index;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import Util.Configuration;
 
@@ -23,7 +28,7 @@ public class LSMOInvertedIndex {
 	File dataDir;
 
 	MemTable curTable;
-	VersionSet version = new VersionSet();
+	VersionSet versionSet = new VersionSet();
 	int maxVersion;
 
 	FlushService flushService;
@@ -40,6 +45,66 @@ public class LSMOInvertedIndex {
 	public void init() {
 		flushService = new FlushService(this);
 		flushService.start();
+
+		CommitLog.instance.init(conf);
+
+		compactService = new CompactService(this);
+		compactService.start();
+	}
+
+	private static final Pattern regex = Pattern.compile("%d_%d.meta");
+
+	private void setupVersionSet() {
+		File[] indexFiles = conf.getIndexDir().listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				Matcher match = regex.matcher(name);
+				return match.matches();
+			}
+		});
+		Arrays.sort(indexFiles, new Comparator<File>() {
+			@Override
+			public int compare(File o1, File o2) {
+				int[] v1 = parseVersion(o1);
+				int[] v2 = parseVersion(o2);
+				int ret = Integer.compare(v1[0], v2[0]);
+				if (ret == 0) {
+					ret = Integer.compare(v1[1], v2[1]);
+				}
+				return ret;
+			}
+		});
+		for (File file : indexFiles) {
+			int[] version = parseVersion(file);
+			SSTableMeta meta = new SSTableMeta(version[0], version[1]);
+			if (validateDataFile(meta)) {
+				versionSet.diskTreeMetas.add(meta);
+			}
+		}
+	}
+
+	private boolean validateDataFile(SSTableMeta meta) {
+		File file = SSTableWriter.dataFile(conf.getIndexDir(), meta);
+		if (!file.exists()) {
+			return false;
+		}
+		file = SSTableWriter.idxFile(conf.getIndexDir(), meta);
+		if (!file.exists()) {
+			return false;
+		}
+		file = SSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		if (!file.exists()) {
+			return false;
+		}
+		return true;
+	}
+
+	private static int[] parseVersion(File file) {
+		int[] ret = new int[2];
+		String[] field = file.getName().split("_");
+		ret[0] = Integer.parseInt(field[0]);
+		ret[1] = Integer.parseInt(field[1].substring(0, field[1].indexOf('.')));
+		return ret;
 	}
 
 	private int getKeywordCode(String keyword) {
@@ -80,8 +145,8 @@ public class LSMOInvertedIndex {
 					CommitLog.instance.openNewLog(maxVersion++);
 					SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
 					tmp = new MemTable(meta);
-					version = version.clone();
-					version.newMemTable(tmp);
+					versionSet = versionSet.clone();
+					versionSet.newMemTable(tmp);
 					curTable = tmp;
 				}
 			} finally {
@@ -92,8 +157,16 @@ public class LSMOInvertedIndex {
 
 	public void flushTables(Set<Integer> versions, SSTableMeta newMeta) {
 		LockManager.instance.versionWriteLock();
-		version = version.clone();
-		version.flush(versions, newMeta);
+		versionSet = versionSet.clone();
+		versionSet.flush(versions, newMeta);
+		// mark redo logs as deleted
+		LockManager.instance.versionWriteUnLock();
+	}
+
+	public void compactTables(Set<Integer> versions, SSTableMeta newMeta) {
+		LockManager.instance.versionWriteLock();
+		versionSet = versionSet.clone();
+		versionSet.compact(versions, newMeta);
 		LockManager.instance.versionWriteUnLock();
 	}
 
@@ -108,7 +181,7 @@ public class LSMOInvertedIndex {
 
 	public VersionSet getVersion() {
 		LockManager.instance.versionReadLock();
-		VersionSet ret = version;
+		VersionSet ret = versionSet;
 		LockManager.instance.versionReadUnLock();
 		return ret;
 	}
@@ -185,5 +258,10 @@ public class LSMOInvertedIndex {
 			ret.diskTreeMetas.addAll(diskTreeMetas);
 			return ret;
 		}
+	}
+
+	public SSTableReader getSSTableReader(SSTableMeta meta) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

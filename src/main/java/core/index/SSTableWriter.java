@@ -63,10 +63,15 @@ public class SSTableWriter {
 	 * @param tables
 	 * @param step
 	 */
-	public SSTableWriter(List<SSTableReader> tables, int step) {
-		
+	public SSTableWriter(SSTableMeta meta, List<SSTableReader> tables, int step) {
+		this.meta = meta;
+		iter = new MergeIterator<Integer, IOctreeIterator>(
+				IntegerComparator.instance);
+		for (final SSTableReader table : tables) {
+			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
+		}
 	}
-	
+
 	public SSTableWriter(List<MemTable> tables, int step) {
 		iter = new MergeIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
@@ -103,12 +108,6 @@ public class SSTableWriter {
 		this.step = step;
 	}
 
-	private SSTableMeta compactMeta(List<SSTableMeta> toCompact) {
-		//TODO
-		SSTableMeta ret = null;
-		return ret;
-	}
-	
 	public SSTableMeta getMeta() {
 		return meta;
 	}

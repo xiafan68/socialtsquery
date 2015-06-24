@@ -19,7 +19,7 @@ public class FlushService extends Thread {
 	Configuration conf;
 
 	public FlushService(LSMOInvertedIndex index) {
-		super("flush worker");
+		super("flush thread");
 		this.index = index;
 		conf = index.getConf();
 	}
