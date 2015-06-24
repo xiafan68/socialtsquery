@@ -4,13 +4,15 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import core.index.octree.MemoryOctree.OctreeMeta;
+
 /**
  * an iterator visiting a memory octree
  * @author xiafan
  *
  */
 public class OctreeIterator implements IOctreeIterator {
-
+	OctreeMeta meta;
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
 			256, new Comparator<OctreeNode>() {
 				@Override
@@ -20,6 +22,7 @@ public class OctreeIterator implements IOctreeIterator {
 			});
 
 	public OctreeIterator(MemoryOctree tree) {
+		meta = tree.getMeta();
 		if (tree.root != null)
 			traverseQueue.offer(tree.root);
 	}
@@ -62,5 +65,10 @@ public class OctreeIterator implements IOctreeIterator {
 	@Override
 	public void open() throws IOException {
 
+	}
+
+	@Override
+	public OctreeMeta getMeta() {
+		return meta;
 	}
 }

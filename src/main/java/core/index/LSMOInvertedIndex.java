@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,8 +19,6 @@ import core.index.MemTable.SSTableMeta;
  *
  */
 public class LSMOInvertedIndex {
-	private Map<String, LogStructureOctree> dir;
-
 	AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
 
@@ -40,14 +37,6 @@ public class LSMOInvertedIndex {
 	public void init() {
 		flushService = new FlushService(this);
 		flushService.start();
-	}
-
-	public LogStructureOctree getPostingList(String word) {
-		LogStructureOctree ret = dir.get(word);
-		if (!ret.increRef()) {
-			ret = null;
-		}
-		return ret;
 	}
 
 	private int getKeywordCode(String keyword) {
@@ -77,7 +66,7 @@ public class LSMOInvertedIndex {
 	}
 
 	// TODO check whether we need to switch the memtable
-	private void maySwitchMemtable() {
+	public void maySwitchMemtable() {
 		MemTable tmp = curTable;
 		if (tmp.size() > conf.getFlushLimit()) {
 			LockManager.instance.versionWriteLock();
@@ -115,7 +104,10 @@ public class LSMOInvertedIndex {
 	}
 
 	public VersionSet getVersion() {
-		return version;
+		LockManager.instance.versionReadLock();
+		VersionSet ret = version;
+		LockManager.instance.versionReadUnLock();
+		return ret;
 	}
 
 	public int getStep() {

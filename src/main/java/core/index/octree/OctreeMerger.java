@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import core.index.octree.MemoryOctree.OctreeMeta;
+
 /**
  * merge leaf nodes of two octrees
  * @author xiafan
@@ -13,6 +15,7 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator lhs;
 	IOctreeIterator rhs;
 	OctreeNode curNode;
+	OctreeMeta meta;
 	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
 			256, new Comparator<OctreeNode>() {
 				@Override
@@ -24,6 +27,7 @@ public class OctreeMerger implements IOctreeIterator {
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
 		this.rhs = rhs;
+		meta = new OctreeMeta(lhs.getMeta(), rhs.getMeta());
 	}
 
 	@Override
@@ -125,5 +129,11 @@ public class OctreeMerger implements IOctreeIterator {
 	public void open() throws IOException {
 		lhs.open();
 		rhs.open();
+	}
+
+	@Override
+	public OctreeMeta getMeta() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

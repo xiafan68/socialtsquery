@@ -1,9 +1,7 @@
 package core.io;
 
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +24,7 @@ public class Bucket {
 
 	int blockIdx = 0;
 	boolean singleBlock = true;
-	int totalSize = 0;
+	int totalSize = 1;
 	List<byte[]> octants = new ArrayList<byte[]>();
 
 	public Bucket(long offset) {
@@ -37,6 +35,7 @@ public class Bucket {
 		octants.add(octant);
 		if (octant.length + totalSize > BLOCK_SIZE) {
 			singleBlock = false;
+			totalSize += 4;
 		}
 		totalSize += octant.length;
 	}
@@ -57,32 +56,41 @@ public class Bucket {
 		int num = 1;
 		if (!singleBlock) {
 			num = input.readInt();
+			totalSize += 4;
 		}
 		int size = 0;
 		for (int i = 0; i < num; i++) {
 			size = input.readInt();
+			totalSize += size;
 			byte[] data = new byte[size];
 			input.readFully(data);
 		}
 	}
 
 	public static class BucketID {
-		int blockID;
-		short offset;
+		public int blockID;
+		public short offset;
 
 		public BucketID(int blockID, short offset) {
 			this.blockID = blockID;
 			this.offset = offset;
 		}
 
-		public void write(DataOutputStream output) throws IOException {
+		public BucketID() {
+		}
+
+		public void write(DataOutput output) throws IOException {
 			output.writeInt(blockID);
 			output.writeShort(offset);
 		}
 
-		public void read(DataInputStream dis) throws IOException {
+		public void read(DataInput dis) throws IOException {
 			blockID = dis.readInt();
 			offset = dis.readShort();
+		}
+
+		public long getFileOffset() {
+			return blockID * BLOCK_SIZE;
 		}
 
 		/* (non-Javadoc)
@@ -93,6 +101,10 @@ public class Bucket {
 			return "BucketID [blockID=" + blockID + ", offset=" + offset + "]";
 		}
 
+	}
+
+	public int blockNum() {
+		return (totalSize + BLOCK_SIZE - 1) / BLOCK_SIZE;
 	}
 
 	public BucketID blockIdx() {
@@ -113,5 +125,9 @@ public class Bucket {
 	public byte[] getOctree(int i) {
 		assert i < octants.size();
 		return octants.get(i);
+	}
+
+	public int octNum() {
+		return octants.size();
 	}
 }

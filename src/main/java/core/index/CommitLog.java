@@ -118,7 +118,7 @@ public class CommitLog {
 			seg.read(dis);
 			tree.insert(word, seg);
 		}
-		tree.flushMemtable();
+		tree.maySwitchMemtable();
 	}
 
 	/**

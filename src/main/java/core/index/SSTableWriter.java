@@ -16,6 +16,7 @@ import core.commom.Encoding;
 import core.index.MemTable.SSTableMeta;
 import core.index.octree.IOctreeIterator;
 import core.index.octree.MemoryOctree;
+import core.index.octree.MemoryOctree.OctreeMeta;
 import core.index.octree.OctreeIterator;
 import core.index.octree.OctreeMerger;
 import core.index.octree.OctreeZOrderBinaryWriter;
@@ -33,13 +34,17 @@ public class SSTableWriter {
 	DataOutputStream dirDos; // write directory meta
 	private int step;
 
-	public static class DirEntry {
+	public static class DirEntry extends OctreeMeta {
 		// runtime state
-		int curKey;
-		int dataStartBlockID;
-		int dataBlockNum;
-		int indexStartID;
-		int sampleNum;
+		public int curKey;
+		public int dataStartBlockID;
+		public int dataBlockNum;
+		public int indexStartID;
+		public int sampleNum;
+
+		public long getIndexOffset() {
+			return indexStartID;
+		}
 	}
 
 	DirEntry curDir = new DirEntry();

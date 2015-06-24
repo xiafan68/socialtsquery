@@ -22,11 +22,20 @@ public class MemoryOctree {
 
 	public static class OctreeMeta {
 		// octant meta
-		public Point cornerPoint = new Point(0, 0, 0);
-		public int edgeLen = 1;
+		// public Point cornerPoint = new Point(0, 0, 0);
 		public int size = 0;
-		public int minTime = 0;
-		public int maxTime = 0;
+		public int minTime = Integer.MAX_VALUE;
+		public int maxTime = Integer.MIN_VALUE;
+
+		public OctreeMeta() {
+
+		}
+
+		public OctreeMeta(OctreeMeta a, OctreeMeta b) {
+			size = a.size + b.size;
+			minTime = Math.min(a.minTime, b.minTime);
+			maxTime = Math.max(a.maxTime, b.maxTime);
+		}
 	}
 
 	public MemoryOctree(OctreeMeta meta) {
@@ -57,6 +66,8 @@ public class MemoryOctree {
 			return false;
 		}
 		meta.size++;
+		meta.minTime = Math.min(meta.minTime, point.getX());
+		meta.maxTime = Math.max(meta.maxTime, point.getY());
 		if (root == null || !root.contains(point)) {
 			OctreeNode preRoot = root;
 

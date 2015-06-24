@@ -2,16 +2,16 @@ package core.index.octree;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import core.commom.Encoding;
+import core.index.SSTableReader;
+import core.index.SSTableWriter.DirEntry;
 import core.index.octree.MemoryOctree.OctreeMeta;
 import core.io.Bucket;
+import core.io.Bucket.BucketID;
 
 /**
  * an iterator visiting leaf nodes of disk octree
@@ -19,8 +19,7 @@ import core.io.Bucket;
  *
  */
 public class DiskOctreeIterator implements IOctreeIterator {
-	File dir;
-	OctreeMeta meta;
+	DirEntry entry;
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
 			256, new Comparator<OctreeNode>() {
 				@Override
@@ -28,38 +27,32 @@ public class DiskOctreeIterator implements IOctreeIterator {
 					return o1.getEncoding().compareTo(o2.getEncoding());
 				}
 			});
-
-	DataInputStream dis;
-	FileInputStream fis;
 	Bucket bucket = null;
 	int i = 0;
+	int readNum = 0;
+	private SSTableReader reader;
 
 	/**
 	 * 
 	 * @param dir the directory where this octree is placed
 	 * @param meta the meta data of the octree
 	 */
-	public DiskOctreeIterator(File dir, OctreeMeta meta) {
-		this.dir = dir;
-		this.meta = meta;
-	}
-
-	public void open() throws FileNotFoundException {
-		File dataFile = OctreeZOrderBinaryWriter.octFile(dir, meta);
-		fis = new FileInputStream(dataFile);
-		dis = new DataInputStream(fis);
+	public DiskOctreeIterator(DirEntry entry, SSTableReader reader) {
+		this.entry = entry;
+		this.reader = reader;
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return !traverseQueue.isEmpty() || dis.available() > 0;
+		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum;
 	}
 
 	@Override
 	public OctreeNode next() throws IOException {
-		if (bucket == null) {
-			bucket = new Bucket(fis.getChannel().position());
-			bucket.read(dis);
+		if (bucket == null || i < bucket.octNum()) {
+			bucket = reader.getBucket(new BucketID(entry.dataStartBlockID,
+					(short) 0));
+			readNum += bucket.blockNum();
 			i = 0;
 		}
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
@@ -73,6 +66,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 			traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
 		}
+		i++;
 		return ret;
 	}
 
@@ -83,6 +77,16 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public void close() {
-		meta.ref.decrementAndGet();
+
+	}
+
+	@Override
+	public OctreeMeta getMeta() {
+		return entry;
+	}
+
+	@Override
+	public void open() throws IOException {
+
 	}
 }
