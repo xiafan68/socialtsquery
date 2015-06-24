@@ -56,9 +56,17 @@ public class SSTableWriter {
 		public int compare(Integer o1, Integer o2) {
 			return Integer.compare(o1, o2);
 		}
-
 	}
 
+	/**
+	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
+	 * @param tables
+	 * @param step
+	 */
+	public SSTableWriter(List<SSTableReader> tables, int step) {
+		
+	}
+	
 	public SSTableWriter(List<MemTable> tables, int step) {
 		iter = new MergeIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
@@ -95,6 +103,12 @@ public class SSTableWriter {
 		this.step = step;
 	}
 
+	private SSTableMeta compactMeta(List<SSTableMeta> toCompact) {
+		//TODO
+		SSTableMeta ret = null;
+		return ret;
+	}
+	
 	public SSTableMeta getMeta() {
 		return meta;
 	}

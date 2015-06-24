@@ -94,7 +94,7 @@ public class MergedMidSeg {
 	}
 
 	/* 计算该微博的 bestScore 和 worstScore */
-	protected void computeScore() {
+	public void computeScore() {
 		bestscore = 0;
 		worstscore = 0;
 		int segScore = 0;

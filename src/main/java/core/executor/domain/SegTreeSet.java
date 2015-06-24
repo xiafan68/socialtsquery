@@ -98,6 +98,7 @@ public class SegTreeSet extends ISegQueue {
 		// if (!priorityQueue.isEmpty())
 		// ret = priorityQueue.peek().getBestscore();
 		if (!treeset.isEmpty()) {
+			treeset.first().computeScore();
 			ret = treeset.first().getBestscore();
 		}
 		return ret;

@@ -8,31 +8,37 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import common.MidSegment;
 import segmentation.Interval;
 import Util.MyMath;
+import Util.Pair;
 import Util.Profile;
+
+import common.MidSegment;
+
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortBestscore;
 import core.executor.domain.SortWorstscore;
-import core.index.IndexReader;
+import core.index.LSMOInvertedIndex;
 import core.index.PartitionMeta;
-import core.index.PostingListCursor;
+import core.index.octree.IOctreeIterator;
+import core.index.octree.IOctreeRangeIterator;
+import core.index.octree.OctreeNode;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询
+ * TODO:某个posting list的最大值改变后，需要Lazy的更新cand和topk队列中对首元素的最大值
  * 
  * @author dingcheng
  * 
  */
 public class PartitionExecutor extends IQueryExecutor {
-	IndexReader reader;
+	LSMOInvertedIndex reader;
 
 	TempKeywordQuery query;
 
-	PostingListCursor[] cursors;
+	IOctreeRangeIterator[] cursors;
 	float[] bestScores;
 	int curListIdx = 0;
 	ISegQueue topk;
@@ -42,7 +48,7 @@ public class PartitionExecutor extends IQueryExecutor {
 
 	boolean stop = false;
 
-	public PartitionExecutor(IndexReader reader) {
+	public PartitionExecutor(LSMOInvertedIndex reader) {
 		this.reader = reader;
 	}
 
@@ -77,18 +83,19 @@ public class PartitionExecutor extends IQueryExecutor {
 		loadCursors();
 	}
 
-	private PostingListCursor getCursor(String keyword, Interval window)
+	// TODO
+	private IOctreeRangeIterator getCursor(String keyword, Interval window)
 			throws IOException {
-		return reader.cursor(keyword, window, meta);
+		return null;
 	}
 
 	private void loadCursors() throws IOException {
 		String[] keywords = query.keywords;
-		cursors = new PostingListCursor[keywords.length];
+		cursors = new IOctreeRangeIterator[keywords.length];
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
-				cursors[i].close();
+				// TODO
 			}
 			cursors[i] = getCursor(keywords[i], query.queryInv);
 		}
@@ -119,7 +126,7 @@ public class PartitionExecutor extends IQueryExecutor {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
-				for (PostingListCursor cursor : cursors) {
+				for (IOctreeRangeIterator cursor : cursors) {
 					if (cursor != null && cursor.hasNext()) {
 						ret = false;
 						break;
@@ -137,8 +144,8 @@ public class PartitionExecutor extends IQueryExecutor {
 		}
 	}
 
-	private PostingListCursor nextCursor() {
-		PostingListCursor ret = null;
+	private IOctreeRangeIterator nextCursor() {
+		IOctreeRangeIterator ret = null;
 		for (int i = 0; i < cursors.length; i++) {
 			int preListIdx = curListIdx;
 			curListIdx = (++curListIdx) % cursors.length;
@@ -149,10 +156,10 @@ public class PartitionExecutor extends IQueryExecutor {
 			} else if (!ret.hasNext()) {
 				cursors[preListIdx] = null;
 				ret = null;
+				break;
 			} else {
 				break;
 			}
-
 		}
 		return ret;
 	}
@@ -176,7 +183,7 @@ public class PartitionExecutor extends IQueryExecutor {
 			newSeg = new MergedMidSeg(ctx);
 			newSeg = newSeg.addMidSeg(idx, midseg, iWeight);
 		}
-		//update the map with the new mergedseg
+		// update the map with the new mergedseg
 		map.put(mid, newSeg);
 
 		boolean ret = true;
@@ -212,23 +219,32 @@ public class PartitionExecutor extends IQueryExecutor {
 			return false;
 		}
 
-		PostingListCursor plc = nextCursor();
-		MidSegment midseg = plc.next();// 读取一个记录。
+		IOctreeRangeIterator plc = nextCursor();
+		Pair<Integer, IOctreeIterator> nextBatch = plc.next();// 读取一个记录。
 
 		int idx = curListIdx - 1;
 		if (idx < 0)
 			idx = query.keywords.length - 1;
-		if (plc.hasNext()) {
-			bestScores[idx] = plc.getBestScore();
+		if (nextBatch != null) {
+			bestScores[idx] = nextBatch.getKey();
 		} else {
 			cursors[idx] = null;
 			bestScores[idx] = 0.0f;
 		}
-		
+
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
-		ret = updateCandState(idx, midseg, 1.0f);
-		Profile.instance.end(Profile.UPDATE_STATE);
+		IOctreeIterator iter = nextBatch.getValue();
+		try {
+			while (iter.hasNext()) {
+				OctreeNode node = iter.next();
+				for (MidSegment midseg : node.getSegs())
+					ret |= updateCandState(idx, midseg, 1.0f);
+				Profile.instance.end(Profile.UPDATE_STATE);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return ret;
 	}
 

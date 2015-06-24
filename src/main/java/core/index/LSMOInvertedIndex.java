@@ -34,6 +34,9 @@ public class LSMOInvertedIndex {
 		this.conf = conf;
 	}
 
+	/**
+	 * TODO: 1. 扫描磁盘文件，确定一个版本集合。2. 启动写出服务;3. 启动日志服务，开始日志恢复;4. 启动压缩服务，开始接受更新与查询
+	 */
 	public void init() {
 		flushService = new FlushService(this);
 		flushService.start();

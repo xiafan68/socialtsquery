@@ -51,7 +51,7 @@ public class MemTable extends TreeMap<Integer, MemoryOctree> {
 	}
 
 	public Iterator<Entry<Integer, MemoryOctree>> iterator() {
-		return PeekIterDecorate.decorate(super.entrySet().iterator());
+		return super.entrySet().iterator();
 	}
 
 	public static class SSTableMeta implements Serializable {
