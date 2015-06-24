@@ -11,6 +11,7 @@ public class LockManager {
 	ReadWriteLock versionLock;
 
 	public static LockManager instance = new LockManager();
+	boolean bootstrap = false;
 
 	private LockManager() {
 		postsLocks = new ReadWriteLock[1024];
@@ -21,7 +22,7 @@ public class LockManager {
 	}
 
 	public void setBootStrap() {
-
+		bootstrap ^= bootstrap;
 	}
 
 	public void postReadLock(int keyword) {
