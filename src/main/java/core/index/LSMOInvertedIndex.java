@@ -2,6 +2,7 @@ package core.index;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -13,9 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.index.MemTable.SSTableMeta;
 
 /**
@@ -41,15 +40,18 @@ public class LSMOInvertedIndex {
 
 	/**
 	 * TODO: 1. 扫描磁盘文件，确定一个版本集合。2. 启动写出服务;3. 启动日志服务，开始日志恢复;4. 启动压缩服务，开始接受更新与查询
+	 * @throws IOException 
 	 */
-	public void init() {
+	public void init() throws IOException {
 		flushService = new FlushService(this);
 		flushService.start();
-
+		LockManager.instance.setBootStrap();
+		setupVersionSet();
 		CommitLog.instance.init(conf);
-
+		CommitLog.instance.recover(this);
 		compactService = new CompactService(this);
 		compactService.start();
+		LockManager.instance.setBootStrap();
 	}
 
 	private static final Pattern regex = Pattern.compile("%d_%d.meta");
@@ -74,13 +76,19 @@ public class LSMOInvertedIndex {
 				return ret;
 			}
 		});
+		maxVersion = Integer.MIN_VALUE;
 		for (File file : indexFiles) {
 			int[] version = parseVersion(file);
 			SSTableMeta meta = new SSTableMeta(version[0], version[1]);
 			if (validateDataFile(meta)) {
 				versionSet.diskTreeMetas.add(meta);
+				maxVersion = Math.max(maxVersion, meta.version + 1);
 			}
 		}
+		// TODO may need to check if compact fails during moving file
+		SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
+		curTable = new MemTable(meta);
+		versionSet.newMemTable(curTable);
 	}
 
 	private boolean validateDataFile(SSTableMeta meta) {
