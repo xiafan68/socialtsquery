@@ -1,5 +1,7 @@
 package core.index;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,6 +46,32 @@ public class SSTableWriter {
 
 		public long getIndexOffset() {
 			return indexStartID;
+		}
+
+		/**
+		 * 写出
+		 * @param output
+		 * @throws IOException
+		 */
+		public void write(DataOutput output) throws IOException {
+			output.writeInt(curKey);
+			output.writeInt(dataStartBlockID);
+			output.writeInt(dataBlockNum);
+			output.writeInt(indexStartID);
+			output.writeInt(sampleNum);
+		}
+
+		/**
+		 * 读取
+		 * @param input
+		 * @throws IOException
+		 */
+		public void read(DataInput input) throws IOException {
+			curKey = input.readInt();
+			dataStartBlockID = input.readInt();
+			dataBlockNum = input.readInt();
+			indexStartID = input.readInt();
+			sampleNum = input.readInt();
 		}
 	}
 

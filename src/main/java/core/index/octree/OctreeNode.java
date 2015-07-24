@@ -22,6 +22,10 @@ public class OctreeNode {
 		segs = new TreeSet<MidSegment>();
 	}
 
+	public void setPoint(Point cornerPoint) {
+		this.cornerPoint = cornerPoint;
+	}
+
 	public OctreeNode search(Point point) {
 		if (!isLeaf()) {
 			int idx = 0;
@@ -115,12 +119,11 @@ public class OctreeNode {
 	 * @return
 	 */
 	public Encoding getEncoding() {
-		// TODO
 		return new Encoding(new Point(cornerPoint.getX(), cornerPoint.getY(),
 				cornerPoint.getZ() + edgeLen), edgeLen);
 	}
 
-	public void serialize(DataOutput output) {
+	public void write(DataOutput output) {
 		try {
 			output.writeInt(segs.size());
 			for (MidSegment seg : segs) {
@@ -130,7 +133,7 @@ public class OctreeNode {
 		}
 	}
 
-	public void deserialize(DataInput input) {
+	public void read(DataInput input) {
 		int size;
 		try {
 			size = input.readInt();

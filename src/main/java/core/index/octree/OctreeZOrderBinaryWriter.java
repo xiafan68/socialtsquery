@@ -39,9 +39,9 @@ public class OctreeZOrderBinaryWriter {
 			if (octreeNode.size() > 0) {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				DataOutputStream dos = new DataOutputStream(baos);
-				// first write the block position, then write the octant
-				cur.blockIdx().write(dos);
-				octreeNode.serialize(dos);
+				// first write the octant code, then write the octant
+				octreeNode.getEncoding().write(dos);
+				octreeNode.write(dos);
 				byte[] data = baos.toByteArray();
 				if (cur == null || !cur.canStore(data.length)) {
 					if (cur != null)

@@ -50,7 +50,7 @@ public class OctreeTextWriter implements OctreeVisitor {
 		if (octreeNode.size() > 0) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream dos = new DataOutputStream(baos);
-			octreeNode.serialize(dos);
+			octreeNode.write(dos);
 			byte[] data = baos.toByteArray();
 			if (cur == null || !cur.canStore(data.length)) {
 				cur = new Bucket(blockIdx * Bucket.BLOCK_SIZE);
