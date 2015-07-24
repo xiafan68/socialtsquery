@@ -30,6 +30,10 @@ public class CompactService extends Thread {
 		this.index = index;
 	}
 
+	/**
+	 * TODO
+	 * @return
+	 */
 	private List<SSTableMeta> fileToCompact() {
 		List<SSTableMeta> ret = new ArrayList<SSTableMeta>();
 		VersionSet set = index.getVersion();

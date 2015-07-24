@@ -132,7 +132,7 @@ public class LSMOInvertedIndex {
 				}
 			}
 		} finally {
-			LockManager.instance.versionReadLock();
+			LockManager.instance.versionReadUnLock();
 		}
 		maySwitchMemtable();
 	}
