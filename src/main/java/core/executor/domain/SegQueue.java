@@ -22,7 +22,7 @@ import Util.MyFile;
  * @author xiafan
  * @version 0.2 2015/3/11
  */
-public class SegQueue extends ISegQueue{
+public class SegQueue extends ISegQueue {
 
 	/**
 	 * 优先队列
@@ -70,8 +70,15 @@ public class SegQueue extends ISegQueue{
 	 */
 	public float getMinWorstScore() {
 		float ret = Float.MIN_VALUE;
-		if (!priorityQueue.isEmpty())
-			ret = priorityQueue.peek().getWorstscore();
+		if (!priorityQueue.isEmpty()) {
+			while (true) {
+				if (priorityQueue.peek().computeScore()) {
+					priorityQueue.offer(priorityQueue.poll());
+				} else {
+					ret = priorityQueue.peek().getWorstscore();
+				}
+			}
+		}
 		return ret;
 	}
 
@@ -96,9 +103,10 @@ public class SegQueue extends ISegQueue{
 		return ret;
 	}
 
-	public boolean contains(MergedMidSeg seg){
+	public boolean contains(MergedMidSeg seg) {
 		return priorityQueue.contains(seg);
 	}
+
 	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
 		if (preSeg != null)
 			priorityQueue.remove(preSeg);
@@ -147,7 +155,7 @@ public class SegQueue extends ISegQueue{
 		/*
 		 * 创建一个按照bestscore降序的堆
 		 */
-		SegQueue que = new SegQueue(new SortBestscore(), false);
+		SegQueue que = new SegQueue(SortBestscore.INSTANCE, false);
 		MyFile myFile = new MyFile("./data/input", "utf-8");
 		String line = null;
 		while ((line = myFile.readLine()) != null) {
@@ -167,7 +175,7 @@ public class SegQueue extends ISegQueue{
 			/*
 			 * 将MidSegment加入堆中
 			 */
-			//que.update(null, seg);
+			// que.update(null, seg);
 
 			que.printTop();
 

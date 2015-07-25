@@ -33,6 +33,10 @@ public abstract class IQueryExecutor {
 	 */
 	public abstract Iterator<Interval> getAnswer() throws IOException;
 
+	/**
+	 * 设置当前分区内元素的最大生命周期
+	 * @param maxLife
+	 */
 	public void setMaxLifeTime(int maxLife) {
 		this.maxLifeTime = maxLife;
 	}
@@ -41,13 +45,15 @@ public abstract class IQueryExecutor {
 	 * 执行一步读取索引元素的操作
 	 * 
 	 * @return
+	 * @throws IOException 
 	 */
-	public abstract boolean advance();
+	public abstract boolean advance() throws IOException;
 
 	/**
 	 * 判断算法执行是否已经结束
 	 * 
 	 * @return
+	 * @throws IOException 
 	 */
-	public abstract boolean isTerminated();
+	public abstract boolean isTerminated() throws IOException;
 }

@@ -14,6 +14,7 @@ import common.MidSegment;
 
 import segmentation.Segment;
 import Util.MyFile;
+
 //import com.sun.scenario.effect.Merge;
 
 /**
@@ -74,8 +75,18 @@ public class SegTreeSet extends ISegQueue {
 		float ret = Float.MIN_VALUE;
 		// if (!priorityQueue.isEmpty())
 		// ret = priorityQueue.peek().getWorstscore();
-		if (!treeset.isEmpty())
-			ret = treeset.first().getWorstscore();
+		if (!treeset.isEmpty()) {
+			while (true) {
+				MergedMidSeg cur = treeset.first();
+				treeset.remove(cur);
+				boolean state = cur.computeScore();
+				treeset.add(cur);
+				if (!state) {
+					ret = cur.getWorstscore();
+					break;
+				}
+			}
+		}
 		return ret;
 	}
 
@@ -98,8 +109,16 @@ public class SegTreeSet extends ISegQueue {
 		// if (!priorityQueue.isEmpty())
 		// ret = priorityQueue.peek().getBestscore();
 		if (!treeset.isEmpty()) {
-			treeset.first().computeScore();
-			ret = treeset.first().getBestscore();
+			while (true) {
+				MergedMidSeg cur = treeset.first();
+				treeset.remove(cur);
+				boolean state = cur.computeScore();
+				treeset.add(cur);
+				if (!state) {
+					ret = cur.getBestscore();
+					break;
+				}
+			}
 		}
 		return ret;
 	}
@@ -173,7 +192,7 @@ public class SegTreeSet extends ISegQueue {
 		/*
 		 * 创建一个按照bestscore降序的堆
 		 */
-		SegQueue que = new SegQueue(new SortBestscore(), false);
+		SegQueue que = new SegQueue(SortBestscore.INSTANCE, false);
 		MyFile myFile = new MyFile("./data/input", "utf-8");
 		String line = null;
 		while ((line = myFile.readLine()) != null) {

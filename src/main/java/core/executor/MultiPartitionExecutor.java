@@ -13,6 +13,7 @@ import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortWorstscore;
 import core.index.IndexReader;
+import core.index.LSMOInvertedIndex;
 import core.index.PartitionMeta;
 
 /**
@@ -26,7 +27,7 @@ import core.index.PartitionMeta;
  */
 public class MultiPartitionExecutor extends IQueryExecutor {
 	private static final int MAX_LIFETIME = 31;
-	private IndexReader reader;
+	private LSMOInvertedIndex reader;
 
 	List<PartitionExecutor> executors = new ArrayList<PartitionExecutor>();
 	ISegQueue topk;

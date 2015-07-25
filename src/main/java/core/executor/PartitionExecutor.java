@@ -10,11 +10,11 @@ import java.util.Map;
 
 import segmentation.Interval;
 import Util.MyMath;
-import Util.Pair;
 import Util.Profile;
 
 import common.MidSegment;
 
+import core.commom.Encoding;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
@@ -23,7 +23,6 @@ import core.executor.domain.SortWorstscore;
 import core.index.LSMOInvertedIndex;
 import core.index.PartitionMeta;
 import core.index.octree.IOctreeIterator;
-import core.index.octree.IOctreeRangeIterator;
 import core.index.octree.OctreeNode;
 
 /**
@@ -38,7 +37,7 @@ public class PartitionExecutor extends IQueryExecutor {
 
 	TempKeywordQuery query;
 
-	IOctreeRangeIterator[] cursors;
+	IOctreeIterator[] cursors;
 	float[] bestScores;
 	int curListIdx = 0;
 	ISegQueue topk;
@@ -68,7 +67,7 @@ public class PartitionExecutor extends IQueryExecutor {
 			this.topk = topk;
 		else
 			this.topk = ISegQueue.create(new SortWorstscore(), true);
-		cand = ISegQueue.create(new SortBestscore(), false);
+		cand = ISegQueue.create(SortBestscore.INSTANCE, false);
 
 		ctx = new ExecContext(query);
 		int part = MyMath.getCeil(maxLifeTime);
@@ -84,18 +83,18 @@ public class PartitionExecutor extends IQueryExecutor {
 	}
 
 	// TODO
-	private IOctreeRangeIterator getCursor(String keyword, Interval window)
+	private IOctreeIterator getCursor(String keyword, Interval window)
 			throws IOException {
-		return null;
+		return reader.getTemporalIterator(keyword, window);
 	}
 
 	private void loadCursors() throws IOException {
 		String[] keywords = query.keywords;
-		cursors = new IOctreeRangeIterator[keywords.length];
+		cursors = new IOctreeIterator[keywords.length];
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
-				// TODO
+				throw new IllegalStateException("cursor is not closed");
 			}
 			cursors[i] = getCursor(keywords[i], query.queryInv);
 		}
@@ -108,7 +107,7 @@ public class PartitionExecutor extends IQueryExecutor {
 	}
 
 	@Override
-	public boolean isTerminated() {
+	public boolean isTerminated() throws IOException {
 		if (stop) {
 			return true;
 		} else {
@@ -126,7 +125,7 @@ public class PartitionExecutor extends IQueryExecutor {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
-				for (IOctreeRangeIterator cursor : cursors) {
+				for (IOctreeIterator cursor : cursors) {
 					if (cursor != null && cursor.hasNext()) {
 						ret = false;
 						break;
@@ -144,8 +143,8 @@ public class PartitionExecutor extends IQueryExecutor {
 		}
 	}
 
-	private IOctreeRangeIterator nextCursor() {
-		IOctreeRangeIterator ret = null;
+	private IOctreeIterator nextCursor() throws IOException {
+		IOctreeIterator ret = null;
 		for (int i = 0; i < cursors.length; i++) {
 			int preListIdx = curListIdx;
 			curListIdx = (++curListIdx) % cursors.length;
@@ -213,37 +212,32 @@ public class PartitionExecutor extends IQueryExecutor {
 	}
 
 	@Override
-	public boolean advance() {
+	public boolean advance() throws IOException {
 		if (isTerminated()) {
 			// 所有倒排记录都读完了。
 			return false;
 		}
 
-		IOctreeRangeIterator plc = nextCursor();
-		Pair<Integer, IOctreeIterator> nextBatch = plc.next();// 读取一个记录。
+		IOctreeIterator plc = nextCursor();
+		OctreeNode node = plc.next();// 读取一个记录。
+
+		Encoding code = node.getEncoding();
 
 		int idx = curListIdx - 1;
 		if (idx < 0)
 			idx = query.keywords.length - 1;
-		if (nextBatch != null) {
-			bestScores[idx] = nextBatch.getKey();
-		} else {
-			cursors[idx] = null;
-			bestScores[idx] = 0.0f;
-		}
+
+		bestScores[idx] = code.getZ();
 
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
-		IOctreeIterator iter = nextBatch.getValue();
-		try {
-			while (iter.hasNext()) {
-				OctreeNode node = iter.next();
-				for (MidSegment midseg : node.getSegs())
-					ret |= updateCandState(idx, midseg, 1.0f);
-				Profile.instance.end(Profile.UPDATE_STATE);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+
+		for (MidSegment midseg : node.getSegs())
+			ret |= updateCandState(idx, midseg, 1.0f);
+		Profile.instance.end(Profile.UPDATE_STATE);
+
+		if (!plc.hasNext()) {
+			bestScores[idx] = 0;
 		}
 		return ret;
 	}

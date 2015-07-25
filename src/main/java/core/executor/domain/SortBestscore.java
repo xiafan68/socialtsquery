@@ -8,10 +8,8 @@ import java.util.Comparator;
  * @author dingcheng
  * @version 0.1 2015/2/9.
  */
-public class SortBestscore implements Comparator<MergedMidSeg> {
-	public SortBestscore() {
-
-	}
+public enum SortBestscore implements Comparator<MergedMidSeg> {
+	INSTANCE;
 
 	/**
 	 * 降序

@@ -13,9 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import segmentation.Interval;
 import Util.Configuration;
 import common.MidSegment;
 import core.index.MemTable.SSTableMeta;
+import core.index.octree.IOctreeIterator;
 
 /**
  * 
@@ -269,6 +271,11 @@ public class LSMOInvertedIndex {
 	}
 
 	public SSTableReader getSSTableReader(SSTableMeta meta) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public IOctreeIterator getTemporalIterator(String keyword, Interval window) {
 		// TODO Auto-generated method stub
 		return null;
 	}

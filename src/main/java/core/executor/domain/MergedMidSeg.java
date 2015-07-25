@@ -80,21 +80,27 @@ public class MergedMidSeg {
 		else
 			return -1;
 	}
-	
-	public int getStartTime(){
+
+	public int getStartTime() {
 		if (segList.isEmpty())
 			return 0;
 		return segList.get(0).getStart();
 	}
-	
-	public int getEndTime(){
+
+	public int getEndTime() {
 		if (segList.isEmpty())
 			return 0;
 		return segList.get(segList.size() - 1).getEndTime();
 	}
 
-	/* 计算该微博的 bestScore 和 worstScore */
-	public void computeScore() {
+	/**
+	 *  计算该微博的 bestScore 和 worstScore 
+	 * @return true如果当前对象的上下界有所改变
+	 */
+	public boolean computeScore() {
+		float preBScore = bestscore;
+		float preWScore = worstscore;
+
 		bestscore = 0;
 		worstscore = 0;
 		int segScore = 0;
@@ -142,6 +148,9 @@ public class MergedMidSeg {
 			else
 				bestscore += window * ctx.getBestScore(i) * ctx.getWeight(i);
 		}
+
+		return Float.compare(preBScore, bestscore) != 0
+				|| Float.compare(preWScore, worstscore) != 0;
 	}
 
 	@Override
