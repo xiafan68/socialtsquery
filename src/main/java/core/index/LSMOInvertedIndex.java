@@ -13,9 +13,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
+
 import segmentation.Interval;
+import shingle.TextShingle;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.index.MemTable.SSTableMeta;
 import core.index.octree.IOctreeIterator;
 
@@ -25,16 +30,21 @@ import core.index.octree.IOctreeIterator;
  *
  */
 public class LSMOInvertedIndex {
+	private static final Logger logger = Logger
+			.getLogger(LSMOInvertedIndex.class);
+
 	AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
+	boolean bootstrap = true;
 
 	MemTable curTable;
 	VersionSet versionSet = new VersionSet();
-	int maxVersion;
+	int maxVersion = 0;
 
 	FlushService flushService;
 	CompactService compactService;
 	Configuration conf;
+	TextShingle shingle = new TextShingle(null);
 
 	public LSMOInvertedIndex(Configuration conf) {
 		this.conf = conf;
@@ -45,15 +55,18 @@ public class LSMOInvertedIndex {
 	 * @throws IOException 
 	 */
 	public void init() throws IOException {
+		bootstrap = true;
 		flushService = new FlushService(this);
 		flushService.start();
-		LockManager.instance.setBootStrap();
+		LockManager.INSTANCE.setBootStrap();
 		setupVersionSet();
-		CommitLog.instance.init(conf);
-		CommitLog.instance.recover(this);
+		CommitLog.INSTANCE.init(conf);
+		CommitLog.INSTANCE.recover(this);
+		CommitLog.INSTANCE.openNewLog(curTable.getMeta().version);
 		compactService = new CompactService(this);
 		compactService.start();
-		LockManager.instance.setBootStrap();
+		LockManager.INSTANCE.setBootStrap();
+		bootstrap = false;
 	}
 
 	private static final Pattern regex = Pattern.compile("%d_%d.meta");
@@ -78,7 +91,7 @@ public class LSMOInvertedIndex {
 				return ret;
 			}
 		});
-		maxVersion = Integer.MIN_VALUE;
+		maxVersion = 0;
 		for (File file : indexFiles) {
 			int[] version = parseVersion(file);
 			SSTableMeta meta = new SSTableMeta(version[0], version[1]);
@@ -121,38 +134,41 @@ public class LSMOInvertedIndex {
 		return 0;
 	}
 
-	public void insert(List<String> keywords, MidSegment seg) {
-		LockManager.instance.versionReadLock();
+	public void insert(List<String> keywords, MidSegment seg)
+			throws IOException {
+		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
+				if (!bootstrap)
+					CommitLog.INSTANCE.write(keyword, seg);
 				int code = getKeywordCode(keyword);
-				LockManager.instance.postWriteLock(code);
+				LockManager.INSTANCE.postWriteLock(code);
 				try {
 					curTable.insert(code, seg);
 				} finally {
-					LockManager.instance.postWriteUnLock(code);
+					LockManager.INSTANCE.postWriteUnLock(code);
 				}
 			}
 		} finally {
-			LockManager.instance.versionReadUnLock();
+			LockManager.INSTANCE.versionReadUnLock();
 		}
 		maySwitchMemtable();
 	}
 
-	public void insert(String keywords, MidSegment seg) {
-
+	public void insert(String keywords, MidSegment seg) throws IOException {
+		insert(shingle.shingling(keywords), seg);
 	}
 
 	// TODO check whether we need to switch the memtable
 	public void maySwitchMemtable() {
 		MemTable tmp = curTable;
 		if (tmp.size() > conf.getFlushLimit()) {
-			LockManager.instance.versionWriteLock();
+			LockManager.INSTANCE.versionWriteLock();
 			try {
 				// check for violation again
 				if (tmp == curTable) {
 					// open new log
-					CommitLog.instance.openNewLog(maxVersion++);
+					CommitLog.INSTANCE.openNewLog(maxVersion++);
 					SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
 					tmp = new MemTable(meta);
 					versionSet = versionSet.clone();
@@ -160,24 +176,35 @@ public class LSMOInvertedIndex {
 					curTable = tmp;
 				}
 			} finally {
-				LockManager.instance.versionWriteUnLock();
+				LockManager.INSTANCE.versionWriteUnLock();
 			}
 		}
 	}
 
+	/**
+	 * invoked after a set of versions are flushed. It will update 
+	 * the version set and delete corresponding log files
+	 * @param versions
+	 * @param newMeta
+	 */
 	public void flushTables(Set<Integer> versions, SSTableMeta newMeta) {
-		LockManager.instance.versionWriteLock();
+		logger.info("flushed tables for versions " + versions);
+		LockManager.INSTANCE.versionWriteLock();
 		versionSet = versionSet.clone();
 		versionSet.flush(versions, newMeta);
+
 		// mark redo logs as deleted
-		LockManager.instance.versionWriteUnLock();
+		for (int version : versions)
+			CommitLog.INSTANCE.deleteLog(version);
+		LockManager.INSTANCE.versionWriteUnLock();
 	}
 
 	public void compactTables(Set<Integer> versions, SSTableMeta newMeta) {
-		LockManager.instance.versionWriteLock();
+		logger.info("compacted versions for " + versions);
+		LockManager.INSTANCE.versionWriteLock();
 		versionSet = versionSet.clone();
 		versionSet.compact(versions, newMeta);
-		LockManager.instance.versionWriteUnLock();
+		LockManager.INSTANCE.versionWriteUnLock();
 	}
 
 	public int getCompactNum() {
@@ -190,9 +217,9 @@ public class LSMOInvertedIndex {
 	}
 
 	public VersionSet getVersion() {
-		LockManager.instance.versionReadLock();
+		LockManager.INSTANCE.versionReadLock();
 		VersionSet ret = versionSet;
-		LockManager.instance.versionReadUnLock();
+		LockManager.INSTANCE.versionReadUnLock();
 		return ret;
 	}
 
@@ -268,6 +295,16 @@ public class LSMOInvertedIndex {
 			ret.diskTreeMetas.addAll(diskTreeMetas);
 			return ret;
 		}
+	}
+
+	public void close() {
+		LockManager.INSTANCE.versionWriteLock();
+		try {
+			CommitLog.INSTANCE.shutdown();
+		} finally {
+			LockManager.INSTANCE.versionWriteUnLock();
+		}
+		LockManager.INSTANCE.shutdown();
 	}
 
 	public SSTableReader getSSTableReader(SSTableMeta meta) {

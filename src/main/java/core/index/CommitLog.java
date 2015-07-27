@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,17 +26,19 @@ import common.MidSegment;
  *  * @author xiafan
  *
  */
-public class CommitLog {
-	public static CommitLog instance = new CommitLog();
-	DataOutputStream dos = null;
-	File dir;
-	int curVersion = -1;
+public enum CommitLog {
+	INSTANCE;
+
+	private DataOutputStream dos = null;
+	private File dir;
+	private int curVersion = -1;
 
 	// log files that are not deleted
-	List<Integer> preVersions = new ArrayList<Integer>();
+	private List<Integer> preVersions = new ArrayList<Integer>();
 
 	// the set of words appearing in this log segment
-	ConcurrentSkipListSet<String> words = new ConcurrentSkipListSet<String>();
+	// ConcurrentSkipListSet<String> words = new
+	// ConcurrentSkipListSet<String>();
 
 	public void init(Configuration conf) {
 		dir = conf.getCommitLogDir();
@@ -75,7 +76,7 @@ public class CommitLog {
 	}
 
 	public void write(String word, MidSegment seg) {
-		words.add(word);
+		// words.add(word);
 		try {
 			dos.writeUTF(word);
 			seg.write(dos);
@@ -126,7 +127,6 @@ public class CommitLog {
 	 * @param version
 	 */
 	public void deleteLogs(int version) {
-		// TODO Auto-generated method stub
 		Iterator<Integer> iter = preVersions.iterator();
 		while (iter.hasNext()) {
 			int cur = iter.next();
@@ -146,5 +146,10 @@ public class CommitLog {
 		if (logFile.exists()) {
 			logFile.delete();
 		}
+	}
+
+	public void shutdown() {
+		// TODO Auto-generated method stub
+		
 	}
 }

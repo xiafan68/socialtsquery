@@ -1,0 +1,5 @@
+index_step=128
+indexdir=/tmp
+tmpdir=/tmp
+oplogdir=/tmp/oplog
+memtable_size_limit=2000000

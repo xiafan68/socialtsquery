@@ -3,6 +3,7 @@ package common;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.hadoop.io.WritableComparable;
 
@@ -38,6 +39,13 @@ public class MidSegment extends Segment implements
 		super.write(arg0);
 	}
 
+	@Override
+	public boolean parse(String line) {
+		String[] fields = line.split("\t");
+		mid = Long.parseLong(fields[0]);
+		return super.parse(fields[1]);
+	}
+
 	public int compareTo(MidSegment o) {
 		int maxA = Math.max(getStartCount(), getEndCount());
 		int maxB = Math.max(o.getStartCount(), o.getEndCount());
@@ -64,5 +72,9 @@ public class MidSegment extends Segment implements
 		return "MidSegment [mid=" + mid + ", start=" + start + ", count="
 				+ count + ", endTime=" + endTime + ", endCount=" + endCount
 				+ "]";
+	}
+
+	public long getMid() {
+		return mid;
 	}
 }

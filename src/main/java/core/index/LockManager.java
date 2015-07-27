@@ -3,15 +3,15 @@ package core.index;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class LockManager {
+public enum LockManager {
+	INSTANCE;
+
 	// locks for posting list
-	ReadWriteLock[] postsLocks;
-
+	private ReadWriteLock[] postsLocks;
 	// any operation to the version set needs to occupy this lock
-	ReadWriteLock versionLock;
-
-	public static LockManager instance = new LockManager();
-	boolean bootstrap = false;
+	private ReadWriteLock versionLock;
+	// public static LockManager instance = new LockManager();
+	private boolean bootstrap = false;
 
 	private LockManager() {
 		postsLocks = new ReadWriteLock[1024];
@@ -55,5 +55,12 @@ public class LockManager {
 
 	public void versionWriteUnLock() {
 		versionLock.writeLock().unlock();
+	}
+
+	public void shutdown() {
+		versionLock = null;
+		for (int i = 0; i < postsLocks.length; i++)
+			postsLocks[i] = null;
+
 	}
 }

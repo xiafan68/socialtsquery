@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -21,7 +20,6 @@ import org.apache.thrift.transport.TTransportException;
 //李超
 //13661912248
 
-
 import searchapi.FetchTweetQuery;
 import searchapi.InvalidJob;
 import searchapi.TKeywordQuery;
@@ -29,30 +27,28 @@ import searchapi.TweetService;
 import searchapi.TweetTuple;
 import searchapi.Tweets;
 import segmentation.Interval;
+import Util.Configuration;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.MultiPartitionExecutor;
-import core.executor.PartitionExecutor;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
+import core.index.LSMOInvertedIndex;
 import dataserver.JDBC;
 import dataserver.TimeSeriesDao;
 import dataserver.TweetDao;
 
 public class TKSearchServer implements TweetService.Iface {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);
-	IndexReader indexReader;
+	LSMOInvertedIndex indexReader;
 	JDBC jdbc;
 
-	public void start() {
-		Path dir = new Path("/Users/xiafan/temp/output/");
-		dir = new Path("/home/xiafan/temp/invindex_parts");
+	public void start() throws IOException {
+		// Path dir = new Path("/Users/xiafan/temp/output/");
+		// dir = new Path("/home/xiafan/temp/invindex_parts");
 		Configuration conf = new Configuration();
-
-		indexReader = new IndexReader();
+		conf.load("conf/index.conf");
+		indexReader = new LSMOInvertedIndex(conf);
 		try {
-			indexReader.addPartitions(dir, conf);
-			;
+			indexReader.init();
 		} catch (IOException e) {
 			e.printStackTrace();
 			indexReader = null;

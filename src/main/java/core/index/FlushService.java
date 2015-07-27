@@ -27,37 +27,46 @@ public class FlushService extends Thread {
 	@Override
 	public void run() {
 		while (index.running.get()) {
-			LockManager.instance.versionReadLock();
+			LockManager.INSTANCE.versionReadLock();
 			List<MemTable> flushingTables = new ArrayList<MemTable>(
 					index.getVersion().flushingTables);
-			LockManager.instance.versionReadUnLock();
-			SSTableWriter writer = new SSTableWriter(flushingTables,
-					index.getStep());
-			try {
-				writer.write(conf.getTmpDir());
-				writer.close();
-				// write succeed, now move file to the right place, update the
-				// versionset and commitlog
+			LockManager.INSTANCE.versionReadUnLock();
+			if (!flushingTables.isEmpty()) {
+				SSTableWriter writer = new SSTableWriter(flushingTables,
+						index.getStep());
+				try {
+					writer.write(conf.getTmpDir());
+					writer.close();
+					// write succeed, now move file to the right place, update
+					// the
+					// versionset and commitlog
 
-				File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
-						writer.getMeta()));
-				tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(),
-						writer.getMeta()));
-				tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
-						writer.getMeta()));
-				Set<Integer> versions = new HashSet<Integer>();
-				for (MemTable table : flushingTables) {
-					versions.add(table.getMeta().version);
+					File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
+							writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
+							writer.getMeta()));
+					tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
+							writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.dirMetaFile(
+							conf.getIndexDir(), writer.getMeta()));
+					tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
+							writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
+							writer.getMeta()));
+					Set<Integer> versions = new HashSet<Integer>();
+					for (MemTable table : flushingTables) {
+						versions.add(table.getMeta().version);
+					}
+					index.flushTables(versions, writer.getMeta());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
-				index.flushTables(versions, writer.getMeta());
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			} else {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
