@@ -1,20 +1,20 @@
 package core.index;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
 import Util.Pair;
-import core.index.SSTableWriter.DirEntry;
 import core.index.octree.IOctreeIterator;
 
 public class SSTableScanner implements
 		Iterator<Entry<Integer, IOctreeIterator>> {
-	SSTableReader reader;
-	Iterator<Entry<Integer, DirEntry>> iter;
+	ISSTableReader reader;
+	Iterator<Integer> iter;
 
-	public SSTableScanner(SSTableReader reader) {
+	public SSTableScanner(ISSTableReader reader) {
 		this.reader = reader;
-		iter = reader.entries.entrySet().iterator();
+		iter = reader.keySetIter();
 	}
 
 	@Override
@@ -24,9 +24,15 @@ public class SSTableScanner implements
 
 	@Override
 	public Entry<Integer, IOctreeIterator> next() {
-		Entry<Integer, DirEntry> entry = iter.next();
-		Pair<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
-				entry.getKey(), reader.getPostingListScanner(entry.getKey()));
+		Integer entry = iter.next();
+		Pair<Integer, IOctreeIterator> ret;
+		try {
+			ret = new Pair<Integer, IOctreeIterator>(entry,
+					reader.getPostingListScanner(entry));
+		} catch (IOException e) {
+			e.printStackTrace();
+			ret = null;
+		}
 		return ret;
 	}
 

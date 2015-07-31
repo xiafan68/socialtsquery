@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
 import core.commom.Encoding;
@@ -27,25 +31,31 @@ import core.io.Bucket.BucketID;
  * @author xiafan
  *
  */
-public class SSTableReader {
-	LSMOInvertedIndex index;
-	SSTableMeta meta;
+public class DiskSSTableReader extends ISSTableReader {
 	RandomAccessFile dataInput;
 	RandomAccessFile dirInput;
 
-	Map<Integer, DirEntry> dirMap = new HashMap<Integer, DirEntry>();
+	Map<Integer, DirEntry> dirMap = new TreeMap<Integer, DirEntry>();
 	Map<Integer, List> skipList = new HashMap<Integer, List>();
+	AtomicBoolean init = new AtomicBoolean(false);
 
-	public SSTableReader(LSMOInvertedIndex index, SSTableMeta meta) {
-
+	public DiskSSTableReader(LSMOInvertedIndex index, SSTableMeta meta) {
+		super(index, meta);
 	}
 
 	public void init() throws IOException {
-		File dataDir = index.getConf().getIndexDir();
-		dataInput = new RandomAccessFile(SSTableWriter.dataFile(dataDir, meta),
-				"r");
-		loadDirMeta();
-		loadIndex();
+		if (!init.get()) {
+			synchronized (this) {
+				if (!init.get()) {
+					File dataDir = index.getConf().getIndexDir();
+					dataInput = new RandomAccessFile(SSTableWriter.dataFile(
+							dataDir, meta), "r");
+					loadDirMeta();
+					loadIndex();
+				}
+			}
+			init.set(true);
+		}
 	}
 
 	private void loadDirMeta() throws IOException {
@@ -72,18 +82,20 @@ public class SSTableReader {
 			Encoding curCode = null;
 			BucketID buck = null;
 			List<Pair<Encoding, BucketID>> curList = null;
-			while (indexDis.available() > 0) {
-				curKey = indexDis.readInt();
-				curCode = new Encoding();
-				curCode.readFields(indexDis);
-				buck = new BucketID();
-				buck.read(indexDis);
+			for (Entry<Integer, DirEntry> entry : dirMap.entrySet()) {
 				if (!skipList.containsKey(curKey)) {
 					curList = new ArrayList<Pair<Encoding, BucketID>>();
 				} else {
 					curList = skipList.get(curKey);
 				}
-				curList.add(new Pair<Encoding, BucketID>(curCode, buck));
+
+				for (int i = 0; i < entry.getValue().sampleNum; i++) {
+					curCode = new Encoding();
+					curCode.readFields(indexDis);
+					buck = new BucketID();
+					buck.read(indexDis);
+					curList.add(new Pair<Encoding, BucketID>(curCode, buck));
+				}
 			}
 		} finally {
 			fis.close();
@@ -165,5 +177,10 @@ public class SSTableReader {
 				ret = list.get(idx);
 		}
 		return ret;
+	}
+
+	@Override
+	public Iterator<Integer> keySetIter() {
+		return dirMap.keySet().iterator();
 	}
 }

@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -17,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import Util.Configuration;
-
+import Util.Pair;
 import common.MidSegment;
 
 /**
@@ -78,7 +79,9 @@ public enum CommitLog {
 	public void write(String word, MidSegment seg) {
 		// words.add(word);
 		try {
-			dos.writeUTF(word);
+			byte[] wordBytes = word.getBytes(Charset.forName("utf8"));
+			dos.writeInt(wordBytes.length);
+			dos.write(wordBytes);
 			seg.write(dos);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -115,11 +118,36 @@ public enum CommitLog {
 		DataInputStream dis = new DataInputStream(new FileInputStream(file));
 		while (dis.available() > 0) {
 			MidSegment seg = new MidSegment();
-			String word = dis.readUTF();
+			int len = dis.readInt();
+			byte[] bytes = new byte[len];
+			String word = new String(bytes, Charset.forName("utf8"));
 			seg.read(dis);
 			tree.insert(word, seg);
 		}
 		tree.maySwitchMemtable();
+	}
+
+	/**
+	 * used for test
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
+	public List<Pair<String, MidSegment>> dumpLog(int version)
+			throws IOException {
+		DataInputStream dis = new DataInputStream(new FileInputStream(
+				versionFile(version)));
+		List<Pair<String, MidSegment>> ret = new ArrayList<Pair<String, MidSegment>>();
+		while (dis.available() > 0) {
+			MidSegment seg = new MidSegment();
+			int len = dis.readInt();
+			byte[] bytes = new byte[len];
+			dis.read(bytes);
+			String word = new String(bytes, Charset.forName("utf8"));
+			seg.readFields(dis);
+			ret.add(new Pair<String, MidSegment>(word, seg));
+		}
+		return ret;
 	}
 
 	/**
@@ -148,8 +176,7 @@ public enum CommitLog {
 		}
 	}
 
-	public void shutdown() {
-		// TODO Auto-generated method stub
-		
+	public void shutdown() throws IOException {
+		dos.close();
 	}
 }

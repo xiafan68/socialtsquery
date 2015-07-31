@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Logger;
+
 import Util.MergeIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
@@ -19,13 +21,14 @@ import core.index.MemTable.SSTableMeta;
 import core.index.octree.IOctreeIterator;
 import core.index.octree.MemoryOctree;
 import core.index.octree.MemoryOctree.OctreeMeta;
-import core.index.octree.OctreeIterator;
+import core.index.octree.MemoryOctreeIterator;
 import core.index.octree.OctreeMerger;
 import core.index.octree.OctreeZOrderBinaryWriter;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 
 public class SSTableWriter {
+	private static final Logger logger = Logger.getLogger(SSTableWriter.class);
 	MergeIterator<Integer, IOctreeIterator> iter;
 	SSTableMeta meta;
 
@@ -41,11 +44,11 @@ public class SSTableWriter {
 		public int curKey;
 		public int dataStartBlockID;
 		public int dataBlockNum;
-		public int indexStartID;
+		public long indexStartOffset;
 		public int sampleNum;
 
 		public long getIndexOffset() {
-			return indexStartID;
+			return indexStartOffset;
 		}
 
 		/**
@@ -57,7 +60,7 @@ public class SSTableWriter {
 			output.writeInt(curKey);
 			output.writeInt(dataStartBlockID);
 			output.writeInt(dataBlockNum);
-			output.writeInt(indexStartID);
+			output.writeLong(indexStartOffset);
 			output.writeInt(sampleNum);
 		}
 
@@ -70,9 +73,21 @@ public class SSTableWriter {
 			curKey = input.readInt();
 			dataStartBlockID = input.readInt();
 			dataBlockNum = input.readInt();
-			indexStartID = input.readInt();
+			indexStartOffset = input.readLong();
 			sampleNum = input.readInt();
 		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "DirEntry [curKey=" + curKey + ", dataStartBlockID="
+					+ dataStartBlockID + ", dataBlockNum=" + dataBlockNum
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
+					+ sampleNum + "]";
+		}
+
 	}
 
 	DirEntry curDir = new DirEntry();
@@ -91,13 +106,14 @@ public class SSTableWriter {
 	 * @param tables
 	 * @param step
 	 */
-	public SSTableWriter(SSTableMeta meta, List<SSTableReader> tables, int step) {
+	public SSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
 		this.meta = meta;
 		iter = new MergeIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
-		for (final SSTableReader table : tables) {
+		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
+		this.step = step;
 	}
 
 	public SSTableWriter(List<MemTable> tables, int step) {
@@ -120,8 +136,8 @@ public class SSTableWriter {
 						public Entry<Integer, IOctreeIterator> next() {
 							Entry<Integer, MemoryOctree> entry = iter.next();
 							Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
-									entry.getKey(), new OctreeIterator(entry
-											.getValue()));
+									entry.getKey(), new MemoryOctreeIterator(
+											entry.getValue()));
 							return ret;
 						}
 
@@ -202,23 +218,21 @@ public class SSTableWriter {
 	}
 
 	public void addSample(Encoding code, BucketID id) throws IOException {
+		curDir.sampleNum++;
 		code.write(indexDos);
 		id.write(indexDos);
 	}
 
 	private void startPostingList() throws IOException {
 		curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE);
-		curDir.indexStartID = (int) (indexFileDos.getChannel().position() / Bucket.BLOCK_SIZE);
+		curDir.indexStartOffset = indexFileDos.getChannel().position();
 	}
 
 	private void endPostingList() throws IOException {
 		curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE)
 				- curDir.dataStartBlockID;
-		dirDos.writeInt(curDir.curKey);
-		dirDos.writeInt(curDir.dataStartBlockID);
-		dirDos.writeInt(curDir.dataBlockNum);
-		dirDos.writeInt(curDir.indexStartID);
-		dirDos.writeInt(curDir.sampleNum);
+		curDir.write(dirDos);
+		logger.info("finish " + curDir);
 	}
 
 	/**

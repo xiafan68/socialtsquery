@@ -3,26 +3,27 @@ package core.index;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import segmentation.Interval;
 import shingle.TextShingle;
 import Util.Configuration;
 
 import common.MidSegment;
 
 import core.index.MemTable.SSTableMeta;
-import core.index.octree.IOctreeIterator;
 
 /**
  * 
@@ -33,12 +34,12 @@ public class LSMOInvertedIndex {
 	private static final Logger logger = Logger
 			.getLogger(LSMOInvertedIndex.class);
 
-	AtomicBoolean running = new AtomicBoolean(true);
+	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
 	boolean bootstrap = true;
-
+	volatile boolean stop = false;
 	MemTable curTable;
-	VersionSet versionSet = new VersionSet();
+	volatile VersionSet versionSet = new VersionSet();
 	int maxVersion = 0;
 
 	FlushService flushService;
@@ -102,7 +103,7 @@ public class LSMOInvertedIndex {
 		}
 		// TODO may need to check if compact fails during moving file
 		SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
-		curTable = new MemTable(meta);
+		curTable = new MemTable(this, meta);
 		versionSet.newMemTable(curTable);
 	}
 
@@ -131,7 +132,7 @@ public class LSMOInvertedIndex {
 	}
 
 	private int getKeywordCode(String keyword) {
-		return 0;
+		return Math.abs(keyword.hashCode()) % 2;
 	}
 
 	public void insert(List<String> keywords, MidSegment seg)
@@ -168,9 +169,9 @@ public class LSMOInvertedIndex {
 				// check for violation again
 				if (tmp == curTable) {
 					// open new log
-					CommitLog.INSTANCE.openNewLog(maxVersion++);
+					CommitLog.INSTANCE.openNewLog(maxVersion);
 					SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
-					tmp = new MemTable(meta);
+					tmp = new MemTable(this, meta);
 					versionSet = versionSet.clone();
 					versionSet.newMemTable(tmp);
 					curTable = tmp;
@@ -187,19 +188,19 @@ public class LSMOInvertedIndex {
 	 * @param versions
 	 * @param newMeta
 	 */
-	public void flushTables(Set<Integer> versions, SSTableMeta newMeta) {
+	public void flushTables(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 		logger.info("flushed tables for versions " + versions);
 		LockManager.INSTANCE.versionWriteLock();
 		versionSet = versionSet.clone();
 		versionSet.flush(versions, newMeta);
 
 		// mark redo logs as deleted
-		for (int version : versions)
-			CommitLog.INSTANCE.deleteLog(version);
+		for (SSTableMeta version : versions)
+			CommitLog.INSTANCE.deleteLog(version.version);
 		LockManager.INSTANCE.versionWriteUnLock();
 	}
 
-	public void compactTables(Set<Integer> versions, SSTableMeta newMeta) {
+	public void compactTables(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 		logger.info("compacted versions for " + versions);
 		LockManager.INSTANCE.versionWriteLock();
 		versionSet = versionSet.clone();
@@ -217,10 +218,10 @@ public class LSMOInvertedIndex {
 	}
 
 	public VersionSet getVersion() {
-		LockManager.INSTANCE.versionReadLock();
-		VersionSet ret = versionSet;
-		LockManager.INSTANCE.versionReadUnLock();
-		return ret;
+		// LockManager.INSTANCE.versionReadLock();
+		// VersionSet ret = versionSet;
+		// LockManager.INSTANCE.versionReadUnLock();
+		return versionSet;
 	}
 
 	public int getStep() {
@@ -229,6 +230,36 @@ public class LSMOInvertedIndex {
 
 	public Configuration getConf() {
 		return conf;
+	}
+
+	// 所有versionset使用的SSTableMeta除了作为readers的key之外，不能有其它地方使用
+	ConcurrentMap<SSTableMetaKey, ISSTableReader> readers = new ConcurrentHashMap<SSTableMetaKey, ISSTableReader>();
+	ReferenceQueue<SSTableMeta> delMetaQueue = new ReferenceQueue<SSTableMeta>();
+
+	private static class SSTableMetaKey extends WeakReference<SSTableMeta> {
+		int version;
+		int level;
+
+		public SSTableMetaKey(SSTableMeta referent,
+				ReferenceQueue<SSTableMeta> queue) {
+			super(referent, queue);
+			version = referent.version;
+			level = referent.level;
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof SSTableMetaKey)) {
+				return false;
+			}
+			SSTableMetaKey key = (SSTableMetaKey) other;
+			return version == key.version && level == key.level;
+		}
+
+		@Override
+		public int hashCode() {
+			return version + level;
+		}
 	}
 
 	/**
@@ -260,11 +291,11 @@ public class LSMOInvertedIndex {
 		 * @param versions
 		 * @param newMeta
 		 */
-		public void flush(Set<Integer> versions, SSTableMeta newMeta) {
+		public void flush(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 			Iterator<MemTable> iter = flushingTables.iterator();
 			while (iter.hasNext()) {
 				MemTable table = iter.next();
-				if (versions.contains(table.getMeta().version)) {
+				if (versions.contains(table.getMeta())) {
 					iter.remove();
 				}
 			}
@@ -276,17 +307,22 @@ public class LSMOInvertedIndex {
 		 * @param versions
 		 * @param newMeta
 		 */
-		public void compact(Set<Integer> versions, SSTableMeta newMeta) {
+		public void compact(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 			Iterator<SSTableMeta> iter = diskTreeMetas.iterator();
 			while (iter.hasNext()) {
 				SSTableMeta meta = iter.next();
-				if (versions.contains(meta.version)) {
+				if (versions.contains(meta)) {
 					iter.remove();
+					meta.markAsDel.set(true);
 				}
 			}
 			diskTreeMetas.add(newMeta);
 		}
 
+		/**
+		 * the clone operation may be expensive, but I believe it 
+		 * is not a quite frequent operation
+		 */
 		@Override
 		public VersionSet clone() {
 			VersionSet ret = new VersionSet();
@@ -297,7 +333,22 @@ public class LSMOInvertedIndex {
 		}
 	}
 
-	public void close() {
+	public void close() throws IOException {
+		stop = true;
+		while (true) {
+			try {
+				flushService.join();
+				break;
+			} catch (InterruptedException e) {
+			}
+		}
+		while (true) {
+			try {
+				compactService.join();
+				break;
+			} catch (InterruptedException e) {
+			}
+		}
 		LockManager.INSTANCE.versionWriteLock();
 		try {
 			CommitLog.INSTANCE.shutdown();
@@ -307,13 +358,56 @@ public class LSMOInvertedIndex {
 		LockManager.INSTANCE.shutdown();
 	}
 
-	public SSTableReader getSSTableReader(SSTableMeta meta) {
-		// TODO Auto-generated method stub
-		return null;
+	private void cleanupReaders() {
+		SSTableMetaKey delMetaKey = null;
+		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
+			ISSTableReader reader = readers.remove(delMetaKey);
+			if (reader != null) {
+				if (reader.meta.markAsDel.get()) {
+					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					logger.info("delete data of " + delMetaKey.version + " "
+							+ delMetaKey.level);
+				}
+			}
+		}
 	}
 
-	public IOctreeIterator getTemporalIterator(String keyword, Interval window) {
-		// TODO Auto-generated method stub
-		return null;
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
+			throws IOException {
+		cleanupReaders();
+		if (snapshot.curTable == null) {
+			return null;
+		} else if (snapshot.curTable.getMeta() == meta) {
+			return snapshot.curTable.getReader();
+		} else {
+			for (MemTable table : snapshot.flushingTables) {
+				if (table.getMeta() == meta) {
+					return table.getReader();
+				}
+			}
+			return getDiskSSTableReader(meta);
+		}
+	}
+
+	private ISSTableReader getDiskSSTableReader(SSTableMeta meta)
+			throws IOException {
+		cleanupReaders();
+		ISSTableReader ret = null;
+		SSTableMetaKey ref = new SSTableMetaKey(meta, delMetaQueue);
+		if (readers.containsKey(ref)) {
+			ret = readers.get(ref);
+		} else {
+			ret = new DiskSSTableReader(this, meta.clone());
+			ISSTableReader tmp = readers.putIfAbsent(ref, ret);
+			if (tmp != null)
+				ret = tmp;
+		}
+		ret.init();
+		return ret;
 	}
 }

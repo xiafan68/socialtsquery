@@ -2,23 +2,28 @@ package Util;
 
 import java.io.IOException;
 
-import common.MidSegment;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
+import common.MidSegment;
 import core.index.LSMOInvertedIndex;
 import fanxia.file.DirLineReader;
 
 public class IndexLoader {
 
 	public static void main(String[] args) throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex indexReader = new LSMOInvertedIndex(conf);
+
+		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		try {
-			indexReader.init();
+			index.init();
 		} catch (IOException e) {
 			e.printStackTrace();
-			indexReader = null;
+			index = null;
 		}
+
 		DirLineReader reader = new DirLineReader(
 				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
 		String line = null;
@@ -26,12 +31,12 @@ public class IndexLoader {
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			indexReader.insert(Long.toString(seg.getMid()), seg);
+			index.insert(Long.toString(seg.getMid()), seg);
 			if (i++ % 1000 == 0) {
-				System.out.println(i);
+				// System.out.println(i);
 			}
 		}
-		indexReader.close();
+		index.close();
 		reader.close();
 	}
 }

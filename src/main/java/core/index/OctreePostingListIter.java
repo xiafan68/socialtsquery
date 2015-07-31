@@ -17,7 +17,7 @@ import fanxia.file.ByteUtil;
 
 public class OctreePostingListIter implements IOctreeIterator {
 	private DirEntry entry;
-	private SSTableReader reader;
+	private ISSTableReader reader;
 	private int ts;
 	private int te;
 
@@ -39,7 +39,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, SSTableReader reader, int ts,
+	public OctreePostingListIter(DirEntry entry, ISSTableReader reader, int ts,
 			int te) {
 		this.entry = entry;
 		this.reader = reader;

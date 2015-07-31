@@ -29,4 +29,11 @@ public class Pair<K, V> implements Entry<K, V> {
 		return pre;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Pair [key=" + key + ", value=" + value + "]";
+	}
 }

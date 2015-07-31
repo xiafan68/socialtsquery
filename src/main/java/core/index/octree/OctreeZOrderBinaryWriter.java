@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
+
 import core.index.SSTableWriter;
 import core.io.Bucket;
 
@@ -14,6 +16,9 @@ import core.io.Bucket;
  *
  */
 public class OctreeZOrderBinaryWriter {
+	private static final Logger logger = Logger
+			.getLogger(OctreeZOrderBinaryWriter.class);
+
 	Bucket cur; // the current bucket used to write data
 	IOctreeIterator iter;
 	SSTableWriter writer;
@@ -44,13 +49,16 @@ public class OctreeZOrderBinaryWriter {
 				octreeNode.write(dos);
 				byte[] data = baos.toByteArray();
 				if (cur == null || !cur.canStore(data.length)) {
-					if (cur != null)
+					if (cur != null) {
 						cur.write(writer.getDataDos());
+						logger.debug(cur);
+					}
 					cur = new Bucket(writer.getDataFilePosition());
 				}
 				if (count++ % step == 0) {
 					writer.addSample(octreeNode.getEncoding(), cur.blockIdx());
 				}
+				logger.debug(octreeNode);
 				cur.storeOctant(data);
 			}
 		}
@@ -59,6 +67,7 @@ public class OctreeZOrderBinaryWriter {
 	public void close() throws IOException {
 		if (cur != null) {
 			cur.write(writer.getDataDos());
+			logger.info("last bucket:" + cur.toString());
 		}
 	}
 }

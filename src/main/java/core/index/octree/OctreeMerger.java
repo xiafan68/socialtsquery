@@ -54,12 +54,21 @@ public class OctreeMerger implements IOctreeIterator {
 			nextLNode();
 			nextRNode();
 			if (lnode == null || rnode == null) {
-				curNode = lnode != null ? lnode : rnode;
+				if (lnode != null) {
+					curNode = lnode;
+					lnode = null;
+				} else {
+					curNode = rnode;
+					rnode = null;
+				}
 				break;
 			}
 			int cmp = lnode.getEncoding().compareTo(rnode.getEncoding());
 			if (cmp == 0) {
-				// TODO merge two nodes
+				curNode = lnode;
+				curNode.addSegs(rnode.getSegs());
+				lnode = null;
+				rnode = null;
 			} else if (cmp > 0) {
 				if (rnode.contains(lnode)) {
 					rnode.split();
@@ -67,24 +76,20 @@ public class OctreeMerger implements IOctreeIterator {
 						if (rnode.getChild(i).size() > 0)
 							rhs.addNode(rnode.getChild(i));
 					}
-					rnode = null;
 				} else {
 					curNode = rnode;
-					rnode = null;
-					break;
 				}
+				rnode = null;
 			} else if (cmp < 0) {
 				if (lnode.contains(rnode)) {
 					lnode.split();
 					for (int i = 0; i < 8; i++)
 						if (lnode.getChild(i).size() > 0)
 							lhs.addNode(lnode.getChild(i));
-					lnode = null;
 				} else {
 					curNode = lnode;
-					lnode = null;
-					break;
 				}
+				lnode = null;
 			}
 		}
 	}
@@ -107,6 +112,9 @@ public class OctreeMerger implements IOctreeIterator {
 			} else {
 				ret = splittedNodes.poll();
 			}
+		} else {
+			ret = curNode;
+			curNode = null;
 		}
 		return ret;
 	}
@@ -133,7 +141,6 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public OctreeMeta getMeta() {
-		// TODO Auto-generated method stub
-		return null;
+		return meta;
 	}
 }

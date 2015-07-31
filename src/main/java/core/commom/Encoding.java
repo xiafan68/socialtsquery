@@ -62,7 +62,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		}
 		int zvalueBit = 63;
 		mask = 1 << 31;
-		System.out.println(Integer.toBinaryString(mask));
+		// System.out.println(Integer.toBinaryString(mask));
 		for (int i = 31; i >= endBit; i--) {
 			int curIdx = 2 - zvalueBit / 32;
 			x |= (encodes[curIdx] & mask) >>> (zvalueBit-- % 32) << i;
@@ -93,11 +93,12 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	}
 
 	public int getZ() {
-		return encodes[0];
+		return z;
 	}
 
 	public void setZ(int z) {
 		encodes[0] = z;
+		encode();
 	}
 
 	/**
@@ -125,21 +126,21 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		int ret = 0;
 		ret = 0 - Long.compare((encodes[0] & 0xffffffffL),
 				(arg0.encodes[0] & 0xffffffffL));
-
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;
 			ret = Long.compare((encodes[i] & 0xffffffffL),
 					(arg0.encodes[i] & 0xffffffffL));
 		}
+
 		return ret;
 	}
 
 	@Override
 	public String toString() {
-		String ret = "HybridEncoding [endBit=" + endBit + "\n, x=" + x + ","
-				+ Integer.toBinaryString(x) + "\n, y=" + y + ","
-				+ Integer.toBinaryString(y) + "\n,z=" + encodes[0] + ","
+		String ret = "HybridEncoding [endBit=" + endBit + "\n, x=" + getX()
+				+ "," + Integer.toBinaryString(x) + "\n, y=" + getY() + ","
+				+ Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
 				+ Integer.toBinaryString(encodes[0]) + "]\n, encoding:";
 		for (int code : encodes) {
 			ret += Integer.toBinaryString(code) + ",";
@@ -160,6 +161,6 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	}
 
 	public int getEdgeLen() {
-		return endBit;
+		return 1 << endBit;
 	}
 }

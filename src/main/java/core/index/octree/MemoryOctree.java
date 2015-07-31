@@ -14,7 +14,7 @@ import core.commom.Point;
  *
  */
 public class MemoryOctree {
-	private static int size_threshold = 10;
+	private static int size_threshold = 100;
 	OctreeMeta meta;
 	OctreeNode root = null;
 	// once true, no data can be inserted any further
@@ -88,7 +88,7 @@ public class MemoryOctree {
 		}
 		OctreeNode leaf = root.search(point);
 		leaf.insert(point, seg);
-		if (leaf.size() > size_threshold) {
+		if (leaf.getEdgeLen() > 1 && leaf.size() > size_threshold) {
 			leaf.split();
 		}
 		return true;

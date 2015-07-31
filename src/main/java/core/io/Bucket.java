@@ -2,9 +2,12 @@ package core.io;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
  * a bucket may correspond to multiple blocks and multiple coctant
@@ -24,7 +27,7 @@ public class Bucket {
 
 	int blockIdx = 0;
 	boolean singleBlock = true;
-	int totalSize = 1;
+	int totalSize = 5;
 	List<byte[]> octants = new ArrayList<byte[]>();
 
 	public Bucket(long offset) {
@@ -41,29 +44,46 @@ public class Bucket {
 	}
 
 	public void write(DataOutput output) throws IOException {
-		output.writeBoolean(singleBlock);
-		if (!singleBlock) {
-			output.writeInt(octants.size());
-		}
+		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(bOutput);
+		dos.writeBoolean(singleBlock);
+		// if (!singleBlock) {
+		dos.writeInt(octants.size());
+		// }
 		for (byte[] data : octants) {
-			output.writeInt(data.length);
-			output.write(data);
+			dos.writeInt(data.length);
+			dos.write(data);
+		}
+		dos.close();
+		byte[] data = bOutput.toByteArray();
+		output.write(data);
+		// write the padding bytes
+
+		int occupy = data.length % BLOCK_SIZE;
+		if (occupy > 0) {
+			byte[] padding = new byte[BLOCK_SIZE - occupy];
+			output.write(padding);
 		}
 	}
 
 	public void read(DataInput input) throws IOException {
 		singleBlock = input.readBoolean();
 		int num = 1;
-		if (!singleBlock) {
-			num = input.readInt();
-			totalSize += 4;
-		}
+		// if (!singleBlock) {
+		num = input.readInt();
+		// }
 		int size = 0;
 		for (int i = 0; i < num; i++) {
 			size = input.readInt();
-			totalSize += size;
+			totalSize += size + 4;
 			byte[] data = new byte[size];
 			input.readFully(data);
+			octants.add(data);
+		}
+		int occupy = totalSize % BLOCK_SIZE;
+		if (occupy > 0) {
+			byte[] padding = new byte[BLOCK_SIZE - occupy];
+			input.readFully(padding);
 		}
 	}
 
@@ -116,7 +136,7 @@ public class Bucket {
 			return true;
 		} else if (!singleBlock) {
 			return false;
-		} else if (totalSize + length <= BLOCK_SIZE) {
+		} else if (totalSize + length + 4 <= BLOCK_SIZE) {
 			return true;
 		}
 		return false;
@@ -130,4 +150,25 @@ public class Bucket {
 	public int octNum() {
 		return octants.size();
 	}
+
+	public void reset() {
+		blockIdx = 0;
+		singleBlock = true;
+		totalSize = 5;
+		octants.clear();
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock
+				+ ", totalSize=" + totalSize + ", octants=" + octants + "]";
+	}
+
+	public void setBlockIdx(int blockIdx) {
+		this.blockIdx = blockIdx;
+	}
+
 }

@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import core.commom.Encoding;
-import core.index.SSTableReader;
+import core.index.DiskSSTableReader;
 import core.index.SSTableWriter.DirEntry;
 import core.index.octree.MemoryOctree.OctreeMeta;
 import core.io.Bucket;
@@ -27,46 +27,59 @@ public class DiskOctreeIterator implements IOctreeIterator {
 					return o1.getEncoding().compareTo(o2.getEncoding());
 				}
 			});
-	Bucket bucket = null;
-	int i = 0;
+
+	Bucket bucket = new Bucket(-1);
+	BucketID nextBucketID = new BucketID(0, (short) 0);
+
+	int curIdx = 0;
 	int readNum = 0;
-	private SSTableReader reader;
+
+	private DiskSSTableReader reader;
 
 	/**
 	 * 
 	 * @param dir the directory where this octree is placed
 	 * @param meta the meta data of the octree
 	 */
-	public DiskOctreeIterator(DirEntry entry, SSTableReader reader) {
+	public DiskOctreeIterator(DirEntry entry, DiskSSTableReader reader) {
 		this.entry = entry;
 		this.reader = reader;
+		nextBucketID.blockID = entry.dataStartBlockID;
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum;
+		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum
+				|| curIdx < bucket.octNum();
 	}
 
 	@Override
 	public OctreeNode next() throws IOException {
-		if (bucket == null || i < bucket.octNum()) {
-			bucket = reader.getBucket(new BucketID(entry.dataStartBlockID,
-					(short) 0));
+		if (readNum < entry.dataBlockNum && curIdx >= bucket.octNum()) {
+			bucket.reset();
+			bucket.setBlockIdx(nextBucketID.blockID);
+			nextBucketID.blockID = reader.getBucket(nextBucketID, bucket);
 			readNum += bucket.blockNum();
-			i = 0;
+			curIdx = 0;
 		}
-		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
-				bucket.getOctree(i)));
-		Encoding coding = new Encoding();
-		coding.readFields(dis);
-		OctreeNode ret = new OctreeNode(coding, coding.getEdgeLen());
-		if (!traverseQueue.isEmpty()
-				&& ret.getEncoding().compareTo(
-						traverseQueue.peek().getEncoding()) > 0) {
-			traverseQueue.offer(ret);
+		OctreeNode ret = null;
+		if (curIdx < bucket.octNum()) {
+			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
+					bucket.getOctree(curIdx)));
+			Encoding coding = new Encoding();
+			coding.readFields(dis);
+			ret = new OctreeNode(coding, coding.getEdgeLen());
+			ret.read(dis);
+		}
+
+		if (ret == null
+				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(
+						traverseQueue.peek().getEncoding()) > 0)) {
+			if (ret != null)
+				traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
 		}
-		i++;
+		curIdx++;
 		return ret;
 	}
 

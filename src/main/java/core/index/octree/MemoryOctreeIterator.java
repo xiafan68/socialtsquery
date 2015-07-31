@@ -11,7 +11,7 @@ import core.index.octree.MemoryOctree.OctreeMeta;
  * @author xiafan
  *
  */
-public class OctreeIterator implements IOctreeIterator {
+public class MemoryOctreeIterator implements IOctreeIterator {
 	OctreeMeta meta;
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
 			256, new Comparator<OctreeNode>() {
@@ -21,13 +21,13 @@ public class OctreeIterator implements IOctreeIterator {
 				}
 			});
 
-	public OctreeIterator(MemoryOctree tree) {
+	public MemoryOctreeIterator(MemoryOctree tree) {
 		meta = tree.getMeta();
 		if (tree.root != null)
 			traverseQueue.offer(tree.root);
 	}
 
-	public OctreeIterator(OctreeNode root) {
+	public MemoryOctreeIterator(OctreeNode root) {
 		if (root != null)
 			traverseQueue.offer(root);
 	}

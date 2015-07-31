@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.TreeSet;
 
 import common.MidSegment;
+
 import core.commom.Encoding;
 import core.commom.Point;
 
@@ -15,6 +16,7 @@ public class OctreeNode {
 	Point cornerPoint;
 	OctreeNode[] children = null;
 	TreeSet<MidSegment> segs;
+	Encoding code = null;
 
 	public OctreeNode(Point cornerPoint, int edgeLen) {
 		this.cornerPoint = cornerPoint;
@@ -111,7 +113,7 @@ public class OctreeNode {
 	}
 
 	public boolean isLeaf() {
-		return segs != null;
+		return children == null;
 	}
 
 	/**
@@ -119,8 +121,18 @@ public class OctreeNode {
 	 * @return
 	 */
 	public Encoding getEncoding() {
-		return new Encoding(new Point(cornerPoint.getX(), cornerPoint.getY(),
-				cornerPoint.getZ() + edgeLen), edgeLen);
+		if (code == null) {
+			int endBits = 0;
+			int tmp = edgeLen;
+			while (tmp != 0) {
+				tmp = tmp >>> 1;
+				if (tmp != 0)
+					endBits++;
+			}
+			code = new Encoding(new Point(cornerPoint.getX(),
+					cornerPoint.getY(), cornerPoint.getZ()), endBits);
+		}
+		return code;
 	}
 
 	public void write(DataOutput output) {
@@ -140,7 +152,7 @@ public class OctreeNode {
 			segs = new TreeSet<MidSegment>();
 			for (int i = 0; i < size; i++) {
 				MidSegment seg = new MidSegment();
-				seg.read(input);
+				seg.readFields(input);
 				segs.add(seg);
 			}
 		} catch (IOException e) {
@@ -176,7 +188,7 @@ public class OctreeNode {
 	public String toString() {
 		return "OctreeNode [edgeLen=" + edgeLen + ", cornerPoint="
 				+ cornerPoint + ", children=" + Arrays.toString(children)
-				+ ", segs=" + segs + "]";
+				+ ", segs=" + segs + " code:" + getEncoding() + "]";
 	}
 
 	public static void main(String[] args) {

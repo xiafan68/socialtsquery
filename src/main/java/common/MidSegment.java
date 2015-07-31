@@ -3,12 +3,11 @@ package common;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.hadoop.io.WritableComparable;
 
-import core.commom.Point;
 import segmentation.Segment;
+import core.commom.Point;
 
 /**
  * posting list里面存储的元素
@@ -28,6 +27,7 @@ public class MidSegment extends Segment implements
 
 	}
 
+	@Override
 	public void readFields(DataInput input) throws IOException {
 		mid = input.readLong();
 		super.read(input);

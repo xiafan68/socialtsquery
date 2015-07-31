@@ -62,7 +62,6 @@ public class MergeIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 	}
 
 	public Entry<K, List<V>> next() {
-
 		if (queue.isEmpty())
 			return null;
 
@@ -78,6 +77,8 @@ public class MergeIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 				if (iter.hasNext()) {
 					queue.offer(iter);
 				}
+			} else {
+				break;
 			}
 		}
 		return ret;
