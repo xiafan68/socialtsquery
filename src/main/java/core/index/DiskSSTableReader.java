@@ -85,6 +85,7 @@ public class DiskSSTableReader extends ISSTableReader {
 			for (Entry<Integer, DirEntry> entry : dirMap.entrySet()) {
 				if (!skipList.containsKey(curKey)) {
 					curList = new ArrayList<Pair<Encoding, BucketID>>();
+					skipList.put(curKey, curList);
 				} else {
 					curList = skipList.get(curKey);
 				}

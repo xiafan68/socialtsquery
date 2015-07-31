@@ -116,13 +116,18 @@ public enum CommitLog {
 
 	private void redo(File file, LSMOInvertedIndex tree) throws IOException {
 		DataInputStream dis = new DataInputStream(new FileInputStream(file));
-		while (dis.available() > 0) {
-			MidSegment seg = new MidSegment();
-			int len = dis.readInt();
-			byte[] bytes = new byte[len];
-			String word = new String(bytes, Charset.forName("utf8"));
-			seg.read(dis);
-			tree.insert(word, seg);
+		try {
+			while (dis.available() > 0) {
+				MidSegment seg = new MidSegment();
+				int len = dis.readInt();
+				byte[] bytes = new byte[len];
+				dis.readFully(bytes);
+				String word = new String(bytes, Charset.forName("utf8"));
+				seg.read(dis);
+				tree.insert(word, seg);
+			}
+		} catch (Exception ex) {
+
 		}
 		tree.maySwitchMemtable();
 	}
@@ -138,14 +143,19 @@ public enum CommitLog {
 		DataInputStream dis = new DataInputStream(new FileInputStream(
 				versionFile(version)));
 		List<Pair<String, MidSegment>> ret = new ArrayList<Pair<String, MidSegment>>();
-		while (dis.available() > 0) {
-			MidSegment seg = new MidSegment();
-			int len = dis.readInt();
-			byte[] bytes = new byte[len];
-			dis.read(bytes);
-			String word = new String(bytes, Charset.forName("utf8"));
-			seg.readFields(dis);
-			ret.add(new Pair<String, MidSegment>(word, seg));
+		try {
+			while (dis.available() > 0) {
+				MidSegment seg = new MidSegment();
+				int len = dis.readInt();
+				byte[] bytes = new byte[len];
+				dis.read(bytes);
+				String word = new String(bytes, Charset.forName("utf8"));
+				seg.readFields(dis);
+				System.out.println(seg);
+				ret.add(new Pair<String, MidSegment>(word, seg));
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 		return ret;
 	}

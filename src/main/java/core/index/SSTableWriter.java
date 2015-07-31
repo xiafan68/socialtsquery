@@ -173,7 +173,7 @@ public class SSTableWriter {
 
 	/**
 	 * write the memtable into sstables stored in directory
-	 * @param dir
+	 * @param dir 数据存储目录
 	 * @throws IOException
 	 */
 	public void write(File dir) throws IOException {
@@ -226,6 +226,7 @@ public class SSTableWriter {
 	private void startPostingList() throws IOException {
 		curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE);
 		curDir.indexStartOffset = indexFileDos.getChannel().position();
+		curDir.sampleNum = 0;
 	}
 
 	private void endPostingList() throws IOException {

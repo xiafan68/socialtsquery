@@ -8,8 +8,8 @@ import segmentation.Segment;
 
 import common.MidSegment;
 
-import core.index.LogStructureOctree.OctreeMeta;
 import core.index.octree.MemoryOctree;
+import core.index.octree.MemoryOctree.OctreeMeta;
 import core.index.octree.OctreeTextWriter;
 
 public class OctreeTest {

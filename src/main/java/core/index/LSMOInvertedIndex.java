@@ -394,8 +394,7 @@ public class LSMOInvertedIndex {
 		}
 	}
 
-	private ISSTableReader getDiskSSTableReader(SSTableMeta meta)
-			throws IOException {
+	ISSTableReader getDiskSSTableReader(SSTableMeta meta) throws IOException {
 		cleanupReaders();
 		ISSTableReader ret = null;
 		SSTableMetaKey ref = new SSTableMetaKey(meta, delMetaQueue);

@@ -15,7 +15,7 @@ public class CommitLogTest {
 		conf.load("conf/index.conf");
 		CommitLog.INSTANCE.init(conf);
 		CommitLog.INSTANCE.openNewLog(0);
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 1000; i++) {
 			CommitLog.INSTANCE.write(Integer.toString(i), new MidSegment(i,
 					new Segment(i, i, i, i)));
 		}
@@ -23,6 +23,7 @@ public class CommitLogTest {
 
 		conf = new Configuration();
 		conf.load("conf/index.conf");
-		System.out.println(CommitLog.INSTANCE.dumpLog(0));
+		// System.out.println(CommitLog.INSTANCE.dumpLog(0));
+		System.out.println(CommitLog.INSTANCE.dumpLog(57));
 	}
 }
