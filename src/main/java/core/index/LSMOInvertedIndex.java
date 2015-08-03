@@ -18,11 +18,11 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+import com.sun.jna.LastErrorException;
+
 import shingle.TextShingle;
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.index.MemTable.SSTableMeta;
 
 /**
@@ -92,8 +92,24 @@ public class LSMOInvertedIndex {
 				return ret;
 			}
 		});
-		maxVersion = 0;
+		List<File> exactVersion = new ArrayList<File>();
 		for (File file : indexFiles) {
+			int[] v1 = parseVersion(file);
+			while (!exactVersion.isEmpty()) {
+				File last = exactVersion.get(exactVersion.size() - 1);
+				int[] v2 = parseVersion(last);
+				if (v1[0] >= v2[0] && v1[1] > v2[1]) {
+					// TODO last file should be removed
+					exactVersion.remove(exactVersion.size() - 1);
+				} else {
+					break;
+				}
+			}
+			exactVersion.add(file);
+		}
+
+		maxVersion = 0;
+		for (File file : exactVersion) {
 			int[] version = parseVersion(file);
 			SSTableMeta meta = new SSTableMeta(version[0], version[1]);
 			if (validateDataFile(meta)) {
@@ -101,23 +117,22 @@ public class LSMOInvertedIndex {
 				maxVersion = Math.max(maxVersion, meta.version + 1);
 			}
 		}
-		// TODO may need to check if compact fails during moving file
 		SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
 		curTable = new MemTable(this, meta);
 		versionSet.newMemTable(curTable);
 	}
 
+	/**
+	 * 验证是否所有的索引文件都存在
+	 * @param meta
+	 * @return
+	 */
 	private boolean validateDataFile(SSTableMeta meta) {
-		File file = SSTableWriter.dataFile(conf.getIndexDir(), meta);
-		if (!file.exists()) {
-			return false;
-		}
-		file = SSTableWriter.idxFile(conf.getIndexDir(), meta);
-		if (!file.exists()) {
-			return false;
-		}
-		file = SSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
-		if (!file.exists()) {
+		File dFile = SSTableWriter.dataFile(conf.getIndexDir(), meta);
+		File idxFile = SSTableWriter.idxFile(conf.getIndexDir(), meta);
+		File dirFile = SSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
+			logger.warn("index file of version " + meta + " is not consistent");
 			return false;
 		}
 		return true;

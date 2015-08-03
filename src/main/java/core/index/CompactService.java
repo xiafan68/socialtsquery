@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import Util.Configuration;
 import core.index.LSMOInvertedIndex.VersionSet;
 import core.index.MemTable.SSTableMeta;
+import fanxia.file.FileUtil;
 
 /**
  * to avoid scan disk to find those posting lists needing compaction, a lazy
@@ -116,8 +117,8 @@ public class CompactService extends Thread {
 				}
 			}
 
-			SSTableMeta newMeta = new SSTableMeta(toCompact.get(0).version,
-					toCompact.get(0).level + 1);
+			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact
+					.size() - 1).version, toCompact.get(0).level + 1);
 			SSTableWriter writer = new SSTableWriter(newMeta, readers,
 					index.getStep());
 			try {
@@ -148,5 +149,13 @@ public class CompactService extends Thread {
 		}
 		snapshot = null;
 		return ret;
+	}
+
+	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
+		for (SSTableMeta meta : toCompact) {
+			File file = SSTableWriter.dataFile(index.getConf().getIndexDir(),
+					meta);
+			FileUtil.markDel(file);
+		}
 	}
 }

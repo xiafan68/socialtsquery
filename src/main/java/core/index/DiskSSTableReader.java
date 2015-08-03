@@ -78,16 +78,15 @@ public class DiskSSTableReader extends ISSTableReader {
 				dataDir, meta));
 		DataInputStream indexDis = new DataInputStream(fis);
 		try {
-			int curKey = 0;
 			Encoding curCode = null;
 			BucketID buck = null;
 			List<Pair<Encoding, BucketID>> curList = null;
 			for (Entry<Integer, DirEntry> entry : dirMap.entrySet()) {
-				if (!skipList.containsKey(curKey)) {
+				if (!skipList.containsKey(entry.getKey())) {
 					curList = new ArrayList<Pair<Encoding, BucketID>>();
-					skipList.put(curKey, curList);
+					skipList.put(entry.getKey(), curList);
 				} else {
-					curList = skipList.get(curKey);
+					curList = skipList.get(entry.getKey());
 				}
 
 				for (int i = 0; i < entry.getValue().sampleNum; i++) {
@@ -137,7 +136,7 @@ public class DiskSSTableReader extends ISSTableReader {
 		@Override
 		public int compare(Pair<Encoding, BucketID> o1,
 				Pair<Encoding, BucketID> o2) {
-			return 0;
+			return o1.getKey().compareTo(o2.getKey());
 		}
 
 	};
@@ -157,7 +156,7 @@ public class DiskSSTableReader extends ISSTableReader {
 			int idx = Collections.binarySearch(list,
 					new Pair<Encoding, BucketID>(code, null), comp);
 			if (idx < 0) {
-				idx = Math.abs(idx) + 1;
+				idx = Math.abs(idx + 1);
 				idx = (idx > 0) ? idx - 1 : 0;
 			}
 			ret = list.get(idx);

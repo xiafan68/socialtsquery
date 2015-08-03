@@ -15,23 +15,23 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import fanxia.file.ByteUtil;
 
+/**
+ * 用于访问disk上的octree
+ * @author xiafan
+ *
+ */
 public class OctreePostingListIter implements IOctreeIterator {
 	private DirEntry entry;
-	private ISSTableReader reader;
+	private DiskSSTableReader reader;
 	private int ts;
 	private int te;
 
-	private Encoding curCode = null;
-	private BucketID curID = null;
+	private Encoding curMin = null;
+	private Encoding max = null;
+	private BucketID nextID = new BucketID(0, (short) 0);
 	private Bucket curBuck = new Bucket(0);
-	private OctreeNode curNode = new OctreeNode(null, 0);
-	private int nextID = 0;
-
-	private enum SkipType {
-		floor, cell
-	};
-
-	private SkipType skipType;
+	private OctreeNode curNode = null;
+	private int nextBlockID = 0;
 
 	/**
 	 * 
@@ -39,13 +39,14 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, ISSTableReader reader, int ts,
-			int te) {
+	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader,
+			int ts, int te) {
 		this.entry = entry;
 		this.reader = reader;
 		this.ts = ts;
 		this.te = te;
-		curCode = new Encoding(new Point(ts, ts, Integer.MAX_VALUE), 0);
+		curMin = new Encoding(new Point(ts, ts, Integer.MAX_VALUE), 0);
+		max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
 	}
 
 	@Override
@@ -65,20 +66,18 @@ public class OctreePostingListIter implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		return curNode != null || diskHasMore();
 	}
 
 	private void gotoNewLayer(int layer) {
-		curCode.setX(ts);
-		curCode.setY(te);
-		curCode.setZ(layer);
-		curBuck = null;
+		curMin.setX(ts);
+		curMin.setY(te);
+		curMin.setZ(layer);
 	}
 
 	private boolean isCorrectCode(Encoding newCode) {
 		// go to the next layer
-		if (newCode.getZ() != curCode.getZ()) {
+		if (newCode.getZ() != curMin.getZ()) {
 			gotoNewLayer(newCode.getZ());
 		} else if (newCode.getX() > te) {
 			gotoNewLayer(newCode.getZ() - 1);
@@ -88,8 +87,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 			int mask = 1 << (31 - commBit);
 			newY |= mask;
 			int newZ = ByteUtil.commonBits(newCode.getX(), commBit);
-			curCode.setY(newY);
-			curCode.setZ(newZ);
+			curMin.setY(newY);
+			curMin.setZ(newZ);
 		} else {
 			return true;
 		}
@@ -97,75 +96,112 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	/**
+	 * 开始的时候，用curMin去找到第一个bucket
 	 * 
-	 * @throws IOException
+	 * 一直往前跑，
+	 * 如果当前跑到查询区间下面去了，生成新的code，跳转
+	 * 如果当前跑到查询区间的外面去了，生成新的code，跳转
+	 * 
 	 */
-	private void skipTo() throws IOException {
+
+	/**
+	 *  在index上找到第一个大于等于参数的octant
+	 * @throws IOException 
+	 */
+	private boolean locateOctant() throws IOException {
 		Pair<Encoding, BucketID> pair = null;
-		
-		while(){
-		pair = reader.cellOffset(entry.curKey, curCode);
-		if (pair == null)
-			pair = reader.floorOffset(entry.curKey, curCode);
+		pair = reader.cellOffset(entry.curKey, curMin);
 		if (pair == null) {
-			// advance to next bucket
-			nextID = reader.getBucket(curID, curBuck);
-			curID.blockID = nextID;
-			curID.offset = 0;
-			nextID = -1;
-		} else {
-			if (isCorrectCode(pair.getKey())) {
-				curID = pair.getValue();
+			pair = reader.floorOffset(entry.curKey, curMin);
+		}
+		assert pair != null;
+		// 利用pair跳转，nextID
+		if (curBuck.octNum() != 0) {
+			if (nextID.compareTo(pair.getValue()) < 0) {
+				curBuck.reset();
+				nextID = pair.getValue();
 			}
 		}
+
+		while (nextID.blockID - entry.dataStartBlockID < entry.dataBlockNum) {
+			if (curBuck.octNum() == 0) {
+				nextBlockID = reader.getBucket(nextID, curBuck);
+			}
+			if (nextID.offset < curBuck.octNum()) {
+				if (readBucketNextOctant())
+					return true;
+				else
+					return false;
+			} else {
+				curBuck.reset();
+				nextID.blockID = nextBlockID;
+				nextID.offset = 0;
+			}
 		}
+		return false;
 	}
 
-	private void nextOctant() throws IOException {
-		while (curNode != null) {
-			if (curBuck != null) {
-				byte[] data = curBuck.getOctree(curID.offset);
-				DataInputStream input = new DataInputStream(
-						new ByteArrayInputStream(data));
-				curCode.readFields(input);
-				if (isCorrectCode(curCode)) {
-					curNode.setPoint(curCode);
-					curNode.read(input);
-					break;
-				}
+	private boolean readBucketNextOctant() throws IOException {
+		Encoding curCode = new Encoding();
+		byte[] data = curBuck.getOctree(nextID.offset);
+		nextID.offset++;
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
+				data));
+		curCode.readFields(input);
+		if (curCode.compareTo(curMin) >= 0) {
+			if (isCorrectCode(curCode)) {
+				curNode = new OctreeNode(null, 0);
+				curNode.setPoint(curCode);
+				curNode.read(input);
+				return true;
 			} else {
-				Pair<Encoding, BucketID> pair = null;
-				if (skipType == SkipType.cell) {
-					pair = reader.cellOffset(entry.curKey, curCode);
-				} else {
-					pair = reader.floorOffset(entry.curKey, curCode);
-				}
+				return false;
+			}
+		}
+		return false;
+	}
 
-				if (pair == null) {
-					// advance to next bucket
-					nextID = reader.getBucket(curID, curBuck);
-					curID.blockID = nextID;
-					curID.offset = 0;
-					nextID = -1;
-				} else {
-					if (isCorrectCode(pair.getKey())) {
-						curID = pair.getValue();
+	private boolean diskHasMore() {
+		return curMin.compareTo(max) <= 0
+				&& (nextID.blockID - entry.dataStartBlockID < entry.dataBlockNum || (curBuck
+						.octNum() != 0 && nextID.offset < curBuck.octNum()));
+	}
+
+	private void advance() throws IOException {
+		boolean skipping = false;
+		while (curNode == null && diskHasMore()) {
+			if (!skipping) {
+				if (curBuck.octNum() != 0 && nextID.offset < curBuck.octNum()) {
+					if (readBucketNextOctant())
+						break;
+					else {
+						skipping = true;
 					}
+				} else if (curBuck.octNum() != 0) {
+					nextID.blockID = nextBlockID;
+					nextID.offset = 0;
+					nextBlockID = reader.getBucket(nextID, curBuck);
+					continue;
 				}
+			}
+			if (locateOctant()) {
+				skipping = false;
+				break;
+			} else {
+				skipping = true;
 			}
 		}
 	}
 
 	@Override
 	public OctreeNode next() throws IOException {
-
-		return null;
+		advance();
+		OctreeNode ret = curNode;
+		curNode = null;
+		return ret;
 	}
 
 	@Override
 	public void close() throws IOException {
-		// TODO Auto-generated method stub
-
 	}
-
 }

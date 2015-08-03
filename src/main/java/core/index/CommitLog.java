@@ -33,7 +33,7 @@ public enum CommitLog {
 	private DataOutputStream dos = null;
 	private File dir;
 	private int curVersion = -1;
-
+	private volatile int writeOpNum = 0;
 	// log files that are not deleted
 	private List<Integer> preVersions = new ArrayList<Integer>();
 
@@ -77,12 +77,15 @@ public enum CommitLog {
 	}
 
 	public void write(String word, MidSegment seg) {
-		// words.add(word);
 		try {
 			byte[] wordBytes = word.getBytes(Charset.forName("utf8"));
 			dos.writeInt(wordBytes.length);
 			dos.write(wordBytes);
 			seg.write(dos);
+			if (writeOpNum++ > 100) {
+				writeOpNum = 0;
+				dos.flush();
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

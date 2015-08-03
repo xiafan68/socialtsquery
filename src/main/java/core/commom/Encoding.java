@@ -124,8 +124,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	@Override
 	public int compareTo(Encoding arg0) {
 		int ret = 0;
-		ret = 0 - Long.compare((encodes[0] & 0xffffffffL),
-				(arg0.encodes[0] & 0xffffffffL));
+		ret = 0 - Integer.compare(encodes[0], arg0.encodes[0]);
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;

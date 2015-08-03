@@ -87,7 +87,7 @@ public class Bucket {
 		}
 	}
 
-	public static class BucketID {
+	public static class BucketID implements Comparable<BucketID> {
 		public int blockID;
 		public short offset;
 
@@ -121,6 +121,14 @@ public class Bucket {
 			return "BucketID [blockID=" + blockID + ", offset=" + offset + "]";
 		}
 
+		@Override
+		public int compareTo(BucketID o) {
+			int ret = Integer.compare(blockID, o.blockID);
+			if (ret == 0) {
+				ret = Integer.compare(offset, offset);
+			}
+			return ret;
+		}
 	}
 
 	public int blockNum() {
