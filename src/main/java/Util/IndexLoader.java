@@ -24,8 +24,8 @@ public class IndexLoader {
 			index = null;
 		}
 
-		DirLineReader reader = new DirLineReader(
-				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
+		// "/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs"
+		DirLineReader reader = new DirLineReader(args[0]);
 		String line = null;
 		int i = 0;
 		while (null != (line = reader.readLine())) {

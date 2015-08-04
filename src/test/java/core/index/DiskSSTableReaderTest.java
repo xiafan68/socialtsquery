@@ -12,6 +12,10 @@ import core.index.octree.IOctreeIterator;
 import core.index.octree.OctreeNode;
 
 public class DiskSSTableReaderTest {
+	/**
+	 * 遍历一个索引文件
+	 * @throws IOException
+	 */
 	@Test
 	public void test() throws IOException {
 		Configuration conf = new Configuration();

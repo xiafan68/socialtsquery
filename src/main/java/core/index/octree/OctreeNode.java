@@ -10,6 +10,7 @@ import common.MidSegment;
 
 import core.commom.Encoding;
 import core.commom.Point;
+import fanxia.file.ByteUtil;
 
 public class OctreeNode {
 	int edgeLen;
@@ -48,12 +49,9 @@ public class OctreeNode {
 	}
 
 	public boolean contains(Point point) {
-		if (cornerPoint.getZ() <= point.getZ()
-				&& point.getZ() < cornerPoint.getZ() + edgeLen
-				&& cornerPoint.getX() <= point.getX()
-				&& point.getX() < cornerPoint.getX() + edgeLen
-				&& cornerPoint.getY() <= point.getY()
-				&& point.getY() < cornerPoint.getY() + edgeLen) {
+		if (cornerPoint.getZ() <= point.getZ() && point.getZ() < cornerPoint.getZ() + edgeLen
+				&& cornerPoint.getX() <= point.getX() && point.getX() < cornerPoint.getX() + edgeLen
+				&& cornerPoint.getY() <= point.getY() && point.getY() < cornerPoint.getY() + edgeLen) {
 			return true;
 		}
 		return false;
@@ -61,12 +59,9 @@ public class OctreeNode {
 
 	public boolean contains(OctreeNode node) {
 		Point point = node.getCornerPoint();
-		if (cornerPoint.getZ() <= point.getZ()
-				&& point.getZ() <= cornerPoint.getZ() + edgeLen
-				&& cornerPoint.getX() <= point.getX()
-				&& point.getX() <= cornerPoint.getX() + edgeLen
-				&& cornerPoint.getY() <= point.getY()
-				&& point.getY() <= cornerPoint.getY() + edgeLen) {
+		if (cornerPoint.getZ() <= point.getZ() && point.getZ() <= cornerPoint.getZ() + edgeLen
+				&& cornerPoint.getX() <= point.getX() && point.getX() <= cornerPoint.getX() + edgeLen
+				&& cornerPoint.getY() <= point.getY() && point.getY() <= cornerPoint.getY() + edgeLen) {
 			return true;
 		}
 		return false;
@@ -78,8 +73,7 @@ public class OctreeNode {
 			int x = ((i & 0x1) > 0) ? edgeLen / 2 : 0;
 			int y = ((i & 0x2) > 0) ? edgeLen / 2 : 0;
 			int z = ((i & 0x4) > 0) ? edgeLen / 2 : 0;
-			Point childCorner = new Point(cornerPoint.getX() + x,
-					cornerPoint.getY() + y, cornerPoint.getZ() + z);
+			Point childCorner = new Point(cornerPoint.getX() + x, cornerPoint.getY() + y, cornerPoint.getZ() + z);
 			children[i] = new OctreeNode(childCorner, edgeLen / 2);
 		}
 
@@ -101,8 +95,9 @@ public class OctreeNode {
 	}
 
 	/**
-	 * how to map multiple nodes to a bucket?
-	 * a bucket may consists of multiple blocks
+	 * how to map multiple nodes to a bucket? a bucket may consists of multiple
+	 * blocks
+	 * 
 	 * @param writer
 	 */
 	public void visit(OctreeVisitor writer) {
@@ -118,19 +113,13 @@ public class OctreeNode {
 
 	/**
 	 * for the z dimension, we use the upper face in the encoding
+	 * 
 	 * @return
 	 */
 	public Encoding getEncoding() {
 		if (code == null) {
-			int endBits = 0;
-			int tmp = edgeLen;
-			while (tmp != 0) {
-				tmp = tmp >>> 1;
-				if (tmp != 0)
-					endBits++;
-			}
-			code = new Encoding(new Point(cornerPoint.getX(),
-					cornerPoint.getY(), cornerPoint.getZ()), endBits);
+			code = new Encoding(new Point(cornerPoint.getX(), cornerPoint.getY(), cornerPoint.getZ()),
+					ByteUtil.lastNonZeroBitFromTail(edgeLen));
 		}
 		return code;
 	}
@@ -181,14 +170,14 @@ public class OctreeNode {
 		return segs;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return "OctreeNode [edgeLen=" + edgeLen + ", cornerPoint="
-				+ cornerPoint + ", children=" + Arrays.toString(children)
-				+ ", segs=" + segs + " code:" + getEncoding() + "]";
+		return "OctreeNode [children=" + Arrays.toString(children) + ", segs=" + segs + " code:" + getEncoding() + "]";
 	}
 
 	public static void main(String[] args) {

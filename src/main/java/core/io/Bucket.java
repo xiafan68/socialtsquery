@@ -10,12 +10,10 @@ import java.util.List;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
- * a bucket may correspond to multiple blocks and multiple coctant
- * it is an outputstream like abstraction
- * - total number of octants
- * - octant
- * - octant
- * - padding
+ * a bucket may correspond to multiple blocks and multiple coctant it is an
+ * outputstream like abstraction - total number of octants - octant - octant -
+ * padding
+ * 
  * @author xiafan
  *
  */
@@ -96,6 +94,11 @@ public class Bucket {
 			this.offset = offset;
 		}
 
+		public BucketID(BucketID other) {
+			this.blockID = other.blockID;
+			this.offset = other.offset;
+		}
+
 		public BucketID() {
 		}
 
@@ -113,7 +116,9 @@ public class Bucket {
 			return blockID * BLOCK_SIZE;
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see java.lang.Object#toString()
 		 */
 		@Override
@@ -166,13 +171,15 @@ public class Bucket {
 		octants.clear();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock
-				+ ", totalSize=" + totalSize + ", octants=" + octants + "]";
+		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock + ", totalSize=" + totalSize
+				+ ", octants=" + octants + "]";
 	}
 
 	public void setBlockIdx(int blockIdx) {

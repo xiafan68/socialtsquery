@@ -16,23 +16,23 @@ import org.apache.hadoop.io.WritableComparable;
  * @author xiafan
  */
 public class Encoding extends Point implements WritableComparable<Encoding> {
-	private int endBit;
-
+	private int paddingBitNum;// the number bits that are padded at the ends
+	private int edgeLen = -1;
 	private int[] encodes = new int[3];
 
 	public Encoding() {
 	}
 
-	public Encoding(Point p, int endBit) {
+	public Encoding(Point p, int paddingBitNum) {
 		super(p.x, p.y, p.z);
-		this.endBit = endBit;
+		this.paddingBitNum = paddingBitNum;
 		encode();
 	}
 
 	private void encode() {
 		encodes[0] = z;
 		int mask = 1;
-		for (int i = 0; i < endBit; i++) {
+		for (int i = 0; i < paddingBitNum; i++) {
 			encodes[0] |= mask;
 			mask <<= 1;
 		}
@@ -42,7 +42,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		int zvalueIdx = 63;
 		int maskIdx = 31;
 		for (int i = 0; i < 32; i++) {
-			if (maskIdx < endBit)
+			if (maskIdx < paddingBitNum)
 				break;
 			curIdx = 2 - zvalueIdx / 32;
 			encodes[curIdx] |= (x & mask) >>> maskIdx << (zvalueIdx-- % 32);
@@ -56,14 +56,14 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		y = 0;
 		z = encodes[0];
 		int mask = -1 << 1;
-		for (int i = 0; i < endBit; i++) {
+		for (int i = 0; i < paddingBitNum; i++) {
 			z &= mask;
 			mask <<= 1;
 		}
 		int zvalueBit = 63;
 		mask = 1 << 31;
 		// System.out.println(Integer.toBinaryString(mask));
-		for (int i = 31; i >= endBit; i--) {
+		for (int i = 31; i >= paddingBitNum; i--) {
 			int curIdx = 2 - zvalueBit / 32;
 			x |= (encodes[curIdx] & mask) >>> (zvalueBit-- % 32) << i;
 			mask >>>= 1;
@@ -97,8 +97,18 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	}
 
 	public void setZ(int z) {
-		encodes[0] = z;
+		this.z = z;
 		encode();
+	}
+
+	public int getTopZ() {
+		return encodes[0];
+	}
+
+	public void setTop(int zTop) {
+		int len = (1 << paddingBitNum) - 1;
+		z = zTop - len;
+		setZ(z);
 	}
 
 	/**
@@ -108,7 +118,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		endBit = arg0.readInt();
+		paddingBitNum = arg0.readInt();
 		for (int i = 0; i < 3; i++)
 			encodes[i] = arg0.readInt();
 		decode();
@@ -116,7 +126,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		arg0.writeInt(endBit);
+		arg0.writeInt(paddingBitNum);
 		for (int code : encodes)
 			arg0.writeInt(code);
 	}
@@ -128,8 +138,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;
-			ret = Long.compare((encodes[i] & 0xffffffffL),
-					(arg0.encodes[i] & 0xffffffffL));
+			ret = Long.compare((encodes[i] & 0xffffffffL), (arg0.encodes[i] & 0xffffffffL));
 		}
 
 		return ret;
@@ -137,9 +146,8 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public String toString() {
-		String ret = "HybridEncoding [endBit=" + endBit + "\n, x=" + getX()
-				+ "," + Integer.toBinaryString(x) + "\n, y=" + getY() + ","
-				+ Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
+		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x=" + getX() + "," + Integer.toBinaryString(x)
+				+ "\n, y=" + getY() + "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
 				+ Integer.toBinaryString(encodes[0]) + "]\n, encoding:";
 		for (int code : encodes) {
 			ret += Integer.toBinaryString(code) + ",";
@@ -154,12 +162,15 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		DataOutputStream dao = new DataOutputStream(baos);
 		data.write(dao);
 		Encoding newData = new Encoding();
-		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos
-				.toByteArray())));
+		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
 		System.out.println(newData);
 	}
 
 	public int getEdgeLen() {
-		return 1 << endBit;
+		return 1 << paddingBitNum;
+	}
+
+	public void setEndBits(int i) {
+		paddingBitNum = i;
 	}
 }
