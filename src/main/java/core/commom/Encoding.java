@@ -138,16 +138,33 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;
-			ret = Long.compare((encodes[i] & 0xffffffffL), (arg0.encodes[i] & 0xffffffffL));
+			ret = Long.compare((encodes[i] & 0xffffffffL),
+					(arg0.encodes[i] & 0xffffffffL));
 		}
 
 		return ret;
 	}
 
 	@Override
+	public boolean equals(Object object) {
+		if (!(object instanceof Encoding)) {
+			return false;
+		}
+		Encoding oCode = (Encoding) object;
+		return x == oCode.x && y == oCode.y && z == oCode.z
+				&& paddingBitNum == oCode.paddingBitNum;
+	}
+
+	@Override
+	public int hashCode() {
+		return x + y + z + paddingBitNum;
+	};
+
+	@Override
 	public String toString() {
-		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x=" + getX() + "," + Integer.toBinaryString(x)
-				+ "\n, y=" + getY() + "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
+		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x="
+				+ getX() + "," + Integer.toBinaryString(x) + "\n, y=" + getY()
+				+ "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
 				+ Integer.toBinaryString(encodes[0]) + "]\n, encoding:";
 		for (int code : encodes) {
 			ret += Integer.toBinaryString(code) + ",";
@@ -162,7 +179,8 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		DataOutputStream dao = new DataOutputStream(baos);
 		data.write(dao);
 		Encoding newData = new Encoding();
-		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos
+				.toByteArray())));
 		System.out.println(newData);
 	}
 

@@ -22,6 +22,7 @@ import core.index.MemTable.SSTableMeta;
 import core.index.SSTableWriter.DirEntry;
 import core.index.octree.DiskOctreeIterator;
 import core.index.octree.IOctreeIterator;
+import core.index.octree.OctreePostingListIter;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 
@@ -124,6 +125,7 @@ public class DiskSSTableReader extends ISSTableReader {
 	 */
 	public synchronized int getBucket(BucketID id, Bucket bucket)
 			throws IOException {
+		bucket.reset();
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
 		return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);

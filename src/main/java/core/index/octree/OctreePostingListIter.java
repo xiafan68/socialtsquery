@@ -1,4 +1,4 @@
-package core.index;
+package core.index.octree;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -9,10 +9,9 @@ import org.apache.log4j.Logger;
 import Util.Pair;
 import core.commom.Encoding;
 import core.commom.Point;
+import core.index.DiskSSTableReader;
 import core.index.SSTableWriter.DirEntry;
-import core.index.octree.IOctreeIterator;
 import core.index.octree.MemoryOctree.OctreeMeta;
-import core.index.octree.OctreeNode;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 
@@ -23,7 +22,8 @@ import core.io.Bucket.BucketID;
  *
  */
 public class OctreePostingListIter implements IOctreeIterator {
-	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
+	private static final Logger logger = Logger
+			.getLogger(OctreePostingListIter.class);
 	private DirEntry entry;
 	private DiskSSTableReader reader;
 	private int ts;
@@ -32,7 +32,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private Encoding curMin = null;
 	private Encoding max = null;
 
-	private BucketID nextID = new BucketID(0, (short) 0);
+	BucketID nextID = new BucketID(0, (short) 0);
 	private Bucket curBuck = new Bucket(0);
 	private int nextBlockID = 0;
 
@@ -44,7 +44,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader, int ts, int te) {
+	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader,
+			int ts, int te) {
 		this.entry = entry;
 		this.reader = reader;
 		this.ts = ts;
@@ -85,13 +86,14 @@ public class OctreePostingListIter implements IOctreeIterator {
 
 	private boolean isCorrectCode(Encoding newCode) {
 		// go to the next layer
-		//logger.info("find new code + " + newCode);
+		// logger.info("find new code + " + newCode);
 		if (newCode.getTopZ() != curMin.getTopZ()) {
 			if (curMin.getTopZ() > newCode.getTopZ())
 				gotoNewLayer(newCode.getTopZ());
 			else
 				nextID.offset++;
 		} else if (newCode.getX() > te) {
+			// 这个走向下一层的标准不对，应该计算当前的面的最大值，只有大于这个最大值时才走向下一个面
 			gotoNewLayer(newCode.getTopZ() - 1);
 			nextID.offset++;
 		} else if (newCode.getY() + newCode.getEdgeLen() <= ts) {
@@ -154,28 +156,26 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private boolean readBucketNextOctant() throws IOException {
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
+				data));
 		curCode.readFields(input);
-		// if (curCode.compareTo(curMin) >= 0) {
+		// logger.info(curCode);
+
 		if (isCorrectCode(curCode)) {
-			curNode = new OctreeNode(null, 0);
-			curNode.setPoint(curCode);
+			curNode = new OctreeNode(curCode, curCode.getEdgeLen());
 			curNode.read(input);
-			logger.info("satisfied block " + nextID);
+			// logger.info("satisfied block " + nextID + " " + curCode);
 			return true;
 		} else {
 			return false;
 		}
-		// } else {
-		// nextID.offset++;
-		// }
-		// return false;
+
 	}
 
 	private boolean diskHasMore() {
-		return curMin.compareTo(max) <= 0 && (nextID.blockID - entry.dataStartBlockID < entry.dataBlockNum
-				|| (curBuck.octNum() != 0 && nextID.offset < curBuck.octNum()));
+		return curMin.compareTo(max) <= 0
+				&& (nextID.blockID - entry.dataStartBlockID < entry.dataBlockNum || (curBuck
+						.octNum() != 0 && nextID.offset < curBuck.octNum()));
 	}
 
 	private void advance() throws IOException {

@@ -71,6 +71,7 @@ public class Bucket {
 		num = input.readInt();
 		// }
 		int size = 0;
+		octants.clear();
 		for (int i = 0; i < num; i++) {
 			size = input.readInt();
 			totalSize += size + 4;
@@ -178,8 +179,8 @@ public class Bucket {
 	 */
 	@Override
 	public String toString() {
-		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock + ", totalSize=" + totalSize
-				+ ", octants=" + octants + "]";
+		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock
+				+ ", totalSize=" + totalSize + ", octants=" + octants + "]";
 	}
 
 	public void setBlockIdx(int blockIdx) {
