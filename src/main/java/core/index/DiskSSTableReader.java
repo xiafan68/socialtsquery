@@ -27,8 +27,10 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 
 /**
- * This class provides interfaces to locate a posting list given the keyword, 
- * locate the position given the octree code and the interface to read the bucket. 
+ * This class provides interfaces to locate a posting list given the keyword,
+ * locate the position given the octree code and the interface to read the
+ * bucket.
+ * 
  * @author xiafan
  *
  */
@@ -49,8 +51,7 @@ public class DiskSSTableReader extends ISSTableReader {
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(SSTableWriter.dataFile(
-							dataDir, meta), "r");
+					dataInput = new RandomAccessFile(SSTableWriter.dataFile(dataDir, meta), "r");
 					loadDirMeta();
 					loadIndex();
 				}
@@ -61,8 +62,7 @@ public class DiskSSTableReader extends ISSTableReader {
 
 	private void loadDirMeta() throws IOException {
 		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(SSTableWriter.dirMetaFile(
-				dataDir, meta));
+		FileInputStream fis = new FileInputStream(SSTableWriter.dirMetaFile(dataDir, meta));
 		DataInputStream dirInput = new DataInputStream(fis);
 		DirEntry entry = null;
 		while (dirInput.available() > 0) {
@@ -75,8 +75,7 @@ public class DiskSSTableReader extends ISSTableReader {
 	private void loadIndex() throws IOException {
 		// load index
 		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(SSTableWriter.idxFile(
-				dataDir, meta));
+		FileInputStream fis = new FileInputStream(SSTableWriter.idxFile(dataDir, meta));
 		DataInputStream indexDis = new DataInputStream(fis);
 		try {
 			Encoding curCode = null;
@@ -108,23 +107,21 @@ public class DiskSSTableReader extends ISSTableReader {
 		return new DiskOctreeIterator(dirMap.get(key), this);
 	}
 
-	public IOctreeIterator getPostingListIter(int key, int start, int end)
-			throws IOException {
-		IOctreeIterator iter = new OctreePostingListIter(dirMap.get(key), this,
-				start, end);
+	public IOctreeIterator getPostingListIter(int key, int start, int end) throws IOException {
+		IOctreeIterator iter = new OctreePostingListIter(dirMap.get(key), this, start, end);
 		iter.open();
 		return iter;
 	}
 
 	/**
 	 * 读取id对应的bucket
+	 * 
 	 * @param id
 	 * @param bucket
 	 * @return the last offset
 	 * @throws IOException
 	 */
-	public synchronized int getBucket(BucketID id, Bucket bucket)
-			throws IOException {
+	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
 		bucket.reset();
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
@@ -136,8 +133,7 @@ public class DiskSSTableReader extends ISSTableReader {
 	 */
 	Comparator<Pair<Encoding, BucketID>> comp = new Comparator<Pair<Encoding, BucketID>>() {
 		@Override
-		public int compare(Pair<Encoding, BucketID> o1,
-				Pair<Encoding, BucketID> o2) {
+		public int compare(Pair<Encoding, BucketID> o1, Pair<Encoding, BucketID> o2) {
 			return o1.getKey().compareTo(o2.getKey());
 		}
 
@@ -145,18 +141,17 @@ public class DiskSSTableReader extends ISSTableReader {
 
 	/**
 	 * 找到第一个不大于key, code的octant的offset
+	 * 
 	 * @param key
 	 * @param code
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<Encoding, BucketID> cellOffset(int key, Encoding code)
-			throws IOException {
+	public Pair<Encoding, BucketID> cellOffset(int key, Encoding code) throws IOException {
 		Pair<Encoding, BucketID> ret = null;
 		if (skipList.containsKey(key)) {
 			List<Pair<Encoding, BucketID>> list = skipList.get(key);
-			int idx = Collections.binarySearch(list,
-					new Pair<Encoding, BucketID>(code, null), comp);
+			int idx = Collections.binarySearch(list, new Pair<Encoding, BucketID>(code, null), comp);
 			if (idx < 0) {
 				idx = Math.abs(idx + 1);
 				idx = (idx > 0) ? idx - 1 : 0;
@@ -170,10 +165,9 @@ public class DiskSSTableReader extends ISSTableReader {
 		Pair<Encoding, BucketID> ret = null;
 		if (skipList.containsKey(curKey)) {
 			List<Pair<Encoding, BucketID>> list = skipList.get(curKey);
-			int idx = Collections.binarySearch(list,
-					new Pair<Encoding, BucketID>(curCode, null), comp);
+			int idx = Collections.binarySearch(list, new Pair<Encoding, BucketID>(curCode, null), comp);
 			if (idx < 0) {
-				idx = Math.abs(idx) + 1;
+				idx = Math.abs(idx + 1);
 			}
 			if (idx < list.size())
 				ret = list.get(idx);

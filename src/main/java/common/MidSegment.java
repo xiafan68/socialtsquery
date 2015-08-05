@@ -11,11 +11,11 @@ import core.commom.Point;
 
 /**
  * posting list里面存储的元素
+ * 
  * @author xiafan
  *
  */
-public class MidSegment extends Segment implements
-		WritableComparable<MidSegment> {
+public class MidSegment extends Segment implements WritableComparable<MidSegment> {
 	public long mid;
 
 	public MidSegment(long midTmp, Segment seg) {
@@ -31,6 +31,9 @@ public class MidSegment extends Segment implements
 	public void readFields(DataInput input) throws IOException {
 		mid = input.readLong();
 		super.read(input);
+		/*if (mid == -6723079032l && getStart() == 696962){
+			System.out.println();
+		}*/
 	}
 
 	@Override
@@ -59,19 +62,30 @@ public class MidSegment extends Segment implements
 		return ret;
 	}
 
-	public Point getPoint() {
-		return new Point(this.getStart(), this.getEndTime(), Math.max(
-				this.getStartCount(), this.getEndCount()));
+	@Override
+	public boolean equals(Object o) {
+		MidSegment seg = (MidSegment) o;
+		return this.compareTo(seg) == 0;
 	}
 
-	/* (non-Javadoc)
+	@Override
+	public int hashCode() {
+		return (int) mid;
+	}
+
+	public Point getPoint() {
+		return new Point(this.getStart(), this.getEndTime(), Math.max(this.getStartCount(), this.getEndCount()));
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return "MidSegment [mid=" + mid + ", start=" + start + ", count="
-				+ count + ", endTime=" + endTime + ", endCount=" + endCount
-				+ "]";
+		return "MidSegment [mid=" + mid + ", start=" + start + ", count=" + count + ", endTime=" + endTime
+				+ ", endCount=" + endCount + "]";
 	}
 
 	public long getMid() {

@@ -8,6 +8,7 @@ import core.index.octree.MemoryOctree.OctreeMeta;
 
 /**
  * merge leaf nodes of two octrees
+ * 
  * @author xiafan
  *
  */
@@ -16,13 +17,12 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator rhs;
 	OctreeNode curNode;
 	OctreeMeta meta;
-	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
-			256, new Comparator<OctreeNode>() {
-				@Override
-				public int compare(OctreeNode o1, OctreeNode o2) {
-					return o1.getEncoding().compareTo(o2.getEncoding());
-				}
-			});
+	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
+		@Override
+		public int compare(OctreeNode o1, OctreeNode o2) {
+			return o1.getEncoding().compareTo(o2.getEncoding());
+		}
+	});
 
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
@@ -32,8 +32,7 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext()
-				|| rhs.hasNext();
+		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext() || rhs.hasNext();
 	}
 
 	OctreeNode lnode;
@@ -63,33 +62,35 @@ public class OctreeMerger implements IOctreeIterator {
 				}
 				break;
 			}
-			int cmp = lnode.getEncoding().compareTo(rnode.getEncoding());
-			if (cmp == 0) {
-				curNode = lnode;
-				curNode.addSegs(rnode.getSegs());
+
+			// 也有可能一个包含另一个
+			if (lnode.contains(rnode)) {
+				lnode.split();
+				for (int i = 0; i < 8; i++)
+					if (lnode.getChild(i).size() > 0)
+						lhs.addNode(lnode.getChild(i));
 				lnode = null;
-				rnode = null;
-			} else if (cmp > 0) {
-				if (rnode.contains(lnode)) {
-					rnode.split();
-					for (int i = 0; i < 8; i++) {
-						if (rnode.getChild(i).size() > 0)
-							rhs.addNode(rnode.getChild(i));
-					}
-				} else {
-					curNode = rnode;
+			} else if (rnode.contains(lnode)) {
+				rnode.split();
+				for (int i = 0; i < 8; i++) {
+					if (rnode.getChild(i).size() > 0)
+						rhs.addNode(rnode.getChild(i));
 				}
 				rnode = null;
-			} else if (cmp < 0) {
-				if (lnode.contains(rnode)) {
-					lnode.split();
-					for (int i = 0; i < 8; i++)
-						if (lnode.getChild(i).size() > 0)
-							lhs.addNode(lnode.getChild(i));
+			} else {
+				int cmp = lnode.getEncoding().compareTo(rnode.getEncoding());
+				if (cmp == 0) {
+					curNode = lnode;
+					curNode.addSegs(rnode.getSegs());
+					lnode = null;
+					rnode = null;
+				} else if (cmp > 0) {
+					curNode = rnode;
+					rnode = null;
 				} else {
 					curNode = lnode;
+					lnode = null;
 				}
-				lnode = null;
 			}
 		}
 	}
@@ -100,8 +101,7 @@ public class OctreeMerger implements IOctreeIterator {
 		advance();
 		if (!splittedNodes.isEmpty()) {
 			if (curNode != null) {
-				int cmp = curNode.getEncoding().compareTo(
-						splittedNodes.peek().getEncoding());
+				int cmp = curNode.getEncoding().compareTo(splittedNodes.peek().getEncoding());
 				if (cmp < 0) {
 					ret = curNode;
 					curNode = null;

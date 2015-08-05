@@ -31,8 +31,7 @@ import core.index.MemTable.SSTableMeta;
  *
  */
 public class LSMOInvertedIndex {
-	private static final Logger logger = Logger
-			.getLogger(LSMOInvertedIndex.class);
+	private static final Logger logger = Logger.getLogger(LSMOInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
@@ -53,7 +52,8 @@ public class LSMOInvertedIndex {
 
 	/**
 	 * TODO: 1. 扫描磁盘文件，确定一个版本集合。2. 启动写出服务;3. 启动日志服务，开始日志恢复;4. 启动压缩服务，开始接受更新与查询
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public void init() throws IOException {
 		bootstrap = true;
@@ -124,6 +124,7 @@ public class LSMOInvertedIndex {
 
 	/**
 	 * 验证是否所有的索引文件都存在
+	 * 
 	 * @param meta
 	 * @return
 	 */
@@ -146,12 +147,11 @@ public class LSMOInvertedIndex {
 		return ret;
 	}
 
-	private int getKeywordCode(String keyword) {
-		return Math.abs(keyword.hashCode()) % 2;
+	int getKeywordCode(String keyword) {
+		return Math.abs(keyword.hashCode()) % 10;
 	}
 
-	public void insert(List<String> keywords, MidSegment seg)
-			throws IOException {
+	public void insert(List<String> keywords, MidSegment seg) throws IOException {
 		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
@@ -198,8 +198,9 @@ public class LSMOInvertedIndex {
 	}
 
 	/**
-	 * invoked after a set of versions are flushed. It will update 
-	 * the version set and delete corresponding log files
+	 * invoked after a set of versions are flushed. It will update the version
+	 * set and delete corresponding log files
+	 * 
 	 * @param versions
 	 * @param newMeta
 	 */
@@ -255,8 +256,7 @@ public class LSMOInvertedIndex {
 		int version;
 		int level;
 
-		public SSTableMetaKey(SSTableMeta referent,
-				ReferenceQueue<SSTableMeta> queue) {
+		public SSTableMetaKey(SSTableMeta referent, ReferenceQueue<SSTableMeta> queue) {
 			super(referent, queue);
 			version = referent.version;
 			level = referent.level;
@@ -279,6 +279,7 @@ public class LSMOInvertedIndex {
 
 	/**
 	 * record the current memory tree, flushing memory tree and disk trees
+	 * 
 	 * @author xiafan
 	 *
 	 */
@@ -291,6 +292,7 @@ public class LSMOInvertedIndex {
 
 		/**
 		 * client grantuee thread safe, used when flushing current octree
+		 * 
 		 * @param newTree
 		 */
 		public void newMemTable(MemTable newTable) {
@@ -302,7 +304,9 @@ public class LSMOInvertedIndex {
 		}
 
 		/**
-		 * used when a set of memory octree are flushed to disk as one single unit
+		 * used when a set of memory octree are flushed to disk as one single
+		 * unit
+		 * 
 		 * @param versions
 		 * @param newMeta
 		 */
@@ -319,6 +323,7 @@ public class LSMOInvertedIndex {
 
 		/**
 		 * used when a set of version a compacted
+		 * 
 		 * @param versions
 		 * @param newMeta
 		 */
@@ -335,8 +340,8 @@ public class LSMOInvertedIndex {
 		}
 
 		/**
-		 * the clone operation may be expensive, but I believe it 
-		 * is not a quite frequent operation
+		 * the clone operation may be expensive, but I believe it is not a quite
+		 * frequent operation
 		 */
 		@Override
 		public VersionSet clone() {
@@ -373,27 +378,24 @@ public class LSMOInvertedIndex {
 		LockManager.INSTANCE.shutdown();
 	}
 
+	private boolean debug = true;
+
 	private void cleanupReaders() {
 		SSTableMetaKey delMetaKey = null;
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
-				if (reader.meta.markAsDel.get()) {
-					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					logger.info("delete data of " + delMetaKey.version + " "
-							+ delMetaKey.level);
+				if (!debug && reader.meta.markAsDel.get()) {
+					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta).delete();
+					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta).delete();
+					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta).delete();
+					logger.info("delete data of " + delMetaKey.version + " " + delMetaKey.level);
 				}
 			}
 		}
 	}
 
-	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
-			throws IOException {
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
 		cleanupReaders();
 		if (snapshot.curTable == null) {
 			return null;

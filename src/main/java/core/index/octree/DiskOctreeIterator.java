@@ -15,18 +15,18 @@ import core.io.Bucket.BucketID;
 
 /**
  * an iterator visiting leaf nodes of disk octree
+ * 
  * @author xiafan
  *
  */
 public class DiskOctreeIterator implements IOctreeIterator {
 	DirEntry entry;
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
-			256, new Comparator<OctreeNode>() {
-				@Override
-				public int compare(OctreeNode o1, OctreeNode o2) {
-					return o1.getEncoding().compareTo(o2.getEncoding());
-				}
-			});
+	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
+		@Override
+		public int compare(OctreeNode o1, OctreeNode o2) {
+			return o1.getEncoding().compareTo(o2.getEncoding());
+		}
+	});
 
 	Bucket bucket = new Bucket(-1);
 	BucketID nextBucketID = new BucketID(0, (short) 0);
@@ -38,8 +38,10 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	/**
 	 * 
-	 * @param dir the directory where this octree is placed
-	 * @param meta the meta data of the octree
+	 * @param dir
+	 *            the directory where this octree is placed
+	 * @param meta
+	 *            the meta data of the octree
 	 */
 	public DiskOctreeIterator(DirEntry entry, DiskSSTableReader reader) {
 		this.entry = entry;
@@ -49,8 +51,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum
-				|| curIdx < bucket.octNum();
+		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum || curIdx < bucket.octNum();
 	}
 
 	@Override
@@ -64,8 +65,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		}
 		OctreeNode ret = null;
 		if (curIdx < bucket.octNum()) {
-			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
-					bucket.getOctree(curIdx)));
+			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bucket.getOctree(curIdx)));
 			Encoding coding = new Encoding();
 			coding.readFields(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
@@ -73,13 +73,15 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		}
 
 		if (ret == null
-				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(
-						traverseQueue.peek().getEncoding()) > 0)) {
+				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0)) {
 			if (ret != null)
 				traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
 		}
 		curIdx++;
+		/*if (ret.getEncoding().getX() == 696962 && ret.getEncoding().getY() == 696964 && ret.getEncoding().getZ() == 0) {
+			System.out.println("debuging at next of DiskOctreeIterator");
+		}*/
 		return ret;
 	}
 

@@ -8,8 +8,8 @@ import common.MidSegment;
 import core.commom.Point;
 
 /**
- * the in-memory implementation of octree:
- * edges are power of 2
+ * the in-memory implementation of octree: edges are power of 2
+ * 
  * @author xiafan
  *
  */
@@ -24,8 +24,8 @@ public class MemoryOctree {
 		// octant meta
 		// public Point cornerPoint = new Point(0, 0, 0);
 		public int size = 0;
-		public int minTime = Integer.MAX_VALUE;
 		public int maxTime = Integer.MIN_VALUE;
+		public int minTime = Integer.MAX_VALUE;
 
 		public OctreeMeta() {
 
@@ -58,8 +58,7 @@ public class MemoryOctree {
 	 * 
 	 * @param point
 	 * @param seg
-	 * @return true if insert success
-	 * false if current tree is immutable
+	 * @return true if insert success false if current tree is immutable
 	 */
 	public boolean insert(Point point, MidSegment seg) {
 		if (immutable.get()) {
@@ -71,18 +70,26 @@ public class MemoryOctree {
 		if (root == null || !root.contains(point)) {
 			OctreeNode preRoot = root;
 
-			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()),
-					IntegerUtil.firstNoneZero(point.getY()));
-			int len = 1 << (Math.max(power,
-					IntegerUtil.firstNoneZero(point.getZ())) + 1);
+			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()), IntegerUtil.firstNoneZero(point.getY()));
+			int len = 1 << (Math.max(power, IntegerUtil.firstNoneZero(point.getZ())) + 1);
 			root = new OctreeNode(new Point(0, 0, 0), len);
 
 			if (preRoot != null) {
-				if (preRoot.size() < size_threshold) {
+				if (preRoot.isLeaf()) {
 					root.addSegs(preRoot.getSegs());
 				} else {
-					root.split();
-					root.setChild(0, preRoot);
+					OctreeNode cur = root;
+					do {
+						cur.split();
+						if (cur.getChild(0).getEncoding().compareTo(preRoot.getEncoding()) == 0) {
+							cur.setChild(0, preRoot);
+							break;
+						} else {
+							cur = cur.getChild(0);
+						}
+					} while (true);
+					// root.split();
+					// root.setChild(0, preRoot);
 				}
 			}
 		}

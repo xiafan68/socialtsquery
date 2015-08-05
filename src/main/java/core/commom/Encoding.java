@@ -37,6 +37,8 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 			mask <<= 1;
 		}
 
+		encodes[1] = 0;
+		encodes[2] = 0;
 		int curIdx = 1;
 		mask = 1 << 31;
 		int zvalueIdx = 63;
@@ -46,7 +48,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 				break;
 			curIdx = 2 - zvalueIdx / 32;
 			encodes[curIdx] |= (x & mask) >>> maskIdx << (zvalueIdx-- % 32);
-			encodes[curIdx] |= (y & mask) >> (maskIdx--) << (zvalueIdx-- % 32);
+			encodes[curIdx] |= (y & mask) >>> (maskIdx--) << (zvalueIdx-- % 32);
 			mask >>>= 1;
 		}
 	}
@@ -138,8 +140,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;
-			ret = Long.compare((encodes[i] & 0xffffffffL),
-					(arg0.encodes[i] & 0xffffffffL));
+			ret = Long.compare((encodes[i] & 0xffffffffL), (arg0.encodes[i] & 0xffffffffL));
 		}
 
 		return ret;
@@ -151,8 +152,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 			return false;
 		}
 		Encoding oCode = (Encoding) object;
-		return x == oCode.x && y == oCode.y && z == oCode.z
-				&& paddingBitNum == oCode.paddingBitNum;
+		return x == oCode.x && y == oCode.y && z == oCode.z && paddingBitNum == oCode.paddingBitNum;
 	}
 
 	@Override
@@ -162,9 +162,8 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public String toString() {
-		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x="
-				+ getX() + "," + Integer.toBinaryString(x) + "\n, y=" + getY()
-				+ "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
+		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x=" + getX() + "," + Integer.toBinaryString(x)
+				+ "\n, y=" + getY() + "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
 				+ Integer.toBinaryString(encodes[0]) + "]\n, encoding:";
 		for (int code : encodes) {
 			ret += Integer.toBinaryString(code) + ",";
@@ -179,9 +178,11 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		DataOutputStream dao = new DataOutputStream(baos);
 		data.write(dao);
 		Encoding newData = new Encoding();
-		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos
-				.toByteArray())));
+		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
 		System.out.println(newData);
+
+		data = new Encoding(new Point(0, 696602, 1), 0);
+		System.out.println(data);
 	}
 
 	public int getEdgeLen() {

@@ -26,8 +26,7 @@ public class OctreePostingListIterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader reader = new DiskSSTableReader(index,
-				new SSTableMeta(34, 0));
+		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(63, 6));
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
@@ -36,16 +35,17 @@ public class OctreePostingListIterTest {
 		int ts = 696602;
 		int te = 696622;
 		Interval window = new Interval(0, ts, te, 0);
-		int expect = 0;
+
 		int expectNodeNum = 0;
 		iter = reader.keySetIter();
 		HashSet<Encoding> expectCodes = new HashSet<Encoding>();
 		Encoding code = null;
 		while (iter.hasNext()) {
+			int expect = 0;
 			int key = iter.next();
+			System.out.println(key);
 			OctreeNode cur = null;
-			FileOutputStream fos = new FileOutputStream(
-					"/Users/xiafan/Documents/lsmodata/log/visit.log");
+			FileOutputStream fos = new FileOutputStream("/tmp/visit.log");
 			System.setOut(new PrintStream(fos));
 			// 遍历所有的node，找到相关的segs
 			IOctreeIterator scanner = reader.getPostingListScanner(key);
@@ -54,20 +54,19 @@ public class OctreePostingListIterTest {
 				code = cur.getEncoding();
 				if (code.getX() < te && code.getY() + code.getEdgeLen() > ts) {
 					expectNodeNum++;
-					System.out.print("hit");
-					System.out
-							.println(((DiskOctreeIterator) scanner).nextBucketID
-									+ " "
-									+ ((DiskOctreeIterator) scanner).curIdx);
+					// System.out.print("hit ");
 					System.out.println(code);
+					System.out.println(
+							((DiskOctreeIterator) scanner).nextBucketID + " " + ((DiskOctreeIterator) scanner).curIdx);
 				} else {
-					System.out.print("not hit");
+					// System.out.print("not hit ");
 				}
+
+				// System.out.println(code);
 
 				boolean print = false;
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd()
-							&& seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
 						expect++;
 						if (!print) {
 							expectCodes.add(code);
@@ -80,26 +79,23 @@ public class OctreePostingListIterTest {
 
 			fos.close();
 
-			fos = new FileOutputStream(
-					"/Users/xiafan/Documents/lsmodata/log/skip.log");
+			fos = new FileOutputStream("/tmp/skip.log");
 			System.setOut(new PrintStream(fos));
 			System.out.println(" skip");
 			int size = 0;
-			scanner = reader.getPostingListIter(key, window.getStart(),
-					window.getEnd());
+			scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
 			while (scanner.hasNext()) {
 				boolean print = false;
 				cur = scanner.next();
 				code = cur.getEncoding();
 				if (code.getX() < te && code.getY() + code.getEdgeLen() > ts) {
 					expectNodeNum++;
-					System.out.println("visit " + code);
-					System.out
-							.println(((OctreePostingListIter) scanner).nextID);
+					// System.out.println(((OctreePostingListIter)
+					// scanner).nextID);
+					System.out.println(code);
 				}
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd()
-							&& seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
 						size++;
 						if (!print) {
 							if (!expectCodes.remove(code)) {
