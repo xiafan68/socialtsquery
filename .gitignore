@@ -1,5 +1,6 @@
 *.class
 bin/
+conf/index.conf
 target/
 .idea/
 socialtsquery.iml

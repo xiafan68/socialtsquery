@@ -139,7 +139,7 @@ public class LSMOInvertedIndex {
 		return true;
 	}
 
-	private static int[] parseVersion(File file) {
+	public static int[] parseVersion(File file) {
 		int[] ret = new int[2];
 		String[] field = file.getName().split("_");
 		ret[0] = Integer.parseInt(field[0]);

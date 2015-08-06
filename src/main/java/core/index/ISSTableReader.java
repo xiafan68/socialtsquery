@@ -7,8 +7,9 @@ import core.index.MemTable.SSTableMeta;
 import core.index.octree.IOctreeIterator;
 
 /**
- * This class provides interfaces to locate a posting list given the keyword, 
- * locate the position given the octree code. 
+ * This class provides interfaces to locate a posting list given the keyword,
+ * locate the position given the octree code.
+ * 
  * @author xiafan
  *
  */
@@ -23,6 +24,7 @@ public abstract class ISSTableReader {
 
 	/**
 	 * whether this reader has been initialized
+	 * 
 	 * @return
 	 */
 	public boolean isInited() {
@@ -35,9 +37,9 @@ public abstract class ISSTableReader {
 
 	public abstract Iterator<Integer> keySetIter();
 
-	public abstract IOctreeIterator getPostingListScanner(int key)
-			throws IOException;
+	public abstract IOctreeIterator getPostingListScanner(int key) throws IOException;
 
-	public abstract IOctreeIterator getPostingListIter(int key, int start,
-			int end) throws IOException;
+	public abstract IOctreeIterator getPostingListIter(int key, int start, int end) throws IOException;
+
+	public abstract void close() throws IOException;
 }

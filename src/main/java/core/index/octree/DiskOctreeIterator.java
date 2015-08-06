@@ -79,14 +79,21 @@ public class DiskOctreeIterator implements IOctreeIterator {
 			ret = traverseQueue.poll();
 		}
 		curIdx++;
-		/*if (ret.getEncoding().getX() == 696962 && ret.getEncoding().getY() == 696964 && ret.getEncoding().getZ() == 0) {
-			System.out.println("debuging at next of DiskOctreeIterator");
-		}*/
+
+		if (ret.getEncoding().getX() == 699344 && ret.getEncoding().getY() == 699344 && ret.getEncoding().getZ() == 0
+				&& ret.getEdgeLen() == 2) {
+			System.out.println("debuging at next of DiskOctreeIterator " + entry + "  " + nextBucketID + " " + curIdx);
+		}
+
 		return ret;
 	}
 
 	@Override
 	public void addNode(OctreeNode node) {
+		if (node.getEncoding().getX() == 699344 && node.getEncoding().getY() == 699344 && node.getEncoding().getZ() == 1
+				&& node.getEdgeLen() == 1) {
+			System.out.println("debuging at addNode of DiskOctreeIterator");
+		}
 		traverseQueue.add(node);
 	}
 

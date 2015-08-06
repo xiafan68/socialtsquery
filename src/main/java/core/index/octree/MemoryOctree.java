@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.IntegerUtil;
 import common.MidSegment;
-
 import core.commom.Point;
 
 /**

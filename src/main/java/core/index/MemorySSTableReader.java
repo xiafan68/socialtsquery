@@ -1,5 +1,6 @@
 package core.index;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import core.index.MemTable.SSTableMeta;
@@ -9,8 +10,7 @@ import core.index.octree.MemoryOctreeIterator;
 public class MemorySSTableReader extends ISSTableReader {
 	MemTable table;
 
-	public MemorySSTableReader(LSMOInvertedIndex index, MemTable table,
-			SSTableMeta meta) {
+	public MemorySSTableReader(LSMOInvertedIndex index, MemTable table, SSTableMeta meta) {
 		super(index, meta);
 		this.table = table;
 	}
@@ -29,6 +29,10 @@ public class MemorySSTableReader extends ISSTableReader {
 	@Override
 	public Iterator<Integer> keySetIter() {
 		return table.keySet().iterator();
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 
 }

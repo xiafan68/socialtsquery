@@ -50,26 +50,26 @@ public class OctreeNode {
 	}
 
 	public boolean contains(Point point) {
-		if (cornerPoint.getZ() <= point.getZ()
-				&& point.getZ() < cornerPoint.getZ() + edgeLen
-				&& cornerPoint.getX() <= point.getX()
-				&& point.getX() < cornerPoint.getX() + edgeLen
-				&& cornerPoint.getY() <= point.getY()
-				&& point.getY() < cornerPoint.getY() + edgeLen) {
+		if (cornerPoint.getZ() <= point.getZ() && point.getZ() < cornerPoint.getZ() + edgeLen
+				&& cornerPoint.getX() <= point.getX() && point.getX() < cornerPoint.getX() + edgeLen
+				&& cornerPoint.getY() <= point.getY() && point.getY() < cornerPoint.getY() + edgeLen) {
 			return true;
 		}
 		return false;
 	}
 
+	/**
+	 * 判断一个node是否完全包含另外一个node，两个node也可能对应的方形相同
+	 * 
+	 * @param node
+	 * @return
+	 */
 	public boolean contains(OctreeNode node) {
 		Point point = node.getCornerPoint();
 		int oLen = node.getEdgeLen();
-		if (cornerPoint.getZ() <= point.getZ()
-				&& point.getZ() + oLen <= cornerPoint.getZ() + edgeLen
-				&& cornerPoint.getX() <= point.getX()
-				&& point.getX() + oLen <= cornerPoint.getX() + edgeLen
-				&& cornerPoint.getY() <= point.getY()
-				&& point.getY() + oLen <= cornerPoint.getY() + edgeLen) {
+		if (cornerPoint.getZ() <= point.getZ() && point.getZ() + oLen <= cornerPoint.getZ() + edgeLen
+				&& cornerPoint.getX() <= point.getX() && point.getX() + oLen <= cornerPoint.getX() + edgeLen
+				&& cornerPoint.getY() <= point.getY() && point.getY() + oLen <= cornerPoint.getY() + edgeLen) {
 			return true;
 		}
 		return false;
@@ -81,8 +81,7 @@ public class OctreeNode {
 			int x = ((i & 0x1) > 0) ? edgeLen / 2 : 0;
 			int y = ((i & 0x2) > 0) ? edgeLen / 2 : 0;
 			int z = ((i & 0x4) > 0) ? edgeLen / 2 : 0;
-			Point childCorner = new Point(cornerPoint.getX() + x,
-					cornerPoint.getY() + y, cornerPoint.getZ() + z);
+			Point childCorner = new Point(cornerPoint.getX() + x, cornerPoint.getY() + y, cornerPoint.getZ() + z);
 			children[i] = new OctreeNode(childCorner, edgeLen / 2);
 		}
 
@@ -127,8 +126,7 @@ public class OctreeNode {
 	 */
 	public Encoding getEncoding() {
 		if (code == null) {
-			code = new Encoding(new Point(cornerPoint.getX(),
-					cornerPoint.getY(), cornerPoint.getZ()),
+			code = new Encoding(new Point(cornerPoint.getX(), cornerPoint.getY(), cornerPoint.getZ()),
 					ByteUtil.lastNonZeroBitFromTail(edgeLen) + 1);
 		}
 		return code;
@@ -187,8 +185,7 @@ public class OctreeNode {
 	 */
 	@Override
 	public String toString() {
-		return "OctreeNode [children=" + Arrays.toString(children) + ", segs="
-				+ segs + " code:" + getEncoding() + "]";
+		return "OctreeNode [children=" + Arrays.toString(children) + ", segs=" + segs + " code:" + getEncoding() + "]";
 	}
 
 	public static void main(String[] args) {

@@ -179,4 +179,12 @@ public class DiskSSTableReader extends ISSTableReader {
 	public Iterator<Integer> keySetIter() {
 		return dirMap.keySet().iterator();
 	}
+
+	@Override
+	public void close() throws IOException {
+		if (dataInput != null)
+			dataInput.close();
+		if (dirInput != null)
+			dirInput.close();
+	}
 }
