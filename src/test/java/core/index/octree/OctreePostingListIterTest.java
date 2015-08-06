@@ -12,8 +12,11 @@ import org.junit.Test;
 
 import segmentation.Interval;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.Encoding;
+import core.commom.Point;
 import core.index.DiskSSTableReader;
 import core.index.LSMOInvertedIndex;
 import core.index.MemTable.SSTableMeta;
@@ -26,7 +29,8 @@ public class OctreePostingListIterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(63, 6));
+		DiskSSTableReader reader = new DiskSSTableReader(index,
+				new SSTableMeta(3,2));
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
@@ -40,6 +44,8 @@ public class OctreePostingListIterTest {
 		iter = reader.keySetIter();
 		HashSet<Encoding> expectCodes = new HashSet<Encoding>();
 		Encoding code = null;
+		Encoding exCode = new Encoding(new Point(696592, 696592, 8), 3);
+
 		while (iter.hasNext()) {
 			int expect = 0;
 			int key = iter.next();
@@ -56,8 +62,10 @@ public class OctreePostingListIterTest {
 					expectNodeNum++;
 					// System.out.print("hit ");
 					System.out.println(code);
-					System.out.println(
-							((DiskOctreeIterator) scanner).nextBucketID + " " + ((DiskOctreeIterator) scanner).curIdx);
+					System.out
+							.println(((DiskOctreeIterator) scanner).nextBucketID
+									+ " "
+									+ ((DiskOctreeIterator) scanner).curIdx);
 				} else {
 					// System.out.print("not hit ");
 				}
@@ -65,15 +73,22 @@ public class OctreePostingListIterTest {
 				// System.out.println(code);
 
 				boolean print = false;
+
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd()
+							&& seg.getEndTime() >= window.getStart()) {
 						expect++;
 						if (!print) {
 							expectCodes.add(code);
-
+							if (expectCodes.contains(exCode)) {
+								System.out.println();
+							}
 							print = true;
 						}
 					}
+				}
+				if (expectCodes.contains(exCode)) {
+					System.out.println();
 				}
 			}
 
@@ -83,7 +98,8 @@ public class OctreePostingListIterTest {
 			System.setOut(new PrintStream(fos));
 			System.out.println(" skip");
 			int size = 0;
-			scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
+			scanner = reader.getPostingListIter(key, window.getStart(),
+					window.getEnd());
 			while (scanner.hasNext()) {
 				boolean print = false;
 				cur = scanner.next();
@@ -95,7 +111,8 @@ public class OctreePostingListIterTest {
 					System.out.println(code);
 				}
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd()
+							&& seg.getEndTime() >= window.getStart()) {
 						size++;
 						if (!print) {
 							if (!expectCodes.remove(code)) {

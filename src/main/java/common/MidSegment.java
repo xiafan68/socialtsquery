@@ -15,7 +15,8 @@ import core.commom.Point;
  * @author xiafan
  *
  */
-public class MidSegment extends Segment implements WritableComparable<MidSegment> {
+public class MidSegment extends Segment implements
+		WritableComparable<MidSegment> {
 	public long mid;
 
 	public MidSegment(long midTmp, Segment seg) {
@@ -31,9 +32,11 @@ public class MidSegment extends Segment implements WritableComparable<MidSegment
 	public void readFields(DataInput input) throws IOException {
 		mid = input.readLong();
 		super.read(input);
-		/*if (mid == -6723079032l && getStart() == 696962){
+		// MidSegment [mid=-103256360592, start=696604, count=1, endTime=696604,
+		// endCount=1]
+		if (mid == -103256360592l && getStart() == 696604) {
 			System.out.println();
-		}*/
+		}
 	}
 
 	@Override
@@ -74,7 +77,8 @@ public class MidSegment extends Segment implements WritableComparable<MidSegment
 	}
 
 	public Point getPoint() {
-		return new Point(this.getStart(), this.getEndTime(), Math.max(this.getStartCount(), this.getEndCount()));
+		return new Point(this.getStart(), this.getEndTime(), Math.max(
+				this.getStartCount(), this.getEndCount()));
 	}
 
 	/*
@@ -84,8 +88,9 @@ public class MidSegment extends Segment implements WritableComparable<MidSegment
 	 */
 	@Override
 	public String toString() {
-		return "MidSegment [mid=" + mid + ", start=" + start + ", count=" + count + ", endTime=" + endTime
-				+ ", endCount=" + endCount + "]";
+		return "MidSegment [mid=" + mid + ", start=" + start + ", count="
+				+ count + ", endTime=" + endTime + ", endCount=" + endCount
+				+ "]";
 	}
 
 	public long getMid() {

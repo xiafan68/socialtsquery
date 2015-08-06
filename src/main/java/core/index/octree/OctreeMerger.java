@@ -17,12 +17,13 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator rhs;
 	OctreeNode curNode;
 	OctreeMeta meta;
-	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
+			256, new Comparator<OctreeNode>() {
+				@Override
+				public int compare(OctreeNode o1, OctreeNode o2) {
+					return o1.getEncoding().compareTo(o2.getEncoding());
+				}
+			});
 
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
@@ -32,7 +33,8 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext() || rhs.hasNext();
+		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext()
+				|| rhs.hasNext();
 	}
 
 	OctreeNode lnode;
@@ -62,15 +64,15 @@ public class OctreeMerger implements IOctreeIterator {
 				}
 				break;
 			}
-
+			int cmp = lnode.getEncoding().compareTo(rnode.getEncoding());
 			// 也有可能一个包含另一个
-			if (lnode.contains(rnode)) {
+			if (cmp != 0 && lnode.contains(rnode)) {
 				lnode.split();
 				for (int i = 0; i < 8; i++)
 					if (lnode.getChild(i).size() > 0)
 						lhs.addNode(lnode.getChild(i));
 				lnode = null;
-			} else if (rnode.contains(lnode)) {
+			} else if (cmp != 0 && rnode.contains(lnode)) {
 				rnode.split();
 				for (int i = 0; i < 8; i++) {
 					if (rnode.getChild(i).size() > 0)
@@ -78,7 +80,6 @@ public class OctreeMerger implements IOctreeIterator {
 				}
 				rnode = null;
 			} else {
-				int cmp = lnode.getEncoding().compareTo(rnode.getEncoding());
 				if (cmp == 0) {
 					curNode = lnode;
 					curNode.addSegs(rnode.getSegs());
@@ -101,7 +102,8 @@ public class OctreeMerger implements IOctreeIterator {
 		advance();
 		if (!splittedNodes.isEmpty()) {
 			if (curNode != null) {
-				int cmp = curNode.getEncoding().compareTo(splittedNodes.peek().getEncoding());
+				int cmp = curNode.getEncoding().compareTo(
+						splittedNodes.peek().getEncoding());
 				if (cmp < 0) {
 					ret = curNode;
 					curNode = null;
