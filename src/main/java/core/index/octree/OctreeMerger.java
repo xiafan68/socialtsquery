@@ -17,12 +17,13 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator rhs;
 	OctreeNode curNode;
 	OctreeMeta meta;
-	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
+			256, new Comparator<OctreeNode>() {
+				@Override
+				public int compare(OctreeNode o1, OctreeNode o2) {
+					return o1.getEncoding().compareTo(o2.getEncoding());
+				}
+			});
 
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
@@ -32,7 +33,8 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return curNode != null || !splittedNodes.isEmpty() || lhs.hasNext() || rhs.hasNext();
+		return curNode != null || !splittedNodes.isEmpty() || lnode != null
+				|| lhs.hasNext() || rnode != null || rhs.hasNext();
 	}
 
 	OctreeNode lnode;
@@ -101,7 +103,8 @@ public class OctreeMerger implements IOctreeIterator {
 		advance();
 		if (!splittedNodes.isEmpty()) {
 			if (curNode != null) {
-				int cmp = curNode.getEncoding().compareTo(splittedNodes.peek().getEncoding());
+				int cmp = curNode.getEncoding().compareTo(
+						splittedNodes.peek().getEncoding());
 				if (cmp < 0) {
 					ret = curNode;
 					curNode = null;

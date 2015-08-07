@@ -194,7 +194,11 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		return 1 << paddingBitNum;
 	}
 
-	public void setEndBits(int i) {
+	public void setPaddingBitNum(int i) {
 		paddingBitNum = i;
+	}
+
+	public int getPaddingBitNum() {
+		return paddingBitNum;
 	}
 }

@@ -21,12 +21,13 @@ import core.io.Bucket.BucketID;
  */
 public class DiskOctreeIterator implements IOctreeIterator {
 	DirEntry entry;
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
+			256, new Comparator<OctreeNode>() {
+				@Override
+				public int compare(OctreeNode o1, OctreeNode o2) {
+					return o1.getEncoding().compareTo(o2.getEncoding());
+				}
+			});
 
 	Bucket bucket = new Bucket(-1);
 	BucketID nextBucketID = new BucketID(0, (short) 0);
@@ -51,11 +52,15 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum || curIdx < bucket.octNum();
+		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum
+				|| curIdx < bucket.octNum();
 	}
 
 	@Override
 	public OctreeNode next() throws IOException {
+		if (entry.curKey == 0 && readNum > 1480) {
+			System.out.print("");
+		}
 		if (readNum < entry.dataBlockNum && curIdx >= bucket.octNum()) {
 			bucket.reset();
 			bucket.setBlockIdx(nextBucketID.blockID);
@@ -65,7 +70,8 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		}
 		OctreeNode ret = null;
 		if (curIdx < bucket.octNum()) {
-			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bucket.getOctree(curIdx)));
+			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
+					bucket.getOctree(curIdx)));
 			Encoding coding = new Encoding();
 			coding.readFields(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
@@ -73,16 +79,19 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		}
 
 		if (ret == null
-				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0)) {
+				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(
+						traverseQueue.peek().getEncoding()) > 0)) {
 			if (ret != null)
 				traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
 		}
 		curIdx++;
 
-		if (ret.getEncoding().getX() == 699344 && ret.getEncoding().getY() == 699344 && ret.getEncoding().getZ() == 0
-				&& ret.getEdgeLen() == 2) {
-			System.out.println("debuging at next of DiskOctreeIterator " + entry + "  " + nextBucketID + " " + curIdx);
+		if (ret.getEncoding().getX() == 699344
+				&& ret.getEncoding().getY() == 699344
+				&& ret.getEncoding().getZ() == 0 && ret.getEdgeLen() == 16) {
+			System.out.println("debuging at next of DiskOctreeIterator "
+					+ entry + "  " + nextBucketID + " " + curIdx);
 		}
 
 		return ret;
@@ -90,8 +99,9 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public void addNode(OctreeNode node) {
-		if (node.getEncoding().getX() == 699344 && node.getEncoding().getY() == 699344 && node.getEncoding().getZ() == 1
-				&& node.getEdgeLen() == 1) {
+		if (node.getEncoding().getX() == 699344
+				&& node.getEncoding().getY() == 699344
+				&& node.getEncoding().getZ() == 1 && node.getEdgeLen() == 1) {
 			System.out.println("debuging at addNode of DiskOctreeIterator");
 		}
 		traverseQueue.add(node);

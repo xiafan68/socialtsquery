@@ -41,7 +41,8 @@ public class OctreeZOrderBinaryWriter {
 		int count = 0;
 		while (iter.hasNext()) {
 			octreeNode = iter.next();
-			if (octreeNode.size() > 0) {
+			if (octreeNode.size() > 0
+					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				DataOutputStream dos = new DataOutputStream(baos);
 				// first write the octant code, then write the octant

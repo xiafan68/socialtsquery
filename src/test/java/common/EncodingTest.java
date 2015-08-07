@@ -11,7 +11,7 @@ public class EncodingTest {
 	public void test() {
 		Encoding data = new Encoding(new Point(696600, 696602, 2), 0);
 		System.out.println(data);
-		data.setEndBits(0);
+		data.setPaddingBitNum(0);
 		data.setX(0);
 		System.out.println(data);
 

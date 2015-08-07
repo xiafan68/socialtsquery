@@ -30,7 +30,7 @@ public class OctreePostingListIterTest {
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
-				new SSTableMeta(3,2));
+				new SSTableMeta(63, 6));
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
@@ -51,8 +51,8 @@ public class OctreePostingListIterTest {
 			int key = iter.next();
 			System.out.println(key);
 			OctreeNode cur = null;
-			FileOutputStream fos = new FileOutputStream("/tmp/visit.log");
-			System.setOut(new PrintStream(fos));
+			// FileOutputStream fos = new FileOutputStream("/tmp/visit.log");
+			// System.setOut(new PrintStream(fos));
 			// 遍历所有的node，找到相关的segs
 			IOctreeIterator scanner = reader.getPostingListScanner(key);
 			while (scanner.hasNext()) {
@@ -92,10 +92,10 @@ public class OctreePostingListIterTest {
 				}
 			}
 
-			fos.close();
+			// fos.close();
 
-			fos = new FileOutputStream("/tmp/skip.log");
-			System.setOut(new PrintStream(fos));
+			// fos = new FileOutputStream("/tmp/skip.log");
+			// System.setOut(new PrintStream(fos));
 			System.out.println(" skip");
 			int size = 0;
 			scanner = reader.getPostingListIter(key, window.getStart(),
@@ -126,7 +126,8 @@ public class OctreePostingListIterTest {
 			for (Encoding encoding : expectCodes) {
 				System.out.println("not visisted " + encoding);
 			}
-			fos.close();
+			// fos.close();
+			System.out.println("expected size:" + expect);
 			Assert.assertEquals(expect, size);
 		}
 	}

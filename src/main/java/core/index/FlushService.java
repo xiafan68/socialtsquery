@@ -37,15 +37,15 @@ public class FlushService extends Thread {
 			LockManager.INSTANCE.versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
 				StringBuffer buf = new StringBuffer("flushing versions ");
-				for (MemTable memTable : flushingTables) {
+				for (MemTable memTable : flushingTables.subList(0, 1)) {
 					buf.append(memTable.getMeta().version);
 					buf.append(" n:");
 					buf.append(memTable.size() + " ");
 				}
 				logger.info(buf.toString());
 
-				SSTableWriter writer = new SSTableWriter(flushingTables,
-						index.getStep());
+				SSTableWriter writer = new SSTableWriter(
+						flushingTables.subList(0, 1), index.getStep());
 				try {
 					writer.write(conf.getTmpDir());
 					writer.close();

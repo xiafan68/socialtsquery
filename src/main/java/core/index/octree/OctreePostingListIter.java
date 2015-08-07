@@ -79,12 +79,12 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private void gotoNewLayer(int layer) {
-		curMin.setEndBits(0);
+		curMin.setPaddingBitNum(0);
 		curMin.setX(0);
 		curMin.setY(ts);
 		curMin.setTop(layer);
 
-		curMax.setEndBits(0);
+		curMax.setPaddingBitNum(0);
 		curMax.setX(te);
 		curMax.setY(Integer.MAX_VALUE);
 		curMax.setTop(layer);
@@ -109,7 +109,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 				int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
 				int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
 				newY |= 1 << (31 - commBit);
-				curMin.setEndBits(0);
+				curMin.setPaddingBitNum(0);
 				curMin.setX(newX);
 				curMin.setY(newY);
 				curMin.setTop(newCode.getTopZ());
@@ -125,7 +125,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 			newY |= 1 << (31 - commBit);
 			// 选择和当前node在左右方向上统一侧的节点
 			newX |= (1 << (31 - commBit)) & newCode.getX();
-			curMin.setEndBits(0);
+			curMin.setPaddingBitNum(0);
 			curMin.setY(newY);
 			curMin.setX(newX);
 			curMin.setTop(newCode.getTopZ());

@@ -34,7 +34,7 @@ public class MidSegment extends Segment implements
 		super.read(input);
 		// MidSegment [mid=-103256360592, start=696604, count=1, endTime=696604,
 		// endCount=1]
-		if (mid == -103256360592l && getStart() == 696604) {
+		if (mid == -123155898253l && getStart() == 696830) {
 			System.out.println();
 		}
 	}

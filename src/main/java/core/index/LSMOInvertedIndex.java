@@ -18,11 +18,11 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import com.sun.jna.LastErrorException;
-
 import shingle.TextShingle;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.index.MemTable.SSTableMeta;
 
 /**
@@ -31,7 +31,8 @@ import core.index.MemTable.SSTableMeta;
  *
  */
 public class LSMOInvertedIndex {
-	private static final Logger logger = Logger.getLogger(LSMOInvertedIndex.class);
+	private static final Logger logger = Logger
+			.getLogger(LSMOInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
@@ -148,10 +149,11 @@ public class LSMOInvertedIndex {
 	}
 
 	int getKeywordCode(String keyword) {
-		return Math.abs(keyword.hashCode()) % 10;
+		return Math.abs(keyword.hashCode()) % 20;
 	}
 
-	public void insert(List<String> keywords, MidSegment seg) throws IOException {
+	public void insert(List<String> keywords, MidSegment seg)
+			throws IOException {
 		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
@@ -256,7 +258,8 @@ public class LSMOInvertedIndex {
 		int version;
 		int level;
 
-		public SSTableMetaKey(SSTableMeta referent, ReferenceQueue<SSTableMeta> queue) {
+		public SSTableMetaKey(SSTableMeta referent,
+				ReferenceQueue<SSTableMeta> queue) {
 			super(referent, queue);
 			version = referent.version;
 			level = referent.level;
@@ -378,7 +381,7 @@ public class LSMOInvertedIndex {
 		LockManager.INSTANCE.shutdown();
 	}
 
-	private boolean debug = true;
+	private boolean debug = false;
 
 	private void cleanupReaders() {
 		SSTableMetaKey delMetaKey = null;
@@ -386,16 +389,21 @@ public class LSMOInvertedIndex {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
 				if (!debug && reader.meta.markAsDel.get()) {
-					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta).delete();
-					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta).delete();
-					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta).delete();
-					logger.info("delete data of " + delMetaKey.version + " " + delMetaKey.level);
+					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta)
+							.delete();
+					logger.info("delete data of " + delMetaKey.version + " "
+							+ delMetaKey.level);
 				}
 			}
 		}
 	}
 
-	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
+			throws IOException {
 		cleanupReaders();
 		if (snapshot.curTable == null) {
 			return null;
