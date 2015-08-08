@@ -14,6 +14,7 @@ public class Configuration {
 
 	/**
 	 * this value specifies the sampling gap of the encoding of octants
+	 * 
 	 * @return
 	 */
 	public int getIndexStep() {
@@ -22,7 +23,8 @@ public class Configuration {
 	}
 
 	/**
-	 * the directory 
+	 * the directory
+	 * 
 	 * @return
 	 */
 	public File getIndexDir() {
@@ -30,7 +32,8 @@ public class Configuration {
 	}
 
 	/**
-	 * the directory 
+	 * the directory
+	 * 
 	 * @return
 	 */
 	public File getTmpDir() {
@@ -42,7 +45,10 @@ public class Configuration {
 	}
 
 	public int getFlushLimit() {
-		return Integer.parseInt(props.getProperty("memtable_size_limit",
-				"2000000"));
+		return Integer.parseInt(props.getProperty("memtable_size_limit", "2000000"));
+	}
+
+	public boolean debugMode() {
+		return Boolean.parseBoolean(props.getProperty("debug", "true"));
 	}
 }

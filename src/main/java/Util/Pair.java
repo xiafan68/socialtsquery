@@ -22,6 +22,10 @@ public class Pair<K, V> implements Entry<K, V> {
 		return value;
 	}
 
+	public void setKey(K key) {
+		this.key = key;
+	}
+
 	@Override
 	public V setValue(V value) {
 		V pre = this.value;
@@ -29,7 +33,9 @@ public class Pair<K, V> implements Entry<K, V> {
 		return pre;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

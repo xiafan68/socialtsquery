@@ -34,19 +34,17 @@ public class OctreeMergerTest {
 			MemoryOctree tree1 = insertAndReadTest(17 + i * 10);
 			MemoryOctree tree2 = insertAndReadTest(51 + i * 10);
 			HashMap<MidSegment, Integer> segs = new HashMap<MidSegment, Integer>();
-			DefaultedPutMap<MidSegment, Integer> map = DefaultedPutMap
-					.decorate(segs, new Factory() {
-						@Override
-						public Object create() {
-							return new Integer(0);
-						}
-					});
+			DefaultedPutMap<MidSegment, Integer> map = DefaultedPutMap.decorate(segs, new Factory() {
+				@Override
+				public Object create() {
+					return new Integer(0);
+				}
+			});
 
 			setupAnswers(new MemoryOctreeIterator(tree1), map);
 			setupAnswers(new MemoryOctreeIterator(tree2), map);
 
-			OctreeMerger merge = new OctreeMerger(new MemoryOctreeIterator(
-					tree1), new MemoryOctreeIterator(tree2));
+			OctreeMerger merge = new OctreeMerger(new MemoryOctreeIterator(tree1), new MemoryOctreeIterator(tree2));
 			Encoding pre = null;
 			while (merge.hasNext()) {
 				OctreeNode node = merge.next();
@@ -69,8 +67,7 @@ public class OctreeMergerTest {
 		}
 	}
 
-	private static void setupAnswers(MemoryOctreeIterator iter,
-			Map<MidSegment, Integer> segs) {
+	private static void setupAnswers(MemoryOctreeIterator iter, Map<MidSegment, Integer> segs) {
 		while (iter.hasNext()) {
 			OctreeNode node = iter.next();
 			for (MidSegment seg : node.getSegs()) {
@@ -89,8 +86,7 @@ public class OctreeMergerTest {
 			int count = Math.abs(rand.nextInt()) % 200;
 			int tgap = Math.abs(rand.nextInt()) % 100;
 			int cgap = Math.abs(rand.nextInt()) % 100;
-			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start,
-					count, start + tgap, count + cgap));
+			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start, count, start + tgap, count + cgap));
 			octree.insert(seg.getPoint(), seg);
 			segs.add(seg);
 		}
@@ -102,34 +98,30 @@ public class OctreeMergerTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(
-				29, 1));
+		int level = 0;
+		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(130, level));
 		lhs.init();
-		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(
-				31, 1));
+		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(131, level));
 		rhs.init();
 
 		Iterator<Integer> keyIter = lhs.keySetIter();
 		int size = 0;
 
-		System.setOut(new PrintStream(new FileOutputStream("/tmp/31_2.txt")));
+		//System.setOut(new PrintStream(new FileOutputStream("/tmp/131_1.txt")));
 		while (keyIter.hasNext()) {
 			int key = keyIter.next();
-			key = 0;
+			//key = 0;
 			System.out.println("merge for key:" + key);
-			OctreeMerger merge = new OctreeMerger(
-					lhs.getPostingListScanner(key),
-					rhs.getPostingListScanner(key));
+			OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(key), rhs.getPostingListScanner(key));
 			OctreeNode pre = null;
 			while (merge.hasNext()) {
 				OctreeNode cur = merge.next();
-				System.out.println(cur);
+				//System.out.println(cur);
 				size += cur.size();
 				if (pre != null) {
 					if (pre.getEncoding().compareTo(cur.getEncoding()) >= 0)
 						System.out.println(key + "\n" + pre + "\n" + cur);
-					Assert.assertTrue(pre.getEncoding().compareTo(
-							cur.getEncoding()) < 0);
+					Assert.assertTrue(pre.getEncoding().compareTo(cur.getEncoding()) < 0);
 				}
 				pre = cur;
 			}
@@ -142,20 +134,15 @@ public class OctreeMergerTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(
-				32, 0));
+		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(32, 0));
 		lhs.init();
-		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(
-				33, 0));
+		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(33, 0));
 		rhs.init();
 
-		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(0),
-				rhs.getPostingListScanner(0));
-		DiskSSTableReader rrhs = new DiskSSTableReader(index, new SSTableMeta(
-				34, 0));
+		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(0), rhs.getPostingListScanner(0));
+		DiskSSTableReader rrhs = new DiskSSTableReader(index, new SSTableMeta(34, 0));
 		rrhs.init();
-		OctreeMerger merge3 = new OctreeMerger(merge,
-				rrhs.getPostingListScanner(0));
+		OctreeMerger merge3 = new OctreeMerger(merge, rrhs.getPostingListScanner(0));
 		while (merge3.hasNext()) {
 			OctreeNode cur = merge3.next();
 			System.out.println(cur);

@@ -68,7 +68,7 @@ public class OctreeZOrderBinaryWriter {
 	public void close() throws IOException {
 		if (cur != null) {
 			cur.write(writer.getDataDos());
-			logger.info("last bucket:" + cur.toString());
+			logger.debug("last bucket:" + cur.toString());
 		}
 	}
 }

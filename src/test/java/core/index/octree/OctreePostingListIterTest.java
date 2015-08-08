@@ -1,8 +1,6 @@
 package core.index.octree;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -10,16 +8,14 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import segmentation.Interval;
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.commom.Encoding;
 import core.commom.Point;
 import core.index.DiskSSTableReader;
 import core.index.LSMOInvertedIndex;
 import core.index.MemTable.SSTableMeta;
+import segmentation.Interval;
 
 public class OctreePostingListIterTest {
 	@Test
@@ -30,7 +26,7 @@ public class OctreePostingListIterTest {
 		conf.load("conf/index.conf");
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
-				new SSTableMeta(63, 6));
+				new SSTableMeta(255, 8));
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {

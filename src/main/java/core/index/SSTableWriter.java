@@ -53,6 +53,7 @@ public class SSTableWriter {
 
 		/**
 		 * 写出
+		 * 
 		 * @param output
 		 * @throws IOException
 		 */
@@ -66,6 +67,7 @@ public class SSTableWriter {
 
 		/**
 		 * 读取
+		 * 
 		 * @param input
 		 * @throws IOException
 		 */
@@ -77,15 +79,15 @@ public class SSTableWriter {
 			sampleNum = input.readInt();
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see java.lang.Object#toString()
 		 */
 		@Override
 		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", dataStartBlockID="
-					+ dataStartBlockID + ", dataBlockNum=" + dataBlockNum
-					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
-					+ sampleNum + "]";
+			return "DirEntry [curKey=" + curKey + ", dataStartBlockID=" + dataStartBlockID + ", dataBlockNum="
+					+ dataBlockNum + ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
 		}
 
 	}
@@ -103,13 +105,13 @@ public class SSTableWriter {
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
+	 * 
 	 * @param tables
 	 * @param step
 	 */
 	public SSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
 		this.meta = meta;
-		iter = new MergeIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
@@ -117,36 +119,32 @@ public class SSTableWriter {
 	}
 
 	public SSTableWriter(List<MemTable> tables, int step) {
-		iter = new MergeIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
 		int version = 0;
 		for (final MemTable table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate
-					.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
-						Iterator<Entry<Integer, MemoryOctree>> iter = table
-								.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
+				Iterator<Entry<Integer, MemoryOctree>> iter = table.iterator();
 
-						@Override
-						public boolean hasNext() {
-							return iter.hasNext();
-						}
+				@Override
+				public boolean hasNext() {
+					return iter.hasNext();
+				}
 
-						@Override
-						public Entry<Integer, IOctreeIterator> next() {
-							Entry<Integer, MemoryOctree> entry = iter.next();
-							Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
-									entry.getKey(), new MemoryOctreeIterator(
-											entry.getValue()));
-							return ret;
-						}
+				@Override
+				public Entry<Integer, IOctreeIterator> next() {
+					Entry<Integer, MemoryOctree> entry = iter.next();
+					Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(entry.getKey(),
+							new MemoryOctreeIterator(entry.getValue()));
+					return ret;
+				}
 
-						@Override
-						public void remove() {
+				@Override
+				public void remove() {
 
-						}
+				}
 
-					}));
+			}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = step;
@@ -157,23 +155,22 @@ public class SSTableWriter {
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
 	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.idx", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.idx", meta.version, meta.level));
 	}
 
 	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.meta", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.meta", meta.version, meta.level));
 	}
 
 	/**
 	 * write the memtable into sstables stored in directory
-	 * @param dir 数据存储目录
+	 * 
+	 * @param dir
+	 *            数据存储目录
 	 * @throws IOException
 	 */
 	public void write(File dir) throws IOException {
@@ -184,8 +181,7 @@ public class SSTableWriter {
 		dataDos = new DataOutputStream(dataFileOs);
 		indexFileDos = new FileOutputStream(idxFile(dir, meta));
 		indexDos = new DataOutputStream(indexFileDos);
-		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir,
-				meta)));
+		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir, meta)));
 
 		while (iter.hasNext()) {
 			Entry<Integer, List<IOctreeIterator>> entry = iter.next();
@@ -200,8 +196,7 @@ public class SSTableWriter {
 					treeIter = new OctreeMerger(treeIter, curIter);
 				}
 			}
-			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(
-					this, treeIter, step);
+			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(this, treeIter, step);
 			writer.write();
 			writer.close();
 
@@ -230,15 +225,14 @@ public class SSTableWriter {
 	}
 
 	private void endPostingList() throws IOException {
-		curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE)
-				- curDir.dataStartBlockID;
+		curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE) - curDir.dataStartBlockID;
 		curDir.write(dirDos);
-		logger.info("finish " + curDir);
+		logger.debug("finish " + curDir);
 	}
 
 	/**
 	 * @return the dataFileOs
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public long getDataFilePosition() throws IOException {
 		return dataFileOs.getChannel().position();

@@ -1,6 +1,10 @@
 package core.index;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
@@ -8,8 +12,11 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -18,12 +25,10 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import shingle.TextShingle;
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.index.MemTable.SSTableMeta;
+import shingle.TextShingle;
 
 /**
  * 
@@ -31,8 +36,7 @@ import core.index.MemTable.SSTableMeta;
  *
  */
 public class LSMOInvertedIndex {
-	private static final Logger logger = Logger
-			.getLogger(LSMOInvertedIndex.class);
+	private static final Logger logger = Logger.getLogger(LSMOInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
@@ -46,6 +50,7 @@ public class LSMOInvertedIndex {
 	CompactService compactService;
 	Configuration conf;
 	TextShingle shingle = new TextShingle(null);
+	DataOutputStream keyWriter;
 
 	public LSMOInvertedIndex(Configuration conf) {
 		this.conf = conf;
@@ -61,6 +66,21 @@ public class LSMOInvertedIndex {
 		flushService = new FlushService(this);
 		flushService.start();
 		LockManager.INSTANCE.setBootStrap();
+
+		File keyFile = new File(conf.getIndexDir(), "keyfile.meta");
+		DataInputStream dis = null;
+		try {
+			dis = new DataInputStream(new FileInputStream(keyFile));
+			while (dis.available() > 0) {
+				keyCode.put(dis.readUTF(), dis.readInt());
+			}
+		} catch (Exception exception) {
+		} finally {
+			if (dis != null)
+				dis.close();
+		}
+		keyWriter = new DataOutputStream(new FileOutputStream(keyFile, true));
+
 		setupVersionSet();
 		CommitLog.INSTANCE.init(conf);
 		CommitLog.INSTANCE.recover(this);
@@ -69,6 +89,7 @@ public class LSMOInvertedIndex {
 		compactService.start();
 		LockManager.INSTANCE.setBootStrap();
 		bootstrap = false;
+
 	}
 
 	private static final Pattern regex = Pattern.compile("%d_%d.meta");
@@ -148,12 +169,18 @@ public class LSMOInvertedIndex {
 		return ret;
 	}
 
-	int getKeywordCode(String keyword) {
-		return Math.abs(keyword.hashCode()) % 20;
+	Map<String, Integer> keyCode = new HashMap<String, Integer>();
+
+	int getKeywordCode(String keyword) throws IOException {
+		if (!keyCode.containsKey(keyword)) {
+			keyCode.put(keyword, keyCode.size());
+			keyWriter.writeUTF(keyword);
+			keyWriter.writeInt(keyCode.get(keyword));
+		}
+		return keyCode.get(keyword);
 	}
 
-	public void insert(List<String> keywords, MidSegment seg)
-			throws IOException {
+	public void insert(List<String> keywords, MidSegment seg) throws IOException {
 		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
@@ -258,8 +285,7 @@ public class LSMOInvertedIndex {
 		int version;
 		int level;
 
-		public SSTableMetaKey(SSTableMeta referent,
-				ReferenceQueue<SSTableMeta> queue) {
+		public SSTableMetaKey(SSTableMeta referent, ReferenceQueue<SSTableMeta> queue) {
 			super(referent, queue);
 			version = referent.version;
 			level = referent.level;
@@ -357,6 +383,7 @@ public class LSMOInvertedIndex {
 	}
 
 	public void close() throws IOException {
+		keyWriter.close();
 		stop = true;
 		while (true) {
 			try {
@@ -381,29 +408,24 @@ public class LSMOInvertedIndex {
 		LockManager.INSTANCE.shutdown();
 	}
 
-	private boolean debug = false;
+	// private boolean debug = false;
 
 	private void cleanupReaders() {
 		SSTableMetaKey delMetaKey = null;
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
-				if (!debug && reader.meta.markAsDel.get()) {
-					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta)
-							.delete();
-					logger.info("delete data of " + delMetaKey.version + " "
-							+ delMetaKey.level);
+				if (!conf.debugMode() && reader.meta.markAsDel.get()) {
+					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta).delete();
+					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta).delete();
+					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta).delete();
+					logger.info("delete data of " + delMetaKey.version + " " + delMetaKey.level);
 				}
 			}
 		}
 	}
 
-	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
-			throws IOException {
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
 		cleanupReaders();
 		if (snapshot.curTable == null) {
 			return null;
