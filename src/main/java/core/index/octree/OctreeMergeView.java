@@ -22,6 +22,13 @@ public class OctreeMergeView implements IOctreeIterator {
 				}
 			});
 
+	public void addIterator(IOctreeIterator iter) throws IOException {
+		if (iter.hasNext()) {
+			OctreeNode node = iter.next();
+			mergeQueue.offer(new Pair<OctreeNode, IOctreeIterator>(node, iter));
+		}
+	}
+
 	@Override
 	public OctreeMeta getMeta() {
 		throw new RuntimeException("getMeta is not supported by OctreeMergeView");

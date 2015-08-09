@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -28,6 +27,8 @@ import org.apache.log4j.Logger;
 import Util.Configuration;
 import common.MidSegment;
 import core.index.MemTable.SSTableMeta;
+import core.index.octree.IOctreeIterator;
+import core.index.octree.OctreeMergeView;
 import shingle.TextShingle;
 
 /**
@@ -114,6 +115,7 @@ public class LSMOInvertedIndex {
 				return ret;
 			}
 		});
+		// TODO 这一段还没有搞定
 		List<File> exactVersion = new ArrayList<File>();
 		for (File file : indexFiles) {
 			int[] v1 = parseVersion(file);
@@ -267,6 +269,27 @@ public class LSMOInvertedIndex {
 		// VersionSet ret = versionSet;
 		// LockManager.INSTANCE.versionReadUnLock();
 		return versionSet;
+	}
+
+	public Map<String, IOctreeIterator> getPostingListIter(List<String> keywords, int start, int end)
+			throws IOException {
+		Map<String, IOctreeIterator> ret = new HashMap<String, IOctreeIterator>();
+		for (String keyword : keywords) {
+			OctreeMergeView view = new OctreeMergeView();
+			int key = getKeywordCode(keyword);
+			// add iter for current memtable
+			view.addIterator(versionSet.curTable.getReader().getPostingListIter(key, start, end));
+			// add iter for flushing memtable
+			for (MemTable table : versionSet.flushingTables) {
+				view.addIterator(table.getReader().getPostingListIter(key, start, end));
+			}
+			for (SSTableMeta meta : versionSet.diskTreeMetas) {
+				ISSTableReader reader = getSSTableReader(versionSet, meta);
+				view.addIterator(reader.getPostingListIter(key, start, end));
+			}
+			ret.put(keyword, view);
+		}
+		return ret;
 	}
 
 	public int getStep() {

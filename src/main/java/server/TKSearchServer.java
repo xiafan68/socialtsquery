@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.server.TServer;
@@ -20,6 +19,14 @@ import org.apache.thrift.transport.TTransportException;
 //李超
 //13661912248
 
+import Util.Configuration;
+import Util.Profile;
+import core.commom.TempKeywordQuery;
+import core.executor.PartitionExecutor;
+import core.index.LSMOInvertedIndex;
+import dataserver.JDBC;
+import dataserver.TimeSeriesDao;
+import dataserver.TweetDao;
 import searchapi.FetchTweetQuery;
 import searchapi.InvalidJob;
 import searchapi.TKeywordQuery;
@@ -27,14 +34,6 @@ import searchapi.TweetService;
 import searchapi.TweetTuple;
 import searchapi.Tweets;
 import segmentation.Interval;
-import Util.Configuration;
-import Util.Profile;
-import core.commom.TempKeywordQuery;
-import core.executor.MultiPartitionExecutor;
-import core.index.LSMOInvertedIndex;
-import dataserver.JDBC;
-import dataserver.TimeSeriesDao;
-import dataserver.TweetDao;
 
 public class TKSearchServer implements TweetService.Iface {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);
@@ -54,9 +53,8 @@ public class TKSearchServer implements TweetService.Iface {
 			indexReader = null;
 		}
 		try {
-			jdbc = new JDBC(
-					"jdbc:mysql://localhost:3306/tseries?useUnicode=true&characterEncoding=utf8",
-					"root", "Hadoop123");
+			jdbc = new JDBC("jdbc:mysql://localhost:3306/tseries?useUnicode=true&characterEncoding=utf8", "root",
+					"Hadoop123");
 		} catch (Exception ex) {
 			System.out.println(ex.getMessage());
 		}
@@ -73,14 +71,12 @@ public class TKSearchServer implements TweetService.Iface {
 	@Override
 	public List<Long> search(TKeywordQuery query) throws TException {
 		List<Long> ret = new ArrayList<Long>();
-		MultiPartitionExecutor executor = new MultiPartitionExecutor(
-				indexReader);
+		PartitionExecutor executor = new PartitionExecutor(indexReader);
 		executor.setMaxLifeTime((int) Math.pow(2, 31));
 		Interval window = new Interval(1, query.startTime, query.endTime, 1);
 		String[] keywords = new String[query.keywords.size()];
 		query.keywords.toArray(keywords);
-		TempKeywordQuery tQuery = new TempKeywordQuery(keywords, window,
-				query.topk);
+		TempKeywordQuery tQuery = new TempKeywordQuery(keywords, window, query.topk);
 		Profile.instance.start("query");
 		try {
 			executor.query(tQuery);
@@ -116,8 +112,7 @@ public class TKSearchServer implements TweetService.Iface {
 		}
 	}
 
-	public void readTimeSeries(Map<Long, TweetTuple> tweetMap, List<Long> tids)
-			throws SQLException {
+	public void readTimeSeries(Map<Long, TweetTuple> tweetMap, List<Long> tids) throws SQLException {
 		TimeSeriesDao seriesDao = new TimeSeriesDao(jdbc);
 		Map<Long, List<List<Integer>>> tsData = seriesDao.getTimeSeries(tids);
 		for (Entry<Long, List<List<Integer>>> entry : tsData.entrySet()) {
@@ -133,8 +128,7 @@ public class TKSearchServer implements TweetService.Iface {
 	}
 
 	@Override
-	public Tweets fetchTweets(FetchTweetQuery query) throws InvalidJob,
-			TException {
+	public Tweets fetchTweets(FetchTweetQuery query) throws InvalidJob, TException {
 		Tweets tweets = new Tweets();
 		Map<Long, TweetTuple> tweetMap = new HashMap<Long, TweetTuple>();
 		try {
@@ -148,17 +142,14 @@ public class TKSearchServer implements TweetService.Iface {
 		return tweets;
 	}
 
-	public static void main(String[] args) throws TTransportException,
-			IOException, SQLException {
+	public static void main(String[] args) throws TTransportException, IOException, SQLException {
 		TServerTransport serverTransport = new TServerSocket(10000);
 
 		TKSearchServer tserver = new TKSearchServer();
 		tserver.start();
 		TweetService.Processor processor = new TweetService.Processor(tserver);
 		// Use this for a multithreaded server
-		TServer masterTServer = new TThreadPoolServer(
-				new TThreadPoolServer.Args(serverTransport)
-						.processor(processor));
+		TServer masterTServer = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
 
 		logger.info("Starting the simple server...");
 		masterTServer.serve();

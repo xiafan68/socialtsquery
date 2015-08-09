@@ -26,8 +26,8 @@ import core.index.octree.IOctreeIterator;
 import core.index.octree.OctreeNode;
 
 /**
- * 实现一个baseline算法,基于某个partition的索引执行查询
- * TODO:某个posting list的最大值改变后，需要Lazy的更新cand和topk队列中对首元素的最大值
+ * 实现一个baseline算法,基于某个partition的索引执行查询 TODO:某个posting
+ * list的最大值改变后，需要Lazy的更新cand和topk队列中对首元素的最大值
  * 
  * @author dingcheng
  * 
@@ -60,8 +60,7 @@ public class PartitionExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map)
-			throws IOException {
+	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
@@ -82,21 +81,18 @@ public class PartitionExecutor extends IQueryExecutor {
 		loadCursors();
 	}
 
-	// TODO
-	private IOctreeIterator getCursor(String keyword, Interval window)
-			throws IOException {
-		return reader.getTemporalIterator(keyword, window);
-	}
-
 	private void loadCursors() throws IOException {
 		String[] keywords = query.keywords;
 		cursors = new IOctreeIterator[keywords.length];
+		List<String> keywordList = Arrays.asList(keywords);
+		Map<String, IOctreeIterator> iters = reader.getPostingListIter(keywordList, query.queryInv.getStart(),
+				query.queryInv.getEnd());
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
 				throw new IllegalStateException("cursor is not closed");
 			}
-			cursors[i] = getCursor(keywords[i], query.queryInv);
+			cursors[i] = iters.get(keywords[i]);
 		}
 	}
 
@@ -115,12 +111,10 @@ public class PartitionExecutor extends IQueryExecutor {
 			for (float bestScore : bestScores) {
 				sum += bestScore;
 			}
-			sum *= Math.min(maxLifeTime,
-					query.getEndTime() - query.getStartTime());
+			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
 			boolean ret = true;
 			// 当前partition不可能有cand能够进入topk
-			if (cand.getMaxBestScore() < topk.getMinWorstScore()
-					&& sum < topk.getMinWorstScore()
+			if (cand.getMaxBestScore() < topk.getMinWorstScore() && sum < topk.getMinWorstScore()
 					&& topk.size() >= ctx.getQuery().k) {
 				ret = true;
 			} else {
@@ -189,8 +183,7 @@ public class PartitionExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k
-				|| newSeg.getWorstscore() > topk.getMinBestScore()) {
+		} else if (topk.size() < query.k || newSeg.getWorstscore() > topk.getMinBestScore()) {
 			topk.update(preSeg, newSeg);
 			if (topk.size() > query.k)
 				topk.poll();// 把bestScore最小的一个移除
@@ -253,8 +246,7 @@ public class PartitionExecutor extends IQueryExecutor {
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
 			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur
-					.getEndTime(), cur.getWorstscore()));
+			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}
