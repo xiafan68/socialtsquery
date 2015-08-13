@@ -1,11 +1,11 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import Util.Pair;
-import core.index.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 
 /**
  * 用于按照OctreeNode定义的顺序返回节点，和OctreeMerger的逻辑类似

@@ -1,4 +1,4 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -6,8 +6,8 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import core.index.SSTableWriter;
 import core.io.Bucket;
+import core.lsmo.SSTableWriter;
 
 /**
  * This class is only responsible for writing the octree into disk file,

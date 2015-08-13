@@ -10,7 +10,7 @@ import org.junit.Test;
 import Util.Profile;
 import segmentation.Interval;
 import core.commom.TempKeywordQuery;
-import core.index.IndexReader;
+import core.lsmt.IndexReader;
 
 public class MultiPartExecutorTest {
 	@Test

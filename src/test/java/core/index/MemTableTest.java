@@ -6,7 +6,9 @@ import org.junit.Test;
 
 import Util.Configuration;
 import common.MidSegment;
-import core.index.MemTable.SSTableMeta;
+import core.lsmo.MemTable;
+import core.lsmo.MemTable.SSTableMeta;
+import core.lsmt.LSMOInvertedIndex;
 import fanxia.file.DirLineReader;
 
 public class MemTableTest {

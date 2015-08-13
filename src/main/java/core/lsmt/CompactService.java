@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmt;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +16,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.log4j.Logger;
 
 import Util.Configuration;
-import core.index.LSMOInvertedIndex.VersionSet;
-import core.index.MemTable.SSTableMeta;
+import core.lsmo.SSTableWriter;
+import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.LSMOInvertedIndex.VersionSet;
 import fanxia.file.FileUtil;
 
 /**
@@ -81,12 +82,16 @@ public class CompactService extends Thread {
 	@Override
 	public void run() {
 		while (!index.stop) {
-			if (!compactTrees()) {
-				try {
-					Thread.sleep(1000);
-					// logger.info("compaction thread wakes up");
-				} catch (InterruptedException e) {
+			try {
+				if (!compactTrees()) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+					}
 				}
+			} catch (Exception ex) {
+				logger.info("compact service:" + ex.getMessage());
+				throw new RuntimeException(ex.getMessage());
 			}
 		}
 	}

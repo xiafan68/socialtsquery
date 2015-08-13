@@ -7,6 +7,7 @@ import org.junit.Test;
 import segmentation.Segment;
 import Util.Configuration;
 import common.MidSegment;
+import core.lsmt.CommitLog;
 
 public class CommitLogTest {
 	@Test

@@ -1,11 +1,12 @@
-package core.index;
+package core.lsmo;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
 import Util.Pair;
-import core.index.octree.IOctreeIterator;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmt.ISSTableReader;
 
 public class SSTableScanner implements
 		Iterator<Entry<Integer, IOctreeIterator>> {

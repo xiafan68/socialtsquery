@@ -2,8 +2,8 @@ package core.executor;
 
 import Util.MyFile;
 import core.commom.TempKeywordQuery;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
+import core.lsmt.IndexReader;
+import core.lsmt.PartitionMeta;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

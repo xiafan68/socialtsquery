@@ -23,7 +23,7 @@ import Util.Configuration;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.PartitionExecutor;
-import core.index.LSMOInvertedIndex;
+import core.lsmt.LSMOInvertedIndex;
 import dataserver.JDBC;
 import dataserver.TimeSeriesDao;
 import dataserver.TweetDao;

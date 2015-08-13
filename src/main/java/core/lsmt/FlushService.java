@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmt;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,11 +9,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import core.index.MemTable.SSTableMeta;
 import Util.Configuration;
+import core.lsmo.MemTable;
+import core.lsmo.SSTableWriter;
+import core.lsmt.IMemTable.SSTableMeta;
 
 /**
  * responsible for write data to disk
+ * 
  * @author xiafan
  *
  */
@@ -32,41 +35,33 @@ public class FlushService extends Thread {
 	public void run() {
 		while (!index.stop) {
 			LockManager.INSTANCE.versionReadLock();
-			List<MemTable> flushingTables = new ArrayList<MemTable>(
-					index.getVersion().flushingTables);
+			List<IMemTable> flushingTables = new ArrayList<IMemTable>(index.getVersion().flushingTables);
 			LockManager.INSTANCE.versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
 				StringBuffer buf = new StringBuffer("flushing versions ");
-				for (MemTable memTable : flushingTables.subList(0, 1)) {
+				for (IMemTable memTable : flushingTables.subList(0, 1)) {
 					buf.append(memTable.getMeta().version);
 					buf.append(" n:");
 					buf.append(memTable.size() + " ");
 				}
 				logger.info(buf.toString());
 
-				SSTableWriter writer = new SSTableWriter(
-						flushingTables.subList(0, 1), index.getStep());
+				ISSTableWriter writer = SSTableWriterFactory.INSTANCE.newWriterForFlushing(flushingTables.subList(0, 1),
+						index.getStep());
 				try {
 					writer.write(conf.getTmpDir());
 					writer.close();
-					// write succeed, now move file to the right place, update
-					// the
-					// versionset and commitlog
 
-					File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
-							writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
-							writer.getMeta()));
-					tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
-							writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dirMetaFile(
-							conf.getIndexDir(), writer.getMeta()));
-					tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
-							writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
-							writer.getMeta()));
+					// write succeed, now move file to the right place, update
+					// the versionset and commitlog
+					File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(), writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(), writer.getMeta()));
+					tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(), writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(), writer.getMeta()));
+					tmpFile = SSTableWriter.dataFile(conf.getTmpDir(), writer.getMeta());
+					tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(), writer.getMeta()));
 					Set<SSTableMeta> versions = new HashSet<SSTableMeta>();
-					for (MemTable table : flushingTables) {
+					for (IMemTable table : flushingTables) {
 						versions.add(table.getMeta());
 					}
 					index.flushTables(versions, writer.getMeta());

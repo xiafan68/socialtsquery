@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmo;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -18,13 +18,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
 import core.commom.Encoding;
-import core.index.MemTable.SSTableMeta;
-import core.index.SSTableWriter.DirEntry;
-import core.index.octree.DiskOctreeIterator;
-import core.index.octree.IOctreeIterator;
-import core.index.octree.OctreePostingListIter;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.octree.DiskOctreeIterator;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.OctreePostingListIter;
+import core.lsmt.IMemTable;
+import core.lsmt.ISSTableReader;
+import core.lsmt.ISSTableWriter;
+import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableWriter.DirEntry;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,
@@ -55,8 +59,8 @@ public class DiskSSTableReader extends ISSTableReader {
 					loadDirMeta();
 					loadIndex();
 				}
+				init.set(true);
 			}
-			init.set(true);
 		}
 	}
 

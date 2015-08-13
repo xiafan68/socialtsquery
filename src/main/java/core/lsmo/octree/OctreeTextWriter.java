@@ -1,4 +1,4 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;

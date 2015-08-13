@@ -20,12 +20,14 @@ import Util.Configuration;
 import common.MidSegment;
 
 import core.commom.Encoding;
-import core.index.MemTable.SSTableMeta;
-import core.index.octree.MemoryOctree;
-import core.index.octree.MemoryOctree.OctreeMeta;
-import core.index.octree.MemoryOctreeIterator;
-import core.index.octree.OctreeMerger;
-import core.index.octree.OctreeNode;
+import core.lsmo.DiskSSTableReader;
+import core.lsmo.MemTable.SSTableMeta;
+import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.MemoryOctreeIterator;
+import core.lsmo.octree.OctreeMerger;
+import core.lsmo.octree.OctreeNode;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmt.LSMOInvertedIndex;
 
 public class OctreeMergerTest {
 	@Test

@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmt;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,9 +26,16 @@ import org.apache.log4j.Logger;
 
 import Util.Configuration;
 import common.MidSegment;
-import core.index.MemTable.SSTableMeta;
-import core.index.octree.IOctreeIterator;
-import core.index.octree.OctreeMergeView;
+import core.commom.TempKeywordQuery;
+import core.executor.IQueryExecutor;
+import core.executor.PartitionExecutor;
+import core.lsmo.DiskSSTableReader;
+import core.lsmo.MemTable;
+import core.lsmo.SSTableWriter;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.OctreeMergeView;
+import core.lsmt.IMemTable.SSTableMeta;
+import segmentation.Interval;
 import shingle.TextShingle;
 
 /**
@@ -36,16 +43,16 @@ import shingle.TextShingle;
  * @author xiafan
  *
  */
-public class LSMOInvertedIndex {
+public class LSMOInvertedIndex<PType> {
 	private static final Logger logger = Logger.getLogger(LSMOInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
 	boolean bootstrap = true;
 	volatile boolean stop = false;
-	MemTable curTable;
+	IMemTable curTable;
 	volatile VersionSet versionSet = new VersionSet();
-	int maxVersion = 0;
+	int nextVersion = 0;
 
 	FlushService flushService;
 	CompactService compactService;
@@ -93,7 +100,7 @@ public class LSMOInvertedIndex {
 
 	}
 
-	private static final Pattern regex = Pattern.compile("%d_%d.meta");
+	private static final Pattern regex = Pattern.compile("[0-9]+_[0-9]+.meta");
 
 	private void setupVersionSet() {
 		File[] indexFiles = conf.getIndexDir().listFiles(new FilenameFilter() {
@@ -115,16 +122,16 @@ public class LSMOInvertedIndex {
 				return ret;
 			}
 		});
-		// TODO 这一段还没有搞定
+
 		List<File> exactVersion = new ArrayList<File>();
 		for (File file : indexFiles) {
 			int[] v1 = parseVersion(file);
-			while (!exactVersion.isEmpty()) {
-				File last = exactVersion.get(exactVersion.size() - 1);
-				int[] v2 = parseVersion(last);
-				if (v1[0] >= v2[0] && v1[1] > v2[1]) {
-					// TODO last file should be removed
-					exactVersion.remove(exactVersion.size() - 1);
+			for (int i = exactVersion.size() - 1; i >= 0; i--) {
+				File cur = exactVersion.get(i);
+				int[] curV = parseVersion(cur);
+				if (curV[1] < v1[1]) {
+					exactVersion.remove(i);
+					delIndexFile(new SSTableMeta(curV[0], curV[1]));
 				} else {
 					break;
 				}
@@ -132,16 +139,16 @@ public class LSMOInvertedIndex {
 			exactVersion.add(file);
 		}
 
-		maxVersion = 0;
+		nextVersion = 0;
 		for (File file : exactVersion) {
 			int[] version = parseVersion(file);
 			SSTableMeta meta = new SSTableMeta(version[0], version[1]);
 			if (validateDataFile(meta)) {
 				versionSet.diskTreeMetas.add(meta);
-				maxVersion = Math.max(maxVersion, meta.version + 1);
+				nextVersion = Math.max(nextVersion, meta.version + 1);
 			}
 		}
-		SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
+		SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
 		curTable = new MemTable(this, meta);
 		versionSet.newMemTable(curTable);
 	}
@@ -208,16 +215,16 @@ public class LSMOInvertedIndex {
 
 	// TODO check whether we need to switch the memtable
 	public void maySwitchMemtable() {
-		MemTable tmp = curTable;
+		IMemTable<PType> tmp = curTable;
 		if (tmp.size() > conf.getFlushLimit()) {
 			LockManager.INSTANCE.versionWriteLock();
 			try {
 				// check for violation again
 				if (tmp == curTable) {
 					// open new log
-					CommitLog.INSTANCE.openNewLog(maxVersion);
-					SSTableMeta meta = new SSTableMeta(maxVersion++, 0);
-					tmp = new MemTable(this, meta);
+					CommitLog.INSTANCE.openNewLog(nextVersion);
+					SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
+					tmp = MemTableFactory.newMemTable(this, meta);
 					versionSet = versionSet.clone();
 					versionSet.newMemTable(tmp);
 					curTable = tmp;
@@ -271,6 +278,14 @@ public class LSMOInvertedIndex {
 		return versionSet;
 	}
 
+	public Iterator<Interval> query(List<String> keywords, int start, int end, int k) throws IOException {
+		IQueryExecutor exec = new PartitionExecutor(this);
+		String[] wordArr = new String[keywords.size()];
+		keywords.toArray(wordArr);
+		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
+		return exec.getAnswer();
+	}
+
 	public Map<String, IOctreeIterator> getPostingListIter(List<String> keywords, int start, int end)
 			throws IOException {
 		Map<String, IOctreeIterator> ret = new HashMap<String, IOctreeIterator>();
@@ -280,7 +295,7 @@ public class LSMOInvertedIndex {
 			// add iter for current memtable
 			view.addIterator(versionSet.curTable.getReader().getPostingListIter(key, start, end));
 			// add iter for flushing memtable
-			for (MemTable table : versionSet.flushingTables) {
+			for (IMemTable table : versionSet.flushingTables) {
 				view.addIterator(table.getReader().getPostingListIter(key, start, end));
 			}
 			for (SSTableMeta meta : versionSet.diskTreeMetas) {
@@ -336,8 +351,8 @@ public class LSMOInvertedIndex {
 	 *
 	 */
 	public static class VersionSet {
-		public MemTable curTable = null;
-		public List<MemTable> flushingTables = new ArrayList<MemTable>();
+		public IMemTable curTable = null;
+		public List<IMemTable> flushingTables = new ArrayList<IMemTable>();
 		public List<SSTableMeta> diskTreeMetas = new ArrayList<SSTableMeta>();
 
 		// public HashMap<OctreeMeta>
@@ -347,7 +362,7 @@ public class LSMOInvertedIndex {
 		 * 
 		 * @param newTree
 		 */
-		public void newMemTable(MemTable newTable) {
+		public void newMemTable(IMemTable newTable) {
 			if (curTable != null) {
 				curTable.freeze();
 				flushingTables.add(curTable);
@@ -363,9 +378,9 @@ public class LSMOInvertedIndex {
 		 * @param newMeta
 		 */
 		public void flush(Set<SSTableMeta> versions, SSTableMeta newMeta) {
-			Iterator<MemTable> iter = flushingTables.iterator();
+			Iterator<IMemTable> iter = flushingTables.iterator();
 			while (iter.hasNext()) {
-				MemTable table = iter.next();
+				IMemTable table = iter.next();
 				if (versions.contains(table.getMeta())) {
 					iter.remove();
 				}
@@ -403,6 +418,19 @@ public class LSMOInvertedIndex {
 			ret.diskTreeMetas.addAll(diskTreeMetas);
 			return ret;
 		}
+
+		@Override
+		public String toString() {
+			StringBuffer ret = new StringBuffer("VersionSet [diskTreeMetas=" + diskTreeMetas + ",");
+			if (curTable != null)
+				ret.append("cur memtable:" + curTable.getMeta());
+			ret.append("flushing memtables:");
+			for (IMemTable table : flushingTables) {
+				ret.append(table.getMeta());
+				ret.append(",");
+			}
+			return ret.toString();
+		}
 	}
 
 	public void close() throws IOException {
@@ -439,13 +467,17 @@ public class LSMOInvertedIndex {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
 				if (!conf.debugMode() && reader.meta.markAsDel.get()) {
-					SSTableWriter.dataFile(conf.getIndexDir(), reader.meta).delete();
-					SSTableWriter.idxFile(conf.getIndexDir(), reader.meta).delete();
-					SSTableWriter.dirMetaFile(conf.getIndexDir(), reader.meta).delete();
-					logger.info("delete data of " + delMetaKey.version + " " + delMetaKey.level);
+					delIndexFile(reader.meta);
 				}
 			}
 		}
+	}
+
+	private void delIndexFile(SSTableMeta meta) {
+		SSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
+		SSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
+		SSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
+		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
 
 	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
@@ -455,7 +487,7 @@ public class LSMOInvertedIndex {
 		} else if (snapshot.curTable.getMeta() == meta) {
 			return snapshot.curTable.getReader();
 		} else {
-			for (MemTable table : snapshot.flushingTables) {
+			for (IMemTable table : snapshot.flushingTables) {
 				if (table.getMeta() == meta) {
 					return table.getReader();
 				}

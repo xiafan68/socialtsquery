@@ -35,8 +35,8 @@ import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.MultiPartitionExecutor;
 import core.executor.PartitionExecutor;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
+import core.lsmt.IndexReader;
+import core.lsmt.PartitionMeta;
 import expr.QueryGen;
 
 public class DiskBasedPerfTest {

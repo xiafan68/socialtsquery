@@ -33,7 +33,7 @@ import xiafan.util.Histogram;
 import xiafan.util.Pair;
 import common.MidSegment;
 import common.Tweet;
-import core.index.IndexWriter;
+import core.lsmt.IndexWriter;
 import extract.TimeSeriesMRJob;
 import extract.common.MRDataFormat;
 

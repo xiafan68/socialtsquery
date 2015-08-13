@@ -1,8 +1,8 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.IOException;
 
-import core.index.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 
 public interface IOctreeIterator {
 

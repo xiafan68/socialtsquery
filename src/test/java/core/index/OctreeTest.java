@@ -7,10 +7,9 @@ import org.junit.Test;
 import segmentation.Segment;
 
 import common.MidSegment;
-
-import core.index.octree.MemoryOctree;
-import core.index.octree.MemoryOctree.OctreeMeta;
-import core.index.octree.OctreeTextWriter;
+import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.OctreeTextWriter;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 
 public class OctreeTest {
 	@Test

@@ -12,9 +12,12 @@ import Util.Configuration;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
-import core.index.DiskSSTableReader;
-import core.index.LSMOInvertedIndex;
-import core.index.MemTable.SSTableMeta;
+import core.lsmo.DiskSSTableReader;
+import core.lsmo.MemTable.SSTableMeta;
+import core.lsmo.octree.DiskOctreeIterator;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.OctreeNode;
+import core.lsmt.LSMOInvertedIndex;
 import segmentation.Interval;
 
 public class OctreePostingListIterTest {

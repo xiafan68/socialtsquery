@@ -9,7 +9,10 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.Encoding;
-import core.index.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.MemoryOctreeIterator;
+import core.lsmo.octree.OctreeNode;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import fanxia.file.DirLineReader;
 import segmentation.Segment;
 

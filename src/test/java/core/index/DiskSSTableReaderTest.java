@@ -18,9 +18,12 @@ import org.junit.Test;
 
 import Util.Configuration;
 import common.MidSegment;
-import core.index.MemTable.SSTableMeta;
-import core.index.octree.IOctreeIterator;
-import core.index.octree.OctreeNode;
+import core.lsmo.DiskSSTableReader;
+import core.lsmo.MemTable.SSTableMeta;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.OctreeNode;
+import core.lsmt.ISSTableReader;
+import core.lsmt.LSMOInvertedIndex;
 
 public class DiskSSTableReaderTest {
 	/**

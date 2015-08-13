@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmt;
 
 /**
  * 

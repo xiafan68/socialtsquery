@@ -9,7 +9,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import common.MidSegment;
 import common.Tweet;
-import core.index.LSMOInvertedIndex;
+import core.lsmt.LSMOInvertedIndex;
 import fanxia.file.DirLineReader;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
@@ -42,8 +42,10 @@ public class IndexLoader {
 			seg.parse(line);
 			index.insert(Long.toString(seg.getMid()), seg);
 			if (i++ % 1000 == 0) {
-				// System.out.println(i);
+				System.out.println(i);
 			}
+			if (i > 10000)
+				break;
 		}
 		index.close();
 		reader.close();

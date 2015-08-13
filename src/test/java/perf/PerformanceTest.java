@@ -15,8 +15,8 @@ import Util.MyFile;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.PartitionExecutor;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
+import core.lsmt.IndexReader;
+import core.lsmt.PartitionMeta;
 import expr.QueryGen;
 
 public class PerformanceTest {

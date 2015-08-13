@@ -10,8 +10,8 @@ import org.junit.Test;
 import Util.Profile;
 import segmentation.Interval;
 import core.commom.TempKeywordQuery;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
+import core.lsmt.IndexReader;
+import core.lsmt.PartitionMeta;
 
 public class PartitionExecutorTest {
 	@Test

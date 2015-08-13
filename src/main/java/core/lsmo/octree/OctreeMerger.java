@@ -1,10 +1,10 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
-import core.index.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 
 /**
  * merge leaf nodes of two octrees

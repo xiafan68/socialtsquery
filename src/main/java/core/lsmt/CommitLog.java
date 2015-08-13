@@ -1,4 +1,4 @@
-package core.index;
+package core.lsmt;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -22,9 +22,8 @@ import Util.Pair;
 import common.MidSegment;
 
 /**
- *TODO: how to grantuee the thread safety of preVersions
- * only one log file is working at any time.
- *  * @author xiafan
+ * TODO: how to grantuee the thread safety of preVersions only one log file is
+ * working at any time. * @author xiafan
  *
  */
 public enum CommitLog {
@@ -54,6 +53,7 @@ public enum CommitLog {
 
 	/**
 	 * flush the previous log for word, create a new version for word
+	 * 
 	 * @not_thread_safe
 	 * @param word
 	 */
@@ -67,10 +67,10 @@ public enum CommitLog {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+			curVersion = version;
 		}
 		try {
-			dos = new DataOutputStream(new FileOutputStream(
-					versionFile(version)));
+			dos = new DataOutputStream(new FileOutputStream(versionFile(version), true));
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -91,8 +91,7 @@ public enum CommitLog {
 		}
 	}
 
-	private final static Pattern RLOG_FILE_PATTERN = Pattern
-			.compile("^[0-9]+.rlog$");
+	private final static Pattern RLOG_FILE_PATTERN = Pattern.compile("^[0-9]+.rlog$");
 
 	public void recover(LSMOInvertedIndex tree) throws IOException {
 		File[] files = dir.listFiles(new FilenameFilter() {
@@ -105,10 +104,8 @@ public enum CommitLog {
 		Arrays.sort(files, new Comparator<File>() {
 			@Override
 			public int compare(File o1, File o2) {
-				int version1 = Integer.parseInt(o1.getName().substring(0,
-						o1.getName().indexOf('.')));
-				int version2 = Integer.parseInt(o2.getName().substring(0,
-						o2.getName().indexOf('.')));
+				int version1 = Integer.parseInt(o1.getName().substring(0, o1.getName().indexOf('.')));
+				int version2 = Integer.parseInt(o2.getName().substring(0, o2.getName().indexOf('.')));
 				return Integer.compare(version1, version2);
 			}
 		});
@@ -137,14 +134,13 @@ public enum CommitLog {
 
 	/**
 	 * used for test
+	 * 
 	 * @param file
 	 * @return
 	 * @throws IOException
 	 */
-	public List<Pair<String, MidSegment>> dumpLog(int version)
-			throws IOException {
-		DataInputStream dis = new DataInputStream(new FileInputStream(
-				versionFile(version)));
+	public List<Pair<String, MidSegment>> dumpLog(int version) throws IOException {
+		DataInputStream dis = new DataInputStream(new FileInputStream(versionFile(version)));
 		List<Pair<String, MidSegment>> ret = new ArrayList<Pair<String, MidSegment>>();
 		try {
 			while (dis.available() > 0) {
@@ -165,6 +161,7 @@ public enum CommitLog {
 
 	/**
 	 * delete all logs with version not greater than version
+	 * 
 	 * @param version
 	 */
 	public void deleteLogs(int version) {
@@ -179,6 +176,7 @@ public enum CommitLog {
 
 	/**
 	 * when the corresponding octree has been writen out.
+	 * 
 	 * @param word
 	 * @param version
 	 */

@@ -20,10 +20,10 @@ import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortBestscore;
 import core.executor.domain.SortWorstscore;
-import core.index.LSMOInvertedIndex;
-import core.index.PartitionMeta;
-import core.index.octree.IOctreeIterator;
-import core.index.octree.OctreeNode;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.OctreeNode;
+import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.PartitionMeta;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询 TODO:某个posting
@@ -220,7 +220,7 @@ public class PartitionExecutor extends IQueryExecutor {
 		if (idx < 0)
 			idx = query.keywords.length - 1;
 
-		bestScores[idx] = code.getZ();
+		bestScores[idx] = code.getTopZ();
 
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);

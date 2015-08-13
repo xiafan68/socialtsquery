@@ -1,10 +1,10 @@
-package core.index;
+package core.lsmt;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import core.index.MemTable.SSTableMeta;
-import core.index.octree.IOctreeIterator;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmt.IMemTable.SSTableMeta;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,
@@ -14,8 +14,8 @@ import core.index.octree.IOctreeIterator;
  *
  */
 public abstract class ISSTableReader {
-	LSMOInvertedIndex index;
-	SSTableMeta meta;
+	protected LSMOInvertedIndex index;
+	protected SSTableMeta meta;
 
 	public ISSTableReader(LSMOInvertedIndex index, SSTableMeta meta) {
 		this.index = index;

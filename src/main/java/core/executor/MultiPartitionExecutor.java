@@ -12,9 +12,9 @@ import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.executor.domain.SortWorstscore;
-import core.index.IndexReader;
-import core.index.LSMOInvertedIndex;
-import core.index.PartitionMeta;
+import core.lsmt.IndexReader;
+import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.PartitionMeta;
 
 /**
  * <p>

@@ -1,4 +1,4 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -7,11 +7,11 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import core.commom.Encoding;
-import core.index.DiskSSTableReader;
-import core.index.SSTableWriter.DirEntry;
-import core.index.octree.MemoryOctree.OctreeMeta;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.DiskSSTableReader;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmt.ISSTableWriter.DirEntry;
 
 /**
  * an iterator visiting leaf nodes of disk octree

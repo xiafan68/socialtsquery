@@ -1,11 +1,15 @@
-package core.index;
+package core.lsmo;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import core.index.MemTable.SSTableMeta;
-import core.index.octree.IOctreeIterator;
-import core.index.octree.MemoryOctreeIterator;
+import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.MemoryOctreeIterator;
+import core.lsmt.IMemTable;
+import core.lsmt.ISSTableReader;
+import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.IMemTable.SSTableMeta;
 
 public class MemorySSTableReader extends ISSTableReader {
 	MemTable table;
@@ -22,8 +26,8 @@ public class MemorySSTableReader extends ISSTableReader {
 
 	@Override
 	public IOctreeIterator getPostingListIter(int key, int start, int end) {
-		// TODO Auto-generated method stub
-		return null;
+		MemoryOctree tree = table.get(key);
+		return new MemoryOctreeIterator(tree, start, end);
 	}
 
 	@Override
@@ -34,5 +38,4 @@ public class MemorySSTableReader extends ISSTableReader {
 	@Override
 	public void close() throws IOException {
 	}
-
 }
