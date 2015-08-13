@@ -49,6 +49,7 @@ public class PartitionExecutor extends IQueryExecutor {
 
 	public PartitionExecutor(LSMOInvertedIndex reader) {
 		this.reader = reader;
+		maxLifeTime = Integer.MAX_VALUE;
 	}
 
 	PartitionMeta meta;
@@ -74,7 +75,7 @@ public class PartitionExecutor extends IQueryExecutor {
 		int minLt = (int) Math.pow(2, part - 1);
 		ctx.setLifeTimeBound(new int[] { minLt, minLt << 2 - 1 });
 		bestScores = new float[query.keywords.length];
-		Arrays.fill(bestScores, 0);
+		Arrays.fill(bestScores, 1000000);
 
 		ctx.setBestScores(bestScores);
 
