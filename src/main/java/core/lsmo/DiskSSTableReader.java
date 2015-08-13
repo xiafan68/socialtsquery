@@ -23,12 +23,10 @@ import core.io.Bucket.BucketID;
 import core.lsmo.octree.DiskOctreeIterator;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
-import core.lsmt.IMemTable;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
-import core.lsmt.LSMOInvertedIndex;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.LSMOInvertedIndex;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,
@@ -41,7 +39,8 @@ import core.lsmt.ISSTableWriter.DirEntry;
 public class DiskSSTableReader extends ISSTableReader {
 	RandomAccessFile dataInput;
 	RandomAccessFile dirInput;
-
+	RandomAccessFile idxInput;
+	
 	Map<Integer, DirEntry> dirMap = new TreeMap<Integer, DirEntry>();
 	Map<Integer, List> skipList = new HashMap<Integer, List>();
 	AtomicBoolean init = new AtomicBoolean(false);

@@ -13,7 +13,7 @@ import core.commom.Point;
  *
  */
 public class MemoryOctree {
-	private static int size_threshold = 100;
+	public static int size_threshold = 100;
 	OctreeMeta meta;
 	OctreeNode root = null;
 	// once true, no data can be inserted any further
@@ -69,8 +69,10 @@ public class MemoryOctree {
 		if (root == null || !root.contains(point)) {
 			OctreeNode preRoot = root;
 
-			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()), IntegerUtil.firstNoneZero(point.getY()));
-			int len = 1 << (Math.max(power, IntegerUtil.firstNoneZero(point.getZ())) + 1);
+			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()),
+					IntegerUtil.firstNoneZero(point.getY()));
+			int len = 1 << (Math.max(power,
+					IntegerUtil.firstNoneZero(point.getZ())) + 1);
 			root = new OctreeNode(new Point(0, 0, 0), len);
 
 			if (preRoot != null) {
@@ -80,7 +82,8 @@ public class MemoryOctree {
 					OctreeNode cur = root;
 					do {
 						cur.split();
-						if (cur.getChild(0).getEncoding().compareTo(preRoot.getEncoding()) == 0) {
+						if (cur.getChild(0).getEncoding()
+								.compareTo(preRoot.getEncoding()) == 0) {
 							cur.setChild(0, preRoot);
 							break;
 						} else {

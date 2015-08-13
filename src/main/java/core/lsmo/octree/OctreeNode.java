@@ -13,6 +13,8 @@ import core.commom.Point;
 import fanxia.file.ByteUtil;
 
 public class OctreeNode {
+	public static SerializeStrategy HANDLER;
+
 	int edgeLen;
 	Point cornerPoint;
 	OctreeNode[] children = null;
@@ -99,6 +101,23 @@ public class OctreeNode {
 		return false;
 	}
 
+	/**
+	 * 如果大部分点都在下半部分，那么有必要分裂
+	 * @return
+	 */
+	public int[] histogram() {
+		int[] counters = new int[] { 0, 0 };
+		int splitPanel = cornerPoint.getZ() + (edgeLen >> 1);
+		for (MidSegment seg : segs) {
+			if (seg.getPoint().getZ() >= splitPanel) {
+				counters[1]++;
+			} else {
+				counters[0]++;
+			}
+		}
+		return counters;
+	}
+
 	public void split() {
 		children = new OctreeNode[8];
 		for (int i = 0; i < children.length; i++) {
@@ -158,29 +177,12 @@ public class OctreeNode {
 		return code;
 	}
 
-	public void write(DataOutput output) {
-		try {
-			output.writeInt(segs.size());
-			for (MidSegment seg : segs) {
-				seg.write(output);
-			}
-		} catch (IOException e) {
-		}
+	public void write(DataOutput output) throws IOException {
+		HANDLER.write(this, output);
 	}
 
-	public void read(DataInput input) {
-		int size;
-		try {
-			size = input.readInt();
-			segs = new TreeSet<MidSegment>();
-			for (int i = 0; i < size; i++) {
-				MidSegment seg = new MidSegment();
-				seg.readFields(input);
-				segs.add(seg);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	public void read(DataInput input) throws IOException {
+		HANDLER.read(this, input);
 	}
 
 	/**
@@ -231,5 +233,79 @@ public class OctreeNode {
 	public void addSegs(TreeSet<MidSegment> items) {
 		children = null;
 		segs.addAll(items);
+	}
+
+	private static interface SerializeStrategy {
+		public void write(OctreeNode node, DataOutput output)
+				throws IOException;
+
+		public void read(OctreeNode node, DataInput input) throws IOException;
+	}
+
+	public static class PlainSerializer implements SerializeStrategy {
+
+		@Override
+		public void write(OctreeNode node, DataOutput output)
+				throws IOException {
+			output.writeInt(node.segs.size());
+			for (MidSegment seg : node.segs) {
+				seg.write(output);
+			}
+		}
+
+		@Override
+		public void read(OctreeNode node, DataInput input) throws IOException {
+			int size = input.readInt();
+			node.segs = new TreeSet<MidSegment>();
+			for (int i = 0; i < size; i++) {
+				MidSegment seg = new MidSegment();
+				seg.readFields(input);
+				node.segs.add(seg);
+			}
+		}
+
+	}
+
+	/**
+	 * 采用压缩方法
+	 * @author xiafan
+	 *
+	 */
+	public static enum CompressedSerializer implements SerializeStrategy {
+		INSTANCE;
+		@Override
+		public void write(OctreeNode node, DataOutput output) {
+			try {
+				ByteUtil.writeVInt(output, node.segs.size());
+				for (MidSegment seg : node.segs) {
+					output.writeLong(seg.getMid());
+					ByteUtil.writeVInt(seg.getStart());
+					ByteUtil.writeVInt(seg.getEndTime() - seg.getStart());
+					ByteUtil.writeVInt(seg.getStartCount());
+					ByteUtil.writeVInt(seg.getEndCount());
+				}
+			} catch (IOException e) {
+			}
+		}
+
+		@Override
+		public void read(OctreeNode node, DataInput input) {
+			try {
+				int size = ByteUtil.readVInt(input);
+				node.segs = new TreeSet<MidSegment>();
+				for (int i = 0; i < size; i++) {
+					MidSegment seg = new MidSegment();
+					seg.mid = input.readLong();
+					seg.setStart(ByteUtil.readVInt(input));
+					seg.setEndTime(ByteUtil.readVInt(input) + seg.getStart());
+					seg.setCount(ByteUtil.readVInt(input));
+					seg.setEndCount(ByteUtil.readVInt(input));
+					node.segs.add(seg);
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 	}
 }

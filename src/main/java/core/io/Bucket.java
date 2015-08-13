@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
+import fanxia.file.ByteUtil;
+
 /**
  * a bucket may correspond to multiple blocks and multiple coctant it is an
  * outputstream like abstraction - total number of octants - octant - octant -
@@ -104,13 +106,16 @@ public class Bucket {
 		}
 
 		public void write(DataOutput output) throws IOException {
-			output.writeInt(blockID);
-			output.writeShort(offset);
+			// output.writeInt(blockID);
+			ByteUtil.writeVInt(output, blockID);
+			ByteUtil.writeVInt(output, offset);
+			// output.writeShort(offset);
 		}
 
 		public void read(DataInput dis) throws IOException {
-			blockID = dis.readInt();
-			offset = dis.readShort();
+			// blockID = dis.readInt();
+			blockID = ByteUtil.readVInt(dis);
+			offset = (short) ByteUtil.readVInt(dis);
 		}
 
 		public long getFileOffset() {

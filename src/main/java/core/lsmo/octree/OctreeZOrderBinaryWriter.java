@@ -43,24 +43,32 @@ public class OctreeZOrderBinaryWriter {
 			octreeNode = iter.next();
 			if (octreeNode.size() > 0
 					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(baos);
-				// first write the octant code, then write the octant
-				octreeNode.getEncoding().write(dos);
-				octreeNode.write(dos);
-				byte[] data = baos.toByteArray();
-				if (cur == null || !cur.canStore(data.length)) {
-					if (cur != null) {
-						cur.write(writer.getDataDos());
-						logger.debug(cur);
+				int[] counters = octreeNode.histogram();
+				if (counters[0] > (MemoryOctree.size_threshold >> 1)) {
+					octreeNode.split();
+					for (int i = 0; i < 8; i++)
+						iter.addNode(octreeNode.getChild(i));
+				} else {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					DataOutputStream dos = new DataOutputStream(baos);
+					// first write the octant code, then write the octant
+					octreeNode.getEncoding().write(dos);
+					octreeNode.write(dos);
+					byte[] data = baos.toByteArray();
+					if (cur == null || !cur.canStore(data.length)) {
+						if (cur != null) {
+							cur.write(writer.getDataDos());
+							logger.debug(cur);
+						}
+						cur = new Bucket(writer.getDataFilePosition());
 					}
-					cur = new Bucket(writer.getDataFilePosition());
+					if (count++ % step == 0) {
+						writer.addSample(octreeNode.getEncoding(),
+								cur.blockIdx());
+					}
+					logger.debug(octreeNode);
+					cur.storeOctant(data);
 				}
-				if (count++ % step == 0) {
-					writer.addSample(octreeNode.getEncoding(), cur.blockIdx());
-				}
-				logger.debug(octreeNode);
-				cur.storeOctant(data);
 			}
 		}
 	}
