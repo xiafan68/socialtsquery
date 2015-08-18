@@ -45,15 +45,18 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	 *            the meta data of the octree
 	 */
 	public DiskOctreeIterator(DirEntry entry, DiskSSTableReader reader) {
-		this.entry = entry;
-		this.reader = reader;
-		nextBucketID.blockID = entry.dataStartBlockID;
+		if (entry != null) {
+			this.entry = entry;
+			this.reader = reader;
+			nextBucketID.blockID = entry.dataStartBlockID;
+		}
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return !traverseQueue.isEmpty() || readNum < entry.dataBlockNum
-				|| curIdx < bucket.octNum();
+		return entry != null
+				&& (!traverseQueue.isEmpty() || readNum < entry.dataBlockNum || curIdx < bucket
+						.octNum());
 	}
 
 	@Override

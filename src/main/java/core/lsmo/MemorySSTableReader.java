@@ -12,9 +12,9 @@ import core.lsmt.LSMOInvertedIndex;
 import core.lsmt.IMemTable.SSTableMeta;
 
 public class MemorySSTableReader extends ISSTableReader {
-	MemTable table;
+	OctreeMemTable table;
 
-	public MemorySSTableReader(LSMOInvertedIndex index, MemTable table, SSTableMeta meta) {
+	public MemorySSTableReader(LSMOInvertedIndex index, OctreeMemTable table, SSTableMeta meta) {
 		super(index, meta);
 		this.table = table;
 	}

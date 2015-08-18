@@ -1,4 +1,4 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -8,17 +8,16 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
+import segmentation.Interval;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.Encoding;
 import core.commom.Point;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.MemTable.SSTableMeta;
-import core.lsmo.octree.DiskOctreeIterator;
-import core.lsmo.octree.IOctreeIterator;
-import core.lsmo.octree.OctreeNode;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMOInvertedIndex;
-import segmentation.Interval;
 
 public class OctreePostingListIterTest {
 	@Test

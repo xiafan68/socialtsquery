@@ -10,7 +10,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import Util.Configuration;
-import core.lsmo.MemTable;
+import core.lsmo.OctreeMemTable;
 import core.lsmo.SSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 

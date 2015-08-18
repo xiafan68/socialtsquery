@@ -30,7 +30,7 @@ import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.PartitionExecutor;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.MemTable;
+import core.lsmo.OctreeMemTable;
 import core.lsmo.SSTableWriter;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
@@ -156,7 +156,7 @@ public class LSMOInvertedIndex<PType> {
 			}
 		}
 		SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
-		curTable = new MemTable(this, meta);
+		curTable = new OctreeMemTable(this, meta);
 		versionSet.newMemTable(curTable);
 	}
 

@@ -7,6 +7,8 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.PropertyConfigurator;
 
+import com.sun.istack.internal.logging.Logger;
+
 import common.MidSegment;
 import common.Tweet;
 import core.lsmt.LSMOInvertedIndex;
@@ -19,6 +21,7 @@ import shingle.TextShingle;
 import xiafan.util.Histogram;
 
 public class IndexLoader {
+	private static Logger logger = Logger.getLogger(IndexLoader.class);
 
 	private static void loadSegs(String[] args) throws IOException {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
@@ -41,10 +44,10 @@ public class IndexLoader {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
 			index.insert(Long.toString(seg.getMid()), seg);
-			if (i++ % 1000 == 0) {
-				System.out.println(i);
+			if (i++ % 10 == 0) {
+				logger.info("loaded " + i);
 			}
-			if (i > 10000)
+			if (i > 1000)
 				break;
 		}
 		index.close();
@@ -88,16 +91,18 @@ public class IndexLoader {
 			}
 			final long mid = midTmp;
 			final List<String> words = shingle.shingling(tweet.getContent());
-			SWSegmentation seg = new SWSegmentation(mid, 5, null, new ISegSubscriber() {
-				@Override
-				public void newSeg(Interval preInv, Segment seg) {
-					try {
-						index.insert(words, new MidSegment(mid, seg));
-					} catch (IOException e) {
-					}
-				}
-			});
-			Iterator<Entry<Double, Integer>> iter = hist.groupby(1000 * 60 * 30).iterator();
+			SWSegmentation seg = new SWSegmentation(mid, 5, null,
+					new ISegSubscriber() {
+						@Override
+						public void newSeg(Interval preInv, Segment seg) {
+							try {
+								index.insert(words, new MidSegment(mid, seg));
+							} catch (IOException e) {
+							}
+						}
+					});
+			Iterator<Entry<Double, Integer>> iter = hist
+					.groupby(1000 * 60 * 30).iterator();
 			while (iter.hasNext()) {
 				Entry<Double, Integer> entry = iter.next();
 				seg.advance(entry.getKey().intValue(), entry.getValue());

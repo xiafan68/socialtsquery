@@ -11,7 +11,7 @@ import core.lsmt.IMemTable;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMOInvertedIndex;
 
-public class MemTable extends TreeMap<Integer, MemoryOctree>implements IMemTable<MemoryOctree> {
+public class OctreeMemTable extends TreeMap<Integer, MemoryOctree>implements IMemTable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;
 	private SSTableMeta meta;
 	// for the reason of multiple thread
@@ -20,7 +20,7 @@ public class MemTable extends TreeMap<Integer, MemoryOctree>implements IMemTable
 	private LSMOInvertedIndex index;
 	private final MemorySSTableReader reader;
 
-	public MemTable(LSMOInvertedIndex index, SSTableMeta meta) {
+	public OctreeMemTable(LSMOInvertedIndex index, SSTableMeta meta) {
 		this.meta = meta;
 		this.index = index;
 		this.reader = new MemorySSTableReader(index, this, meta);

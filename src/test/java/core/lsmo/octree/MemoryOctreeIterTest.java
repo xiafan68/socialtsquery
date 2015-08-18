@@ -1,4 +1,4 @@
-package core.index.octree;
+package core.lsmo.octree;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -7,14 +7,16 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
+import segmentation.Segment;
+
 import common.MidSegment;
+
 import core.commom.Encoding;
 import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeNode;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import fanxia.file.DirLineReader;
-import segmentation.Segment;
 
 public class MemoryOctreeIterTest {
 	@Test

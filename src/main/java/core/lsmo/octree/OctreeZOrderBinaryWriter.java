@@ -44,7 +44,8 @@ public class OctreeZOrderBinaryWriter {
 			if (octreeNode.size() > 0
 					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				int[] counters = octreeNode.histogram();
-				if (counters[0] > (MemoryOctree.size_threshold >> 1)) {
+				if (octreeNode.getEdgeLen() != 1
+						&& counters[0] > (MemoryOctree.size_threshold >> 1)) {
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));

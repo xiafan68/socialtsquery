@@ -1,18 +1,22 @@
 package core.index;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import Util.Configuration;
-
 import common.MidSegment;
-import core.lsmo.MemTable;
-import core.lsmo.SSTableWriter;
-import core.lsmo.MemTable.SSTableMeta;
+import core.lsmo.OctreeMemTable;
+import core.lsmo.octree.OctreeNode;
+import core.lsmo.octree.OctreeNode.CompressedSerializer;
+import core.lsmt.IMemTable;
+import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.SSTableWriterFactory;
 import fanxia.file.DirLineReader;
 
 public class SSTableWriterTest {
@@ -23,11 +27,12 @@ public class SSTableWriterTest {
 		conf.load("conf/index.conf");
 
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		DirLineReader reader = new DirLineReader(
 				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
 		String line = null;
 		SSTableMeta meta = new SSTableMeta(0, 0);
-		MemTable tree = new MemTable(index, meta);
+		OctreeMemTable tree = new OctreeMemTable(index, meta);
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
@@ -39,7 +44,10 @@ public class SSTableWriterTest {
 		}
 		reader.close();
 
-		SSTableWriter writer = new SSTableWriter(Arrays.asList(tree), 128);
+		List<IMemTable> tables = new ArrayList<IMemTable>();
+		tables.add(tree);
+		ISSTableWriter writer = SSTableWriterFactory.INSTANCE
+				.newWriterForFlushing(tables, 128);
 		writer.write(conf.getIndexDir());
 		writer.close();
 	}

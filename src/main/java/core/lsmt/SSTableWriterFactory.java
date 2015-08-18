@@ -2,7 +2,7 @@ package core.lsmt;
 
 import java.util.List;
 
-import core.lsmo.MemTable;
+import core.lsmo.OctreeMemTable;
 import core.lsmo.SSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 

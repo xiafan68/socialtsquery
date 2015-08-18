@@ -1,5 +1,4 @@
 *.class
-conf/log4j-server.properties
 bin/
 conf/index.conf
 target/

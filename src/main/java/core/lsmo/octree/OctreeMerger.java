@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import com.sun.org.apache.bcel.internal.generic.LSHL;
+
 import core.lsmo.octree.MemoryOctree.OctreeMeta;
 
 /**
@@ -28,7 +30,12 @@ public class OctreeMerger implements IOctreeIterator {
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
 		this.rhs = rhs;
-		meta = new OctreeMeta(lhs.getMeta(), rhs.getMeta());
+		if (lhs.getMeta() == null || rhs.getMeta() == null) {
+			meta = new OctreeMeta(lhs.getMeta() != null ? lhs.getMeta()
+					: rhs.getMeta());
+		} else {
+			meta = new OctreeMeta(lhs.getMeta(), rhs.getMeta());
+		}
 	}
 
 	@Override

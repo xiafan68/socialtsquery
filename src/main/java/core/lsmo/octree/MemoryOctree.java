@@ -30,6 +30,12 @@ public class MemoryOctree {
 
 		}
 
+		public OctreeMeta(OctreeMeta meta) {
+			size = meta.size;
+			minTime = meta.minTime;
+			maxTime = meta.maxTime;
+		}
+
 		public OctreeMeta(OctreeMeta a, OctreeMeta b) {
 			size = a.size + b.size;
 			minTime = Math.min(a.minTime, b.minTime);

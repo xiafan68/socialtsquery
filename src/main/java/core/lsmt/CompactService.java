@@ -68,13 +68,15 @@ public class CompactService extends Thread {
 			return ret;
 		}
 
-		Collections.sort(sortedLevelNum, new Comparator<Entry<Integer, Integer>>() {
+		Collections.sort(sortedLevelNum,
+				new Comparator<Entry<Integer, Integer>>() {
 
-			@Override
-			public int compare(Entry<Integer, Integer> o1, Entry<Integer, Integer> o2) {
-				return o2.getValue().compareTo(o1.getValue());
-			}
-		});
+					@Override
+					public int compare(Entry<Integer, Integer> o1,
+							Entry<Integer, Integer> o2) {
+						return o2.getValue().compareTo(o1.getValue());
+					}
+				});
 		ret = levelList.get(sortedLevelNum.get(0).getKey());
 		return ret;
 	}
@@ -91,6 +93,7 @@ public class CompactService extends Thread {
 				}
 			} catch (Exception ex) {
 				logger.info("compact service:" + ex.getMessage());
+				index.stop = true;
 				throw new RuntimeException(ex.getMessage());
 			}
 		}
@@ -122,9 +125,10 @@ public class CompactService extends Thread {
 				}
 			}
 
-			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact.size() - 1).version,
-					toCompact.get(0).level + 1);
-			SSTableWriter writer = new SSTableWriter(newMeta, readers, index.getStep());
+			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact
+					.size() - 1).version, toCompact.get(0).level + 1);
+			SSTableWriter writer = new SSTableWriter(newMeta, readers,
+					index.getStep());
 			try {
 				Configuration conf = index.getConf();
 				writer.write(conf.getTmpDir());
@@ -132,13 +136,20 @@ public class CompactService extends Thread {
 				// write succeed, now move file to the right place, update
 				// the versionset and commitlog
 
-				File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(), writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(), writer.getMeta()));
-				tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(), writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(), writer.getMeta()));
-				tmpFile = SSTableWriter.dataFile(conf.getTmpDir(), writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(), writer.getMeta()));
-				index.compactTables(new HashSet<SSTableMeta>(toCompact), writer.getMeta());
+				File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
+						writer.getMeta()));
+				tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(),
+						writer.getMeta()));
+				tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
+						writer.getMeta());
+				tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
+						writer.getMeta()));
+				index.compactTables(new HashSet<SSTableMeta>(toCompact),
+						writer.getMeta());
 			} catch (IOException e) {
 				logger.error(e.getStackTrace());
 				throw new RuntimeException(e);
@@ -150,7 +161,8 @@ public class CompactService extends Thread {
 
 	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
 		for (SSTableMeta meta : toCompact) {
-			File file = SSTableWriter.dataFile(index.getConf().getIndexDir(), meta);
+			File file = SSTableWriter.dataFile(index.getConf().getIndexDir(),
+					meta);
 			FileUtil.markDel(file);
 		}
 	}

@@ -279,10 +279,11 @@ public class OctreeNode {
 				ByteUtil.writeVInt(output, node.segs.size());
 				for (MidSegment seg : node.segs) {
 					output.writeLong(seg.getMid());
-					ByteUtil.writeVInt(seg.getStart());
-					ByteUtil.writeVInt(seg.getEndTime() - seg.getStart());
-					ByteUtil.writeVInt(seg.getStartCount());
-					ByteUtil.writeVInt(seg.getEndCount());
+					ByteUtil.writeVInt(output, seg.getStart());
+					ByteUtil.writeVInt(output,
+							seg.getEndTime() - seg.getStart());
+					ByteUtil.writeVInt(output, seg.getStartCount());
+					ByteUtil.writeVInt(output, seg.getEndCount());
 				}
 			} catch (IOException e) {
 			}
