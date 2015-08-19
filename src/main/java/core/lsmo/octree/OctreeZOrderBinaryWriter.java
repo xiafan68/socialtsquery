@@ -29,6 +29,7 @@ public class OctreeZOrderBinaryWriter {
 		this.writer = writer;
 		this.iter = iter;
 		this.step = step;
+		cur = writer.getBucket();
 	}
 
 	/**
@@ -56,12 +57,10 @@ public class OctreeZOrderBinaryWriter {
 					octreeNode.getEncoding().write(dos);
 					octreeNode.write(dos);
 					byte[] data = baos.toByteArray();
-					if (cur == null || !cur.canStore(data.length)) {
-						if (cur != null) {
-							cur.write(writer.getDataDos());
-							logger.debug(cur);
-						}
-						cur = new Bucket(writer.getDataFilePosition());
+					if (!cur.canStore(data.length)) {
+						cur.write(writer.getDataDos());
+						logger.debug(cur);
+						cur = writer.newBucket();
 					}
 					if (count++ % step == 0) {
 						writer.addSample(octreeNode.getEncoding(),
@@ -75,9 +74,5 @@ public class OctreeZOrderBinaryWriter {
 	}
 
 	public void close() throws IOException {
-		if (cur != null) {
-			cur.write(writer.getDataDos());
-			logger.debug("last bucket:" + cur.toString());
-		}
 	}
 }

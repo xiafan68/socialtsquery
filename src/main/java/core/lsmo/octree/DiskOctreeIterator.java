@@ -32,9 +32,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	Bucket bucket = new Bucket(-1);
 	BucketID nextBucketID = new BucketID(0, (short) 0);
 
-	int curIdx = 0;
-	int readNum = 0;
-
+	int nextBlockID = -1;
 	private DiskSSTableReader reader;
 
 	/**
@@ -48,33 +46,32 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
-			nextBucketID.blockID = entry.dataStartBlockID;
+			nextBucketID.copy(entry.startBucketID);
 		}
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
 		return entry != null
-				&& (!traverseQueue.isEmpty() || readNum < entry.dataBlockNum || curIdx < bucket
-						.octNum());
+				&& (!traverseQueue.isEmpty() || nextBucketID
+						.compareTo(entry.endBucketID) <= 0);
 	}
 
 	@Override
 	public OctreeNode next() throws IOException {
-		if (entry.curKey == 0 && readNum > 1480) {
-			System.out.print("");
-		}
-		if (readNum < entry.dataBlockNum && curIdx >= bucket.octNum()) {
+		assert nextBucketID.compareTo(entry.endBucketID) <= 0;
+		if (bucket.octNum() == 0 || nextBucketID.offset >= bucket.octNum()) {
 			bucket.reset();
-			bucket.setBlockIdx(nextBucketID.blockID);
-			nextBucketID.blockID = reader.getBucket(nextBucketID, bucket);
-			readNum += bucket.blockNum();
-			curIdx = 0;
+			nextBucketID.blockID = nextBlockID;
+			if (bucket.octNum() != 0)
+				nextBucketID.offset = 0;
+			bucket.setBlockIdx(nextBlockID);
+			nextBlockID = reader.getBucket(nextBucketID, bucket);
 		}
 		OctreeNode ret = null;
-		if (curIdx < bucket.octNum()) {
+		if (nextBucketID.offset < bucket.octNum()) {
 			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
-					bucket.getOctree(curIdx)));
+					bucket.getOctree(nextBucketID.offset)));
 			Encoding coding = new Encoding();
 			coding.readFields(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
@@ -88,13 +85,13 @@ public class DiskOctreeIterator implements IOctreeIterator {
 				traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
 		}
-		curIdx++;
+		nextBucketID.offset++;
 
 		if (ret.getEncoding().getX() == 699344
 				&& ret.getEncoding().getY() == 699344
 				&& ret.getEncoding().getZ() == 0 && ret.getEdgeLen() == 16) {
 			System.out.println("debuging at next of DiskOctreeIterator "
-					+ entry + "  " + nextBucketID + " " + curIdx);
+					+ entry + "  " + nextBucketID + " " + nextBucketID.offset);
 		}
 
 		return ret;

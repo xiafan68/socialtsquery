@@ -102,6 +102,11 @@ public class Bucket {
 			this.offset = other.offset;
 		}
 
+		public void copy(BucketID other) {
+			this.blockID = other.blockID;
+			this.offset = other.offset;
+		}
+
 		public BucketID() {
 		}
 

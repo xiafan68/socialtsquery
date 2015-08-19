@@ -23,7 +23,8 @@ import fanxia.file.ByteUtil;
  *
  */
 public class OctreePostingListIter implements IOctreeIterator {
-	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
+	private static final Logger logger = Logger
+			.getLogger(OctreePostingListIter.class);
 	private DirEntry entry;
 	private DiskSSTableReader reader;
 	private int ts;
@@ -45,14 +46,17 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader, int ts, int te) {
+	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader,
+			int ts, int te) {
 		this.entry = entry;
 		this.reader = reader;
 		this.ts = ts;
 		this.te = te;
 		curMin = new Encoding(new Point(0, ts, Integer.MAX_VALUE), 0);
-		curMax = new Encoding(new Point(te, Integer.MAX_VALUE, Integer.MAX_VALUE), 0);
+		curMax = new Encoding(new Point(te, Integer.MAX_VALUE,
+				Integer.MAX_VALUE), 0);
 		max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
+		nextID.copy(entry.startBucketID);
 	}
 
 	@Override
@@ -158,7 +162,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 		// 利用pair跳转，nextID
 		if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
 			curBuck.reset();
-			nextID = new BucketID(pair.getValue());
+			nextID.copy(pair.getValue());
 		}
 
 		while (diskHasMore()) {
@@ -182,7 +186,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private boolean readBucketNextOctant() throws IOException {
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
+				data));
 		curCode.readFields(input);
 		// logger.info(curCode);
 
@@ -198,8 +203,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private boolean diskHasMore() {
-		return curMin.compareTo(max) <= 0 && (nextID.blockID - entry.dataStartBlockID < entry.dataBlockNum
-				|| (curBuck.octNum() != 0 && nextID.offset < curBuck.octNum()));
+		return curMin.compareTo(max) <= 0
+				&& nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
 	private void advance() throws IOException {

@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
+import core.io.Bucket;
+import core.io.Bucket.BucketID;
 import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmt.IMemTable.SSTableMeta;
 
@@ -26,11 +28,23 @@ public interface ISSTableWriter {
 		}
 	}
 
+	/**
+	 * return a bucket
+	 * @return
+	 */
+	public Bucket getBucket();
+
+	/**
+	 * create a new bucket
+	 * @return
+	 */
+	public Bucket newBucket();
+
 	public static class DirEntry extends OctreeMeta {
 		// runtime state
 		public int curKey;
-		public int dataStartBlockID;
-		public int dataBlockNum;
+		public BucketID startBucketID;
+		public BucketID endBucketID;
 		public long indexStartOffset;
 		public int sampleNum;
 
@@ -46,8 +60,8 @@ public interface ISSTableWriter {
 		 */
 		public void write(DataOutput output) throws IOException {
 			output.writeInt(curKey);
-			output.writeInt(dataStartBlockID);
-			output.writeInt(dataBlockNum);
+			startBucketID.write(output);
+			endBucketID.write(output);
 			output.writeLong(indexStartOffset);
 			output.writeInt(sampleNum);
 		}
@@ -60,21 +74,21 @@ public interface ISSTableWriter {
 		 */
 		public void read(DataInput input) throws IOException {
 			curKey = input.readInt();
-			dataStartBlockID = input.readInt();
-			dataBlockNum = input.readInt();
+			startBucketID.read(input);
+			endBucketID.read(input);
 			indexStartOffset = input.readLong();
 			sampleNum = input.readInt();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
+		/* (non-Javadoc)
 		 * @see java.lang.Object#toString()
 		 */
 		@Override
 		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", dataStartBlockID=" + dataStartBlockID + ", dataBlockNum="
-					+ dataBlockNum + ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
+			return "DirEntry [curKey=" + curKey + ", startBucketID="
+					+ startBucketID + ", endBucketID=" + endBucketID
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
+					+ sampleNum + "]";
 		}
 	}
 

@@ -39,6 +39,7 @@ public class SSTableWriter implements ISSTableWriter {
 	private int step;
 
 	DirEntry curDir = new DirEntry();
+	Bucket buck = new Bucket(0);
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -48,7 +49,8 @@ public class SSTableWriter implements ISSTableWriter {
 	 */
 	public SSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
 		this.meta = meta;
-		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(
+				IntegerComparator.instance);
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
@@ -56,32 +58,36 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	public SSTableWriter(List<IMemTable> tables, int step) {
-		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(
+				IntegerComparator.instance);
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
-				Iterator<Entry<Integer, MemoryOctree>> iter = table.iterator();
+			iter.add(PeekIterDecorate
+					.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
+						Iterator<Entry<Integer, MemoryOctree>> iter = table
+								.iterator();
 
-				@Override
-				public boolean hasNext() {
-					return iter.hasNext();
-				}
+						@Override
+						public boolean hasNext() {
+							return iter.hasNext();
+						}
 
-				@Override
-				public Entry<Integer, IOctreeIterator> next() {
-					Entry<Integer, MemoryOctree> entry = iter.next();
-					Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(entry.getKey(),
-							new MemoryOctreeIterator(entry.getValue()));
-					return ret;
-				}
+						@Override
+						public Entry<Integer, IOctreeIterator> next() {
+							Entry<Integer, MemoryOctree> entry = iter.next();
+							Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
+									entry.getKey(), new MemoryOctreeIterator(
+											entry.getValue()));
+							return ret;
+						}
 
-				@Override
-				public void remove() {
+						@Override
+						public void remove() {
 
-				}
+						}
 
-			}));
+					}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = step;
@@ -92,15 +98,18 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version,
+				meta.level));
 	}
 
 	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.idx", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d.idx", meta.version,
+				meta.level));
 	}
 
 	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.meta", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d.meta", meta.version,
+				meta.level));
 	}
 
 	/**
@@ -118,7 +127,8 @@ public class SSTableWriter implements ISSTableWriter {
 		dataDos = new DataOutputStream(dataFileOs);
 		indexFileDos = new FileOutputStream(idxFile(dir, meta));
 		indexDos = new DataOutputStream(indexFileDos);
-		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir, meta)));
+		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir,
+				meta)));
 
 		while (iter.hasNext()) {
 			Entry<Integer, List<IOctreeIterator>> entry = iter.next();
@@ -133,7 +143,8 @@ public class SSTableWriter implements ISSTableWriter {
 					treeIter = new OctreeMerger(treeIter, curIter);
 				}
 			}
-			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(this, treeIter, step);
+			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(
+					this, treeIter, step);
 			writer.write();
 			writer.close();
 
@@ -142,6 +153,11 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	public void close() throws IOException {
+		if (buck != null) {
+			buck.write(getDataDos());
+			logger.debug("last bucket:" + buck.toString());
+		}
+
 		dataFileOs.close();
 		dataDos.close();
 		indexFileDos.close();
@@ -156,13 +172,18 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	private void startPostingList() throws IOException {
-		curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE);
+		curDir.startBucketID.copy(buck.blockIdx());
+		// curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() /
+		// Bucket.BLOCK_SIZE);
 		curDir.indexStartOffset = indexFileDos.getChannel().position();
 		curDir.sampleNum = 0;
 	}
 
 	private void endPostingList() throws IOException {
-		curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE) - curDir.dataStartBlockID;
+		// curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() /
+		// Bucket.BLOCK_SIZE)
+		// - curDir.dataStartBlockID;
+		curDir.endBucketID.copy(buck.blockIdx());
 		curDir.write(dirDos);
 		logger.debug("finish " + curDir);
 	}
@@ -182,4 +203,19 @@ public class SSTableWriter implements ISSTableWriter {
 		return dataDos;
 	}
 
+	@Override
+	public Bucket getBucket() {
+		return buck;
+	}
+
+	@Override
+	public Bucket newBucket() {
+		buck.reset();
+		try {
+			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return buck;
+	}
 }
