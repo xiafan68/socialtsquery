@@ -141,16 +141,14 @@ public class PartitionExecutor extends IQueryExecutor {
 	private IOctreeIterator nextCursor() throws IOException {
 		IOctreeIterator ret = null;
 		for (int i = 0; i < cursors.length; i++) {
-			int preListIdx = curListIdx;
 			curListIdx = (++curListIdx) % cursors.length;
-
-			ret = cursors[preListIdx];
+			ret = cursors[curListIdx];
 			if (ret == null) {
 				continue;
 			} else if (!ret.hasNext()) {
-				cursors[preListIdx] = null;
+				cursors[curListIdx] = null;
 				ret = null;
-				break;
+				// break;
 			} else {
 				break;
 			}
@@ -217,21 +215,17 @@ public class PartitionExecutor extends IQueryExecutor {
 
 		Encoding code = node.getEncoding();
 
-		int idx = curListIdx - 1;
-		if (idx < 0)
-			idx = query.keywords.length - 1;
-
-		bestScores[idx] = code.getTopZ();
+		bestScores[curListIdx] = code.getTopZ();
 
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
 
 		for (MidSegment midseg : node.getSegs())
-			ret |= updateCandState(idx, midseg, 1.0f);
+			ret |= updateCandState(curListIdx, midseg, 1.0f);
 		Profile.instance.end(Profile.UPDATE_STATE);
 
 		if (!plc.hasNext()) {
-			bestScores[idx] = 0;
+			bestScores[curListIdx] = 0;
 		}
 		return ret;
 	}

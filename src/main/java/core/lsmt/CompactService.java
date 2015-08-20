@@ -92,7 +92,7 @@ public class CompactService extends Thread {
 					}
 				}
 			} catch (Exception ex) {
-				logger.info("compact service:" + ex.getMessage());
+				logger.error("compact service:" + ex.getMessage());
 				index.stop = true;
 				throw new RuntimeException(ex.getMessage());
 			}

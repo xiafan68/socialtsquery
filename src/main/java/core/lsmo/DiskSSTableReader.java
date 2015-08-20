@@ -20,12 +20,12 @@ import Util.Pair;
 import core.commom.Encoding;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.SSTableWriter.DirEntry;
 import core.lsmo.octree.DiskOctreeIterator;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMOInvertedIndex;
 
 /**

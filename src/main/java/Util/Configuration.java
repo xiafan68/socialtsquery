@@ -45,8 +45,7 @@ public class Configuration {
 	}
 
 	public int getFlushLimit() {
-		return Integer.parseInt(props.getProperty("memtable_size_limit",
-				"2000000"));
+		return Integer.parseInt(props.getProperty("memtable_size_limit", "2000000"));
 	}
 
 	public boolean debugMode() {
@@ -55,9 +54,14 @@ public class Configuration {
 
 	/**
 	 * determine the max number of blocks an octant may occupy
+	 * 
 	 * @return
 	 */
 	public int getOctantSizeLimit() {
 		return Integer.parseInt(props.getProperty("octant_size_limit", "120"));
+	}
+
+	public int getBatchCommitNum() {
+		return Integer.parseInt(props.getProperty("batch_commit_num", "1000"));
 	}
 }

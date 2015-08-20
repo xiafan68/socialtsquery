@@ -12,8 +12,8 @@ import core.commom.Point;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
+import core.lsmo.SSTableWriter.DirEntry;
 import core.lsmo.octree.MemoryOctree.OctreeMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
 import fanxia.file.ByteUtil;
 
 /**
@@ -23,8 +23,7 @@ import fanxia.file.ByteUtil;
  *
  */
 public class OctreePostingListIter implements IOctreeIterator {
-	private static final Logger logger = Logger
-			.getLogger(OctreePostingListIter.class);
+	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
 	private DirEntry entry;
 	private DiskSSTableReader reader;
 	private int ts;
@@ -46,17 +45,18 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader,
-			int ts, int te) {
-		this.entry = entry;
-		this.reader = reader;
-		this.ts = ts;
-		this.te = te;
-		curMin = new Encoding(new Point(0, ts, Integer.MAX_VALUE), 0);
-		curMax = new Encoding(new Point(te, Integer.MAX_VALUE,
-				Integer.MAX_VALUE), 0);
-		max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
-		nextID.copy(entry.startBucketID);
+	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader, int ts, int te) {
+		if (entry != null) {
+			this.entry = entry;
+			this.reader = reader;
+			this.ts = ts;
+			this.te = te;
+			curMin = new Encoding(new Point(0, ts, Integer.MAX_VALUE), 0);
+			curMax = new Encoding(new Point(te, Integer.MAX_VALUE, Integer.MAX_VALUE), 0);
+			max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
+			nextID.copy(entry.startBucketID);
+		}
+
 	}
 
 	@Override
@@ -186,8 +186,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private boolean readBucketNextOctant() throws IOException {
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
-				data));
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
 		curCode.readFields(input);
 		// logger.info(curCode);
 
@@ -203,8 +202,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private boolean diskHasMore() {
-		return curMin.compareTo(max) <= 0
-				&& nextID.compareTo(entry.endBucketID) <= 0;
+		return curMin.compareTo(max) <= 0 && nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
 	private void advance() throws IOException {

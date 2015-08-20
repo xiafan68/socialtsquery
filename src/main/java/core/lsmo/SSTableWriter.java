@@ -1,5 +1,8 @@
 package core.lsmo;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,7 +23,9 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
+import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeZOrderBinaryWriter;
+import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
@@ -41,6 +46,63 @@ public class SSTableWriter implements ISSTableWriter {
 	DirEntry curDir = new DirEntry();
 	Bucket buck = new Bucket(0);
 
+	public static class DirEntry extends OctreeMeta {
+		// runtime state
+		public int curKey;
+		public BucketID startBucketID;
+		public BucketID endBucketID;
+		public long indexStartOffset;
+		public int sampleNum;
+
+		public DirEntry() {
+			startBucketID = new BucketID();
+			endBucketID = new BucketID();
+		}
+
+		public long getIndexOffset() {
+			return indexStartOffset;
+		}
+
+		/**
+		 * 写出
+		 * 
+		 * @param output
+		 * @throws IOException
+		 */
+		public void write(DataOutput output) throws IOException {
+			output.writeInt(curKey);
+			startBucketID.write(output);
+			endBucketID.write(output);
+			output.writeLong(indexStartOffset);
+			output.writeInt(sampleNum);
+		}
+
+		/**
+		 * 读取
+		 * 
+		 * @param input
+		 * @throws IOException
+		 */
+		public void read(DataInput input) throws IOException {
+			curKey = input.readInt();
+			startBucketID.read(input);
+			endBucketID.read(input);
+			indexStartOffset = input.readLong();
+			sampleNum = input.readInt();
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
+		}
+	}
+
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
 	 * 
@@ -49,8 +111,7 @@ public class SSTableWriter implements ISSTableWriter {
 	 */
 	public SSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
 		this.meta = meta;
-		iter = new MergeIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
@@ -58,36 +119,31 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	public SSTableWriter(List<IMemTable> tables, int step) {
-		iter = new MergeIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+		iter = new MergeIterator<Integer, IOctreeIterator>(IntegerComparator.instance);
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate
-					.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
-						Iterator<Entry<Integer, MemoryOctree>> iter = table
-								.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
+				Iterator<Entry<Integer, MemoryOctree>> iter = table.iterator();
 
-						@Override
-						public boolean hasNext() {
-							return iter.hasNext();
-						}
+				@Override
+				public boolean hasNext() {
+					return iter.hasNext();
+				}
 
-						@Override
-						public Entry<Integer, IOctreeIterator> next() {
-							Entry<Integer, MemoryOctree> entry = iter.next();
-							Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
-									entry.getKey(), new MemoryOctreeIterator(
-											entry.getValue()));
-							return ret;
-						}
+				@Override
+				public Entry<Integer, IOctreeIterator> next() {
+					Entry<Integer, MemoryOctree> entry = iter.next();
+					Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(entry.getKey(),
+							new MemoryOctreeIterator(entry.getValue()));
+					return ret;
+				}
 
-						@Override
-						public void remove() {
+				@Override
+				public void remove() {
 
-						}
-
-					}));
+				}
+			}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = step;
@@ -98,18 +154,15 @@ public class SSTableWriter implements ISSTableWriter {
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
 	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.idx", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.idx", meta.version, meta.level));
 	}
 
 	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.meta", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.meta", meta.version, meta.level));
 	}
 
 	/**
@@ -127,8 +180,7 @@ public class SSTableWriter implements ISSTableWriter {
 		dataDos = new DataOutputStream(dataFileOs);
 		indexFileDos = new FileOutputStream(idxFile(dir, meta));
 		indexDos = new DataOutputStream(indexFileDos);
-		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir,
-				meta)));
+		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir, meta)));
 
 		while (iter.hasNext()) {
 			Entry<Integer, List<IOctreeIterator>> entry = iter.next();
@@ -143,12 +195,52 @@ public class SSTableWriter implements ISSTableWriter {
 					treeIter = new OctreeMerger(treeIter, curIter);
 				}
 			}
-			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(
-					this, treeIter, step);
-			writer.write();
-			writer.close();
-
+			writeOctree(treeIter);
 			endPostingList();// end a new posting list
+		}
+	}
+
+	/**
+	 * the visiting of the parent controls the setup of bucket
+	 * 
+	 * @param octreeNode
+	 * @throws IOException
+	 */
+	public void writeOctree(IOctreeIterator iter) throws IOException {
+		boolean first = true;
+		OctreeNode octreeNode = null;
+		int count = 0;
+		while (iter.hasNext()) {
+			octreeNode = iter.next();
+			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+				int[] counters = octreeNode.histogram();
+				if (octreeNode.getEdgeLen() != 1 && counters[0] > (MemoryOctree.size_threshold >> 1)) {
+					octreeNode.split();
+					for (int i = 0; i < 8; i++)
+						iter.addNode(octreeNode.getChild(i));
+				} else {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					DataOutputStream dos = new DataOutputStream(baos);
+					// first write the octant code, then write the octant
+					octreeNode.getEncoding().write(dos);
+					octreeNode.write(dos);
+					byte[] data = baos.toByteArray();
+					if (!buck.canStore(data.length)) {
+						buck.write(getDataDos());
+						logger.debug(buck);
+						newBucket();
+					}
+					logger.debug(octreeNode);
+					buck.storeOctant(data);
+					if (first) {
+						first = false;
+						startPostingList();
+					}
+					if (count++ % step == 0) {
+						addSample(octreeNode.getEncoding(), buck.blockIdx());
+					}
+				}
+			}
 		}
 	}
 
@@ -171,7 +263,7 @@ public class SSTableWriter implements ISSTableWriter {
 		id.write(indexDos);
 	}
 
-	private void startPostingList() throws IOException {
+	public void startPostingList() throws IOException {
 		curDir.startBucketID.copy(buck.blockIdx());
 		// curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() /
 		// Bucket.BLOCK_SIZE);
@@ -179,7 +271,7 @@ public class SSTableWriter implements ISSTableWriter {
 		curDir.sampleNum = 0;
 	}
 
-	private void endPostingList() throws IOException {
+	public void endPostingList() throws IOException {
 		// curDir.dataBlockNum = (int) (dataFileOs.getChannel().position() /
 		// Bucket.BLOCK_SIZE)
 		// - curDir.dataStartBlockID;
