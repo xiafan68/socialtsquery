@@ -18,13 +18,13 @@ import common.MidSegment;
 import core.commom.Encoding;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.PostingListMeta;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 
 public class OctreeMergerTest {
 	@Test
@@ -79,7 +79,7 @@ public class OctreeMergerTest {
 	}
 
 	public static MemoryOctree insertAndReadTest(int seed) {
-		MemoryOctree octree = new MemoryOctree(new OctreeMeta());
+		MemoryOctree octree = new MemoryOctree(new PostingListMeta());
 		Random rand = new Random();
 		rand.setSeed(seed);
 		HashSet<MidSegment> segs = new HashSet<MidSegment>();
@@ -101,7 +101,7 @@ public class OctreeMergerTest {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		int level = 0;
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(0,
@@ -144,7 +144,7 @@ public class OctreeMergerTest {
 	public void merge3SStables() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(
 				32, 0));
 		lhs.init();

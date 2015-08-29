@@ -3,15 +3,21 @@ package core.lsmo.octree;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import Util.Pair;
+
+import common.MidSegment;
 
 import core.commom.Encoding;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.PostingListMeta;
 
 /**
  * an iterator visiting leaf nodes of disk octree
@@ -58,7 +64,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() throws IOException {
+	public OctreeNode nextNode() throws IOException {
 		assert nextBucketID.compareTo(entry.endBucketID) <= 0;
 		if (bucket.octNum() == 0 || nextBucketID.offset >= bucket.octNum()) {
 			bucket.reset();
@@ -113,12 +119,21 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return entry;
 	}
 
 	@Override
 	public void open() throws IOException {
 
+	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		OctreeNode node = nextNode();
+		Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
+				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
+						node.segs));
+		return ret;
 	}
 }

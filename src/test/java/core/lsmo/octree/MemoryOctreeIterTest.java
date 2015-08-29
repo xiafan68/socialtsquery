@@ -13,7 +13,7 @@ import common.MidSegment;
 
 import core.commom.Encoding;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.PostingListMeta;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import fanxia.file.DirLineReader;
@@ -26,7 +26,7 @@ public class MemoryOctreeIterTest {
 	}
 
 	public void insertAndReadTest(int seed) {
-		MemoryOctree octree = new MemoryOctree(new OctreeMeta());
+		MemoryOctree octree = new MemoryOctree(new PostingListMeta());
 		Random rand = new Random();
 		rand.setSeed(seed);
 		HashSet<MidSegment> segs = new HashSet<MidSegment>();
@@ -65,7 +65,7 @@ public class MemoryOctreeIterTest {
 		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");
 		String line = null;
 		int i = 0;
-		MemoryOctree octree = new MemoryOctree(new OctreeMeta());
+		MemoryOctree octree = new MemoryOctree(new PostingListMeta());
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);

@@ -17,7 +17,7 @@ import core.commom.Encoding;
 import core.commom.Point;
 import core.lsmo.DiskSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 
 public class OctreePostingListIterTest {
 	@Test
@@ -26,7 +26,7 @@ public class OctreePostingListIterTest {
 
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
 				new SSTableMeta(255, 8));
 		reader.init();

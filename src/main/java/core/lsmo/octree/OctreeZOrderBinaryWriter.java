@@ -7,7 +7,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import core.io.Bucket;
-import core.lsmo.SSTableWriter;
+import core.lsmo.OctreeSSTableWriter;
 
 /**
  * This class is only responsible for writing the octree into disk file,
@@ -21,10 +21,10 @@ public class OctreeZOrderBinaryWriter {
 
 	Bucket cur; // the current bucket used to write data
 	IOctreeIterator iter;
-	SSTableWriter writer;
+	OctreeSSTableWriter writer;
 	int step;
 
-	public OctreeZOrderBinaryWriter(SSTableWriter writer, IOctreeIterator iter,
+	public OctreeZOrderBinaryWriter(OctreeSSTableWriter writer, IOctreeIterator iter,
 			int step) {
 		this.writer = writer;
 		this.iter = iter;
@@ -41,7 +41,7 @@ public class OctreeZOrderBinaryWriter {
 		OctreeNode octreeNode = null;
 		int count = 0;
 		while (iter.hasNext()) {
-			octreeNode = iter.next();
+			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0
 					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				int[] counters = octreeNode.histogram();

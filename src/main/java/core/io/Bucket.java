@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.ftpserver.command.impl.RETR;
 
 import fanxia.file.ByteUtil;
 
@@ -153,6 +154,12 @@ public class Bucket {
 
 	public BucketID blockIdx() {
 		return new BucketID(blockIdx, (short) octants.size());
+	}
+
+	public int available() {
+		if (totalSize == BLOCK_SIZE)
+			return 0;
+		return BLOCK_SIZE - totalSize % BLOCK_SIZE;
 	}
 
 	public boolean canStore(int length) {

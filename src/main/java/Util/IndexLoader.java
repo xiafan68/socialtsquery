@@ -11,7 +11,7 @@ import com.sun.istack.internal.logging.Logger;
 
 import common.MidSegment;
 import common.Tweet;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
@@ -28,7 +28,7 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -59,7 +59,7 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		final LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		try {
 			index.init();
 		} catch (IOException e) {

@@ -6,15 +6,14 @@ import java.util.Iterator;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
-import core.lsmt.IMemTable;
-import core.lsmt.ISSTableReader;
-import core.lsmt.LSMOInvertedIndex;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableReader;
+import core.lsmt.LSMTInvertedIndex;
 
 public class MemorySSTableReader extends ISSTableReader {
 	OctreeMemTable table;
 
-	public MemorySSTableReader(LSMOInvertedIndex index, OctreeMemTable table, SSTableMeta meta) {
+	public MemorySSTableReader(LSMTInvertedIndex index, OctreeMemTable table, SSTableMeta meta) {
 		super(index, meta);
 		this.table = table;
 	}

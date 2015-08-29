@@ -15,7 +15,7 @@ import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.SSTableWriterFactory;
 import fanxia.file.DirLineReader;
 
@@ -26,7 +26,7 @@ public class SSTableWriterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		DirLineReader reader = new DirLineReader(
 				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");

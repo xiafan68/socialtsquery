@@ -31,10 +31,9 @@ import core.executor.IQueryExecutor;
 import core.executor.PartitionExecutor;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
-import core.lsmo.SSTableWriter;
+import core.lsmo.OctreeSSTableWriter;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.OctreeMergeView;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -46,9 +45,9 @@ import shingle.TextShingle;
  * @author xiafan
  *
  */
-public class LSMOInvertedIndex<PType> {
+public class LSMTInvertedIndex<PType> {
 	private static final Logger logger = Logger
-			.getLogger(LSMOInvertedIndex.class);
+			.getLogger(LSMTInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	File dataDir;
@@ -64,7 +63,7 @@ public class LSMOInvertedIndex<PType> {
 	TextShingle shingle = new TextShingle(null);
 	DataOutputStream keyWriter;
 
-	public LSMOInvertedIndex(Configuration conf) {
+	public LSMTInvertedIndex(Configuration conf) {
 		this.conf = conf;
 	}
 
@@ -167,9 +166,9 @@ public class LSMOInvertedIndex<PType> {
 	 * @return
 	 */
 	private boolean validateDataFile(SSTableMeta meta) {
-		File dFile = SSTableWriter.dataFile(conf.getIndexDir(), meta);
-		File idxFile = SSTableWriter.idxFile(conf.getIndexDir(), meta);
-		File dirFile = SSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		File dFile = OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta);
+		File idxFile = OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta);
+		File dirFile = OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
 		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
 			logger.warn("index file of version " + meta + " is not consistent");
 			return false;
@@ -296,11 +295,11 @@ public class LSMOInvertedIndex<PType> {
 		return exec.getAnswer();
 	}
 
-	public Map<String, IOctreeIterator> getPostingListIter(
+	public Map<String, IPostingListIterator> getPostingListIter(
 			List<String> keywords, int start, int end) throws IOException {
-		Map<String, IOctreeIterator> ret = new HashMap<String, IOctreeIterator>();
+		Map<String, IPostingListIterator> ret = new HashMap<String, IPostingListIterator>();
 		for (String keyword : keywords) {
-			OctreeMergeView view = new OctreeMergeView();
+			PostingListMergeView view = new PostingListMergeView();
 			int key = getKeywordCode(keyword);
 			// add iter for current memtable
 			view.addIterator(versionSet.curTable.getReader()
@@ -488,9 +487,9 @@ public class LSMOInvertedIndex<PType> {
 	}
 
 	private void delIndexFile(SSTableMeta meta) {
-		SSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
-		SSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
-		SSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
 		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
 

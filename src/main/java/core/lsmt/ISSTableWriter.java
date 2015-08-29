@@ -8,16 +8,26 @@ import java.util.Comparator;
 
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmt.IMemTable.SSTableMeta;
 
-public interface ISSTableWriter {
+public abstract class ISSTableWriter {
 
-	public SSTableMeta getMeta();
+	public abstract SSTableMeta getMeta();
 
-	public void write(File dir) throws IOException;
+	/**
+	 * 将索引文件写入到dir中
+	 * @param dir
+	 * @throws IOException
+	 */
+	public abstract void write(File dir) throws IOException;
 
-	public void close() throws IOException;
+	/**
+	 * 将已写出的索引文件移到dir中
+	 * @param dir
+	 */
+	public abstract void moveToDir(File preDir, File dir);
+
+	public abstract void close() throws IOException;
 
 	public static class IntegerComparator implements Comparator<Integer> {
 		public static IntegerComparator instance = new IntegerComparator();
@@ -32,15 +42,15 @@ public interface ISSTableWriter {
 	 * return a bucket
 	 * @return
 	 */
-	public Bucket getBucket();
+	public abstract Bucket getBucket();
 
 	/**
 	 * create a new bucket
 	 * @return
 	 */
-	public Bucket newBucket();
+	public abstract Bucket newBucket();
 
-	public static class DirEntry extends OctreeMeta {
+	public static class DirEntry extends PostingListMeta {
 		// runtime state
 		public int curKey;
 		public BucketID startBucketID;

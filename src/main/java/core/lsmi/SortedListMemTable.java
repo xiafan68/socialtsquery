@@ -1,72 +1,76 @@
-package core.lsmo;
+package core.lsmi;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import common.MidSegment;
 
-import core.lsmo.octree.MemoryOctree;
 import core.lsmt.IMemTable;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PostingListMeta;
 
-public class OctreeMemTable extends TreeMap<Integer, MemoryOctree>implements IMemTable<MemoryOctree> {
-	private static final long serialVersionUID = 1L;
-	private SSTableMeta meta;
+public class SortedListMemTable extends TreeMap<Integer, List<MidSegment>>
+		implements IMemTable<List<MidSegment>> {
+	SSTableMeta meta;
 	// for the reason of multiple thread
 	private volatile boolean frezen = false;
 	private volatile int valueCount = 0;
-	private LSMTInvertedIndex index;
-	private final MemorySSTableReader reader;
+	LSMTInvertedIndex index;
 
-	public OctreeMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
+	public SortedListMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
 		this.meta = meta;
 		this.index = index;
-		this.reader = new MemorySSTableReader(index, this, meta);
 	}
 
-	/**
-	 * @return the reader
-	 */
+	@Override
 	public ISSTableReader getReader() {
-		return reader;
+		return new SortedListMemTableReader(this);
 	}
 
-	/**
-	 * @return the meta
-	 */
+	@Override
 	public SSTableMeta getMeta() {
 		return meta;
 	}
 
+	@Override
 	public void freeze() {
 		frezen = true;
+
 	}
 
+	@Override
 	public int size() {
 		return valueCount;
 	}
 
+	@Override
 	public void insert(int key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}
 
 		valueCount++;
-		MemoryOctree postinglist;
+		List<MidSegment> postinglist;
 		if (containsKey(key)) {
 			postinglist = get(key);
 		} else {
-			postinglist = new MemoryOctree(new PostingListMeta());
+			postinglist = new ArrayList<MidSegment>();
 			put(key, postinglist);
 		}
-		postinglist.insert(seg.getPoint(), seg);
+		int idx = Collections.binarySearch(postinglist, seg);
+		if (idx < 0) {
+			idx = Math.abs(idx) - 1;
+		}
+		postinglist.add(idx, seg);
 	}
 
-	public Iterator<Entry<Integer, MemoryOctree>> iterator() {
-		return super.entrySet().iterator();
+	@Override
+	public Iterator<Entry<Integer, List<MidSegment>>> iterator() {
+		return this.iterator();
 	}
 
 }

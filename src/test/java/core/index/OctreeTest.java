@@ -9,12 +9,12 @@ import segmentation.Segment;
 import common.MidSegment;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.OctreeTextWriter;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmo.octree.MemoryOctree.PostingListMeta;
 
 public class OctreeTest {
 	@Test
 	public void serializeTest() throws IOException {
-		MemoryOctree tree = new MemoryOctree(new OctreeMeta());
+		MemoryOctree tree = new MemoryOctree(new PostingListMeta());
 		long id = 0;
 		for (int i = 0; i < 8; i++) {
 			for (int j = i; j < 8; j++) {

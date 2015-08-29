@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 
 import Util.Configuration;
 import core.lsmo.OctreeMemTable;
-import core.lsmo.SSTableWriter;
+import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 
 /**
@@ -22,10 +22,10 @@ import core.lsmt.IMemTable.SSTableMeta;
  */
 public class FlushService extends Thread {
 	private static final Logger logger = Logger.getLogger(FlushService.class);
-	LSMOInvertedIndex index;
+	LSMTInvertedIndex index;
 	Configuration conf;
 
-	public FlushService(LSMOInvertedIndex index) {
+	public FlushService(LSMTInvertedIndex index) {
 		super("flush thread");
 		this.index = index;
 		conf = index.getConf();
@@ -35,7 +35,8 @@ public class FlushService extends Thread {
 	public void run() {
 		while (!index.stop) {
 			LockManager.INSTANCE.versionReadLock();
-			List<IMemTable> flushingTables = new ArrayList<IMemTable>(index.getVersion().flushingTables);
+			List<IMemTable> flushingTables = new ArrayList<IMemTable>(
+					index.getVersion().flushingTables);
 			LockManager.INSTANCE.versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
 				StringBuffer buf = new StringBuffer("flushing versions ");
@@ -46,20 +47,16 @@ public class FlushService extends Thread {
 				}
 				logger.info(buf.toString());
 
-				ISSTableWriter writer = SSTableWriterFactory.INSTANCE.newWriterForFlushing(flushingTables.subList(0, 1),
-						index.getStep());
+				ISSTableWriter writer = SSTableWriterFactory.INSTANCE
+						.newWriterForFlushing(flushingTables.subList(0, 1),
+								index.getStep());
 				try {
 					writer.write(conf.getTmpDir());
 					writer.close();
 
 					// write succeed, now move file to the right place, update
 					// the versionset and commitlog
-					File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(), writer.getMeta()));
-					tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(), writer.getMeta()));
-					tmpFile = SSTableWriter.dataFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(), writer.getMeta()));
+					writer.moveToDir(conf.getTmpDir(), conf.getIndexDir());
 					Set<SSTableMeta> versions = new HashSet<SSTableMeta>();
 					for (IMemTable table : flushingTables) {
 						versions.add(table.getMeta());

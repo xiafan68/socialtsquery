@@ -23,7 +23,7 @@ import Util.Configuration;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.PartitionExecutor;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import dataserver.JDBC;
 import dataserver.TimeSeriesDao;
 import dataserver.TweetDao;
@@ -37,7 +37,7 @@ import segmentation.Interval;
 
 public class TKSearchServer implements TweetService.Iface {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);
-	LSMOInvertedIndex indexReader;
+	LSMTInvertedIndex indexReader;
 	JDBC jdbc;
 
 	public void start() throws IOException {
@@ -45,7 +45,7 @@ public class TKSearchServer implements TweetService.Iface {
 		// dir = new Path("/home/xiafan/temp/invindex_parts");
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		indexReader = new LSMOInvertedIndex(conf);
+		indexReader = new LSMTInvertedIndex(conf);
 		try {
 			indexReader.init();
 		} catch (IOException e) {

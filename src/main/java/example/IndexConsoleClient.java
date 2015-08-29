@@ -12,7 +12,7 @@ import java.util.Scanner;
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import segmentation.Interval;
 
 public class IndexConsoleClient {
@@ -21,7 +21,7 @@ public class IndexConsoleClient {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex client = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf);
 		try {
 			client.init();
 		} catch (IOException e) {

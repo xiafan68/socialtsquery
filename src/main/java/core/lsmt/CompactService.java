@@ -16,9 +16,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.log4j.Logger;
 
 import Util.Configuration;
-import core.lsmo.SSTableWriter;
+import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex.VersionSet;
+import core.lsmt.LSMTInvertedIndex.VersionSet;
 import fanxia.file.FileUtil;
 
 /**
@@ -31,11 +31,11 @@ import fanxia.file.FileUtil;
  */
 public class CompactService extends Thread {
 	private static final Logger logger = Logger.getLogger(CompactService.class);
-	LSMOInvertedIndex index;
+	LSMTInvertedIndex index;
 	ConcurrentSkipListSet<String> compactingWords = new ConcurrentSkipListSet<String>();
 	VersionSet snapshot;
 
-	public CompactService(LSMOInvertedIndex index) {
+	public CompactService(LSMTInvertedIndex index) {
 		super("compaction thread");
 		this.index = index;
 	}
@@ -127,7 +127,7 @@ public class CompactService extends Thread {
 
 			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact
 					.size() - 1).version, toCompact.get(0).level + 1);
-			SSTableWriter writer = new SSTableWriter(newMeta, readers,
+			OctreeSSTableWriter writer = new OctreeSSTableWriter(newMeta, readers,
 					index.getStep());
 			try {
 				Configuration conf = index.getConf();
@@ -136,17 +136,17 @@ public class CompactService extends Thread {
 				// write succeed, now move file to the right place, update
 				// the versionset and commitlog
 
-				File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(),
+				File tmpFile = OctreeSSTableWriter.idxFile(conf.getTmpDir(),
 						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(),
+				tmpFile.renameTo(OctreeSSTableWriter.idxFile(conf.getIndexDir(),
 						writer.getMeta()));
-				tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(),
+				tmpFile = OctreeSSTableWriter.dirMetaFile(conf.getTmpDir(),
 						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(),
+				tmpFile.renameTo(OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(),
 						writer.getMeta()));
-				tmpFile = SSTableWriter.dataFile(conf.getTmpDir(),
+				tmpFile = OctreeSSTableWriter.dataFile(conf.getTmpDir(),
 						writer.getMeta());
-				tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(),
+				tmpFile.renameTo(OctreeSSTableWriter.dataFile(conf.getIndexDir(),
 						writer.getMeta()));
 				index.compactTables(new HashSet<SSTableMeta>(toCompact),
 						writer.getMeta());
@@ -161,7 +161,7 @@ public class CompactService extends Thread {
 
 	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
 		for (SSTableMeta meta : toCompact) {
-			File file = SSTableWriter.dataFile(index.getConf().getIndexDir(),
+			File file = OctreeSSTableWriter.dataFile(index.getConf().getIndexDir(),
 					meta);
 			FileUtil.markDel(file);
 		}

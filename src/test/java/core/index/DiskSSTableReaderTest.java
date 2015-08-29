@@ -24,7 +24,7 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 
 public class DiskSSTableReaderTest {
 	/**
@@ -37,7 +37,7 @@ public class DiskSSTableReaderTest {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		File dataDir = conf.getIndexDir();
 		List<File> files = new ArrayList<File>(FileUtils.listFiles(dataDir,
 				new RegexFileFilter("[0-9]+_[0-9]+.data"), null));
@@ -45,8 +45,8 @@ public class DiskSSTableReaderTest {
 		Collections.sort(files, new Comparator<File>() {
 			@Override
 			public int compare(File o1, File o2) {
-				int[] v1 = LSMOInvertedIndex.parseVersion(o1);
-				int[] v2 = LSMOInvertedIndex.parseVersion(o2);
+				int[] v1 = LSMTInvertedIndex.parseVersion(o1);
+				int[] v2 = LSMTInvertedIndex.parseVersion(o2);
 				int ret = Integer.compare(v1[1], v2[1]);
 				if (ret == 0) {
 					ret = Integer.compare(v1[0], v2[0]);
@@ -56,7 +56,7 @@ public class DiskSSTableReaderTest {
 		});
 		for (File dataFile : files) {
 			System.out.println("examine data file of version:" + dataFile);
-			int[] version = LSMOInvertedIndex.parseVersion(dataFile);
+			int[] version = LSMTInvertedIndex.parseVersion(dataFile);
 			DiskSSTableReader reader = new DiskSSTableReader(index,
 					new SSTableMeta(version[0], version[1]));
 			reader.init();
@@ -75,7 +75,7 @@ public class DiskSSTableReaderTest {
 		System.setOut(new PrintStream(new FileOutputStream("/tmp/7_0.txt")));
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
 				new SSTableMeta(131, 1));
 		reader.init();
@@ -116,7 +116,7 @@ public class DiskSSTableReaderTest {
 	public void detectMissingSegs() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		int level = 7;
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		DiskSSTableReader reader = null;

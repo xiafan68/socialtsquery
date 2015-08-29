@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
-import Util.MergeIterator;
+import Util.GroupByKeyIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
 import core.commom.Encoding;
@@ -26,9 +26,9 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 
-public class SSTableWriter implements ISSTableWriter {
-	private static final Logger logger = Logger.getLogger(SSTableWriter.class);
-	MergeIterator<Integer, IOctreeIterator> iter;
+public class OctreeSSTableWriter extends ISSTableWriter {
+	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
+	GroupByKeyIterator<Integer, IOctreeIterator> iter;
 	SSTableMeta meta;
 
 	FileOutputStream dataFileOs;
@@ -47,9 +47,9 @@ public class SSTableWriter implements ISSTableWriter {
 	 * @param tables
 	 * @param step
 	 */
-	public SSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
+	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
 		this.meta = meta;
-		iter = new MergeIterator<Integer, IOctreeIterator>(
+		iter = new GroupByKeyIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
@@ -57,8 +57,8 @@ public class SSTableWriter implements ISSTableWriter {
 		this.step = step;
 	}
 
-	public SSTableWriter(List<IMemTable> tables, int step) {
-		iter = new MergeIterator<Integer, IOctreeIterator>(
+	public OctreeSSTableWriter(List<IMemTable> tables, int step) {
+		iter = new GroupByKeyIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
@@ -132,8 +132,12 @@ public class SSTableWriter implements ISSTableWriter {
 
 		while (iter.hasNext()) {
 			Entry<Integer, List<IOctreeIterator>> entry = iter.next();
+			startPostingList();// reset the curDir
+			// setup meta values
 			curDir.curKey = entry.getKey();
-			startPostingList();// write a new posting
+			for (IOctreeIterator iter : entry.getValue()) {
+				curDir.merge(iter.getMeta());
+			}
 			List<IOctreeIterator> trees = entry.getValue();
 			IOctreeIterator treeIter = null;
 
@@ -177,6 +181,9 @@ public class SSTableWriter implements ISSTableWriter {
 		// Bucket.BLOCK_SIZE);
 		curDir.indexStartOffset = indexFileDos.getChannel().position();
 		curDir.sampleNum = 0;
+		curDir.size = 0;
+		curDir.minTime = Integer.MAX_VALUE;
+		curDir.maxTime = Integer.MIN_VALUE;
 	}
 
 	private void endPostingList() throws IOException {
@@ -217,5 +224,15 @@ public class SSTableWriter implements ISSTableWriter {
 			throw new RuntimeException(e);
 		}
 		return buck;
+	}
+
+	@Override
+	public void moveToDir(File preDir, File dir) {
+		File tmpFile = OctreeSSTableWriter.idxFile(preDir, getMeta());
+		tmpFile.renameTo(OctreeSSTableWriter.idxFile(dir, getMeta()));
+		tmpFile = OctreeSSTableWriter.dirMetaFile(preDir, getMeta());
+		tmpFile.renameTo(OctreeSSTableWriter.dirMetaFile(dir, getMeta()));
+		tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
+		tmpFile.renameTo(OctreeSSTableWriter.dataFile(dir, getMeta()));
 	}
 }

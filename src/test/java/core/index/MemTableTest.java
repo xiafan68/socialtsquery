@@ -8,7 +8,7 @@ import Util.Configuration;
 import common.MidSegment;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.OctreeMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
 
 public class MemTableTest {
@@ -16,7 +16,7 @@ public class MemTableTest {
 	public void insertTest() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeMemTable table = new OctreeMemTable(index, new SSTableMeta(0, 0));
 		// "/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
 		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");

@@ -3,17 +3,20 @@ package core.lsmo.octree;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
 import Util.Pair;
+import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.PostingListMeta;
 import fanxia.file.ByteUtil;
 
 /**
@@ -60,7 +63,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return entry;
 	}
 
@@ -231,7 +234,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() throws IOException {
+	public OctreeNode nextNode() throws IOException {
 		advance();
 		OctreeNode ret = curNode;
 		curNode = null;
@@ -241,4 +244,13 @@ public class OctreePostingListIter implements IOctreeIterator {
 	@Override
 	public void close() throws IOException {
 	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		OctreeNode node = nextNode();
+		return new Pair<Integer, List<MidSegment>>(
+				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
+						node.getSegs()));
+	}
+
 }

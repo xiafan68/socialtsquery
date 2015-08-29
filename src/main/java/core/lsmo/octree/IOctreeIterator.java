@@ -2,11 +2,9 @@ package core.lsmo.octree;
 
 import java.io.IOException;
 
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmt.IPostingListIterator;
 
-public interface IOctreeIterator {
-
-	public OctreeMeta getMeta();
+public interface IOctreeIterator extends IPostingListIterator {
 
 	public void addNode(OctreeNode node);
 
@@ -14,7 +12,7 @@ public interface IOctreeIterator {
 
 	public boolean hasNext() throws IOException;
 
-	public OctreeNode next() throws IOException;
+	public OctreeNode nextNode() throws IOException;
 
 	public void close() throws IOException;
 }
