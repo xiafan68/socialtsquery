@@ -6,9 +6,8 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import Util.Pair;
-
 import common.MidSegment;
-
+import core.lsmt.IndexKey;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -161,5 +160,10 @@ public class OctreeMerger implements IOctreeIterator {
 	public Pair<Integer, List<MidSegment>> next() throws IOException {
 		throw new RuntimeException(
 				"next should never be invoked on instance of OctreeMerger");
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		throw new RuntimeException("skipto OctreeMerger");
 	}
 }

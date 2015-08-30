@@ -8,13 +8,13 @@ import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
-import core.lsmt.LSMTInvertedIndex;
 
-public class MemorySSTableReader extends ISSTableReader {
+public class MemorySSTableReader implements ISSTableReader {
 	OctreeMemTable table;
+	SSTableMeta meta;
 
-	public MemorySSTableReader(LSMTInvertedIndex index, OctreeMemTable table, SSTableMeta meta) {
-		super(index, meta);
+	public MemorySSTableReader(OctreeMemTable table, SSTableMeta meta) {
+		this.meta = meta;
 		this.table = table;
 	}
 
@@ -36,5 +36,19 @@ public class MemorySSTableReader extends ISSTableReader {
 
 	@Override
 	public void close() throws IOException {
+	}
+
+	@Override
+	public SSTableMeta getMeta() {
+		return meta;
+	}
+
+	@Override
+	public boolean isInited() {
+		return true;
+	}
+
+	@Override
+	public void init() throws IOException {
 	}
 }

@@ -6,18 +6,18 @@ import java.util.Iterator;
 import java.util.List;
 
 import Util.Pair;
-
 import common.MidSegment;
-
+import core.lsmi.SortedListMemTable.SortedListPostinglist;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
+import core.lsmt.IndexKey;
 import core.lsmt.PostingListMeta;
 
-public class SortedListMemTableReader extends ISSTableReader {
+public class SortedListMemTableReader implements ISSTableReader {
 	SortedListMemTable table;
 
 	public SortedListMemTableReader(SortedListMemTable table) {
-		super(table.index, table.meta);
 		this.table = table;
 	}
 
@@ -29,36 +29,36 @@ public class SortedListMemTableReader extends ISSTableReader {
 	@Override
 	public IPostingListIterator getPostingListScanner(int key)
 			throws IOException {
-		return new SortedListIterator(table.get(key), 0, Integer.MAX_VALUE);
+		return new MemorySortedListIterator(table.get(key), 0,
+				Integer.MAX_VALUE);
 	}
 
 	@Override
 	public IPostingListIterator getPostingListIter(int key, int start, int end)
 			throws IOException {
-		return new SortedListIterator(table.get(key), start, end);
+		return new MemorySortedListIterator(table.get(key), start, end);
 	}
 
-	@Override
-	public void close() throws IOException {
-	}
-
-	private static class SortedListIterator implements IPostingListIterator {
+	private static class MemorySortedListIterator implements
+			IPostingListIterator {
+		SortedListPostinglist postingList;
 		Iterator<MidSegment> iter;
 		int start;
 		int end;
 
 		MidSegment cur = null;
 
-		public SortedListIterator(List<MidSegment> list, int start, int end) {
-			this.iter = list.iterator();
+		public MemorySortedListIterator(SortedListPostinglist postingList,
+				int start, int end) {
+			this.postingList = postingList;
+			this.iter = postingList.iterator();
 			this.start = start;
 			this.end = end;
 		}
 
 		@Override
 		public PostingListMeta getMeta() {
-
-			return null;
+			return postingList.getMeta();
 		}
 
 		@Override
@@ -97,7 +97,29 @@ public class SortedListMemTableReader extends ISSTableReader {
 
 		@Override
 		public void close() throws IOException {
-
 		}
+
+		@Override
+		public void skipTo(IndexKey key) throws IOException {
+			// TODO Auto-generated method stub
+		}
+	}
+
+	@Override
+	public SSTableMeta getMeta() {
+		return table.meta;
+	}
+
+	@Override
+	public boolean isInited() {
+		return true;
+	}
+
+	@Override
+	public void init() throws IOException {
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 }

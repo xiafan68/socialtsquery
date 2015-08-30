@@ -9,11 +9,13 @@ import java.util.TreeMap;
 
 import common.MidSegment;
 
+import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.IMemTable;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.PostingListMeta;
 
-public class SortedListMemTable extends TreeMap<Integer, List<MidSegment>>
+public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
 		implements IMemTable<List<MidSegment>> {
 	SSTableMeta meta;
 	// for the reason of multiple thread
@@ -54,23 +56,43 @@ public class SortedListMemTable extends TreeMap<Integer, List<MidSegment>>
 		}
 
 		valueCount++;
-		List<MidSegment> postinglist;
+		SortedListPostinglist postinglist;
 		if (containsKey(key)) {
 			postinglist = get(key);
 		} else {
-			postinglist = new ArrayList<MidSegment>();
+			postinglist = new SortedListPostinglist();
 			put(key, postinglist);
 		}
-		int idx = Collections.binarySearch(postinglist, seg);
-		if (idx < 0) {
-			idx = Math.abs(idx) - 1;
-		}
-		postinglist.add(idx, seg);
+		postinglist.insert(seg);
 	}
 
 	@Override
 	public Iterator<Entry<Integer, List<MidSegment>>> iterator() {
 		return this.iterator();
+	}
+
+	public static class SortedListPostinglist {
+		List<MidSegment> list = new ArrayList<MidSegment>();
+		PostingListMeta meta = new PostingListMeta();
+
+		public PostingListMeta getMeta() {
+			return meta;
+		}
+
+		public void insert(MidSegment seg) {
+			meta.size++;
+			meta.minTime = Math.min(meta.minTime, seg.getStart());
+			meta.maxTime = Math.max(meta.maxTime, seg.getEndTime());
+			int idx = Collections.binarySearch(list, seg);
+			if (idx < 0) {
+				idx = Math.abs(idx) - 1;
+			}
+			list.add(idx, seg);
+		}
+
+		public Iterator<MidSegment> iterator() {
+			return list.iterator();
+		}
 	}
 
 }

@@ -16,6 +16,7 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.IndexKey;
 import core.lsmt.PostingListMeta;
 import fanxia.file.ByteUtil;
 
@@ -156,7 +157,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @throws IOException
 	 */
 	private boolean skipToOctant() throws IOException {
-		Pair<Encoding, BucketID> pair = null;
+		Pair<IndexKey, BucketID> pair = null;
 		pair = reader.cellOffset(entry.curKey, curMin);
 		if (pair == null) {
 			pair = reader.floorOffset(entry.curKey, curMin);
@@ -191,7 +192,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 		byte[] data = curBuck.getOctree(nextID.offset);
 		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
 				data));
-		curCode.readFields(input);
+		curCode.read(input);
 		// logger.info(curCode);
 
 		if (isCorrectCode(curCode)) {
@@ -251,6 +252,12 @@ public class OctreePostingListIter implements IOctreeIterator {
 		return new Pair<Integer, List<MidSegment>>(
 				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
 						node.getSegs()));
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+
 	}
 
 }

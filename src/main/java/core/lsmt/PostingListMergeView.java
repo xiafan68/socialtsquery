@@ -70,4 +70,8 @@ public class PostingListMergeView implements IPostingListIterator {
 		return ret;
 	}
 
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+	}
 }

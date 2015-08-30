@@ -17,6 +17,7 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.IndexKey;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -79,7 +80,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
 					bucket.getOctree(nextBucketID.offset)));
 			Encoding coding = new Encoding();
-			coding.readFields(dis);
+			coding.read(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
 			ret.read(dis);
 		}
@@ -135,5 +136,11 @@ public class DiskOctreeIterator implements IOctreeIterator {
 				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
 						node.segs));
 		return ret;
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+
 	}
 }

@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import Util.Pair;
-
 import common.MidSegment;
-
+import core.lsmt.IndexKey;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -108,5 +107,11 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 		return new Pair<Integer, List<MidSegment>>(
 				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
 						node.getSegs()));
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -3,6 +3,8 @@ package core.lsmt;
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.lsmt.IMemTable.SSTableMeta;
+
 /**
  * This class provides interfaces to locate a posting list given the keyword,
  * locate the position given the octree code.
@@ -11,6 +13,8 @@ import java.util.Iterator;
  *
  */
 public interface ISSTableReader {
+	public SSTableMeta getMeta();
+
 	/**
 	 * whether this reader has been initialized
 	 * 

@@ -62,6 +62,15 @@ public abstract class ISSTableWriter {
 			return indexStartOffset;
 		}
 
+		public void init() {
+			curKey = 0;
+			size = 0;
+			minTime = Integer.MAX_VALUE;
+			maxTime = Integer.MIN_VALUE;
+			sampleNum = 0;
+			indexStartOffset = 0;
+		}
+
 		/**
 		 * 写出
 		 * 
@@ -69,6 +78,7 @@ public abstract class ISSTableWriter {
 		 * @throws IOException
 		 */
 		public void write(DataOutput output) throws IOException {
+			super.write(output);
 			output.writeInt(curKey);
 			startBucketID.write(output);
 			endBucketID.write(output);
@@ -83,6 +93,7 @@ public abstract class ISSTableWriter {
 		 * @throws IOException
 		 */
 		public void read(DataInput input) throws IOException {
+			super.read(input);
 			curKey = input.readInt();
 			startBucketID.read(input);
 			endBucketID.read(input);

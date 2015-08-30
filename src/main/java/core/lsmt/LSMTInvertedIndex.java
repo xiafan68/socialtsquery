@@ -168,7 +168,8 @@ public class LSMTInvertedIndex<PType> {
 	private boolean validateDataFile(SSTableMeta meta) {
 		File dFile = OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta);
 		File idxFile = OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta);
-		File dirFile = OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		File dirFile = OctreeSSTableWriter
+				.dirMetaFile(conf.getIndexDir(), meta);
 		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
 			logger.warn("index file of version " + meta + " is not consistent");
 			return false;
@@ -479,8 +480,8 @@ public class LSMTInvertedIndex<PType> {
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
-				if (!conf.debugMode() && reader.meta.markAsDel.get()) {
-					delIndexFile(reader.meta);
+				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
+					delIndexFile(reader.getMeta());
 				}
 			}
 		}
