@@ -7,8 +7,13 @@ import org.junit.Test;
 import Util.Configuration;
 import common.MidSegment;
 import core.lsmo.OctreeMemTable;
+<<<<<<< HEAD
 import core.lsmo.OctreeMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
+=======
+import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.LSMOInvertedIndex;
+>>>>>>> ec2f31a7f064673b4b0947465b30a51eff920ae8
 import fanxia.file.DirLineReader;
 
 public class MemTableTest {

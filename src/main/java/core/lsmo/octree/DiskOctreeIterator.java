@@ -66,33 +66,28 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public OctreeNode nextNode() throws IOException {
-		assert nextBucketID.compareTo(entry.endBucketID) <= 0;
-		if (bucket.octNum() == 0 || nextBucketID.offset >= bucket.octNum()) {
-			bucket.reset();
-			nextBucketID.blockID = nextBlockID;
-			if (bucket.octNum() != 0)
-				nextBucketID.offset = 0;
-			bucket.setBlockIdx(nextBlockID);
-			nextBlockID = reader.getBucket(nextBucketID, bucket);
-		}
+		// load new bucket
 		OctreeNode ret = null;
-		if (nextBucketID.offset < bucket.octNum()) {
+		if (nextBucketID.compareTo(entry.endBucketID) <= 0) {
+			if (bucket.octNum() == 0 || nextBucketID.offset >= bucket.octNum()) {
+				if (bucket.octNum() != 0) {
+					nextBucketID.offset = 0;
+					nextBucketID.blockID = nextBlockID;
+				}
+				bucket.reset();
+				bucket.setBlockIdx(nextBucketID.blockID);
+				nextBlockID = reader.getBucket(nextBucketID, bucket);
+			}
+
+			assert nextBucketID.offset < bucket.octNum();
 			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
 					bucket.getOctree(nextBucketID.offset)));
 			Encoding coding = new Encoding();
 			coding.read(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
 			ret.read(dis);
+			nextBucketID.offset++;
 		}
-
-		if (ret == null
-				|| (!traverseQueue.isEmpty() && ret.getEncoding().compareTo(
-						traverseQueue.peek().getEncoding()) > 0)) {
-			if (ret != null)
-				traverseQueue.offer(ret);
-			ret = traverseQueue.poll();
-		}
-		nextBucketID.offset++;
 
 		if (ret.getEncoding().getX() == 699344
 				&& ret.getEncoding().getY() == 699344

@@ -50,17 +50,18 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader,
-			int ts, int te) {
-		this.entry = entry;
-		this.reader = reader;
-		this.ts = ts;
-		this.te = te;
-		curMin = new Encoding(new Point(0, ts, Integer.MAX_VALUE), 0);
-		curMax = new Encoding(new Point(te, Integer.MAX_VALUE,
-				Integer.MAX_VALUE), 0);
-		max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
-		nextID.copy(entry.startBucketID);
+	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader, int ts, int te) {
+		if (entry != null) {
+			this.entry = entry;
+			this.reader = reader;
+			this.ts = ts;
+			this.te = te;
+			curMin = new Encoding(new Point(0, ts, Integer.MAX_VALUE), 0);
+			curMax = new Encoding(new Point(te, Integer.MAX_VALUE, Integer.MAX_VALUE), 0);
+			max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
+			nextID.copy(entry.startBucketID);
+		}
+
 	}
 
 	@Override

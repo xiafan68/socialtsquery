@@ -26,9 +26,14 @@ public class OctreePostingListIterTest {
 
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
+<<<<<<< HEAD
 		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
 				new SSTableMeta(255, 8));
+=======
+		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(255, 8));
+>>>>>>> ec2f31a7f064673b4b0947465b30a51eff920ae8
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
@@ -60,10 +65,7 @@ public class OctreePostingListIterTest {
 					expectNodeNum++;
 					// System.out.print("hit ");
 					System.out.println(code);
-					System.out
-							.println(((DiskOctreeIterator) scanner).nextBucketID
-									+ " "
-									+ ((DiskOctreeIterator) scanner).curIdx);
+					System.out.println(((DiskOctreeIterator) scanner).nextBucketID);
 				} else {
 					// System.out.print("not hit ");
 				}
@@ -73,8 +75,7 @@ public class OctreePostingListIterTest {
 				boolean print = false;
 
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd()
-							&& seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
 						expect++;
 						if (!print) {
 							expectCodes.add(code);
@@ -96,8 +97,7 @@ public class OctreePostingListIterTest {
 			// System.setOut(new PrintStream(fos));
 			System.out.println(" skip");
 			int size = 0;
-			scanner = reader.getPostingListIter(key, window.getStart(),
-					window.getEnd());
+			scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
 			while (scanner.hasNext()) {
 				boolean print = false;
 				cur = scanner.next();
@@ -109,8 +109,7 @@ public class OctreePostingListIterTest {
 					System.out.println(code);
 				}
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd()
-							&& seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
 						size++;
 						if (!print) {
 							if (!expectCodes.remove(code)) {

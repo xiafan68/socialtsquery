@@ -29,7 +29,7 @@ public class SSTableWriterTest {
 		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		DirLineReader reader = new DirLineReader(
-				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
+				"/home/xiafan/dataset/twitter/twitter_segs");
 		String line = null;
 		SSTableMeta meta = new SSTableMeta(0, 0);
 		OctreeMemTable tree = new OctreeMemTable(index, meta);

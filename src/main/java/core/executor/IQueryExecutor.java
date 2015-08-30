@@ -14,7 +14,7 @@ import core.commom.TempKeywordQuery;
  * 
  */
 public abstract class IQueryExecutor {
-	protected int maxLifeTime;
+	protected int maxLifeTime = 60 * 60 * 24 * 365 * 10;
 
 	/**
 	 * 给定关键词列表和查询时间窗口
@@ -35,6 +35,7 @@ public abstract class IQueryExecutor {
 
 	/**
 	 * 设置当前分区内元素的最大生命周期
+	 * 
 	 * @param maxLife
 	 */
 	public void setMaxLifeTime(int maxLife) {
@@ -45,7 +46,7 @@ public abstract class IQueryExecutor {
 	 * 执行一步读取索引元素的操作
 	 * 
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public abstract boolean advance() throws IOException;
 
@@ -53,7 +54,7 @@ public abstract class IQueryExecutor {
 	 * 判断算法执行是否已经结束
 	 * 
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public abstract boolean isTerminated() throws IOException;
 }

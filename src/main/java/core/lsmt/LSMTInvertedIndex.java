@@ -291,8 +291,8 @@ public class LSMTInvertedIndex<PType> {
 		IQueryExecutor exec = new PartitionExecutor(this);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
-		exec.query(new TempKeywordQuery(wordArr,
-				new Interval(-1, start, end, 0), k));
+		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
+		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
 		return exec.getAnswer();
 	}
 

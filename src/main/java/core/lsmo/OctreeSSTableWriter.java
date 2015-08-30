@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
 import Util.GroupByKeyIterator;
@@ -20,14 +21,15 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
-import core.lsmo.octree.OctreeZOrderBinaryWriter;
+import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 
 public class OctreeSSTableWriter extends ISSTableWriter {
-	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
+	private static final Logger logger = Logger
+			.getLogger(OctreeSSTableWriter.class);
 	GroupByKeyIterator<Integer, IOctreeIterator> iter;
 	SSTableMeta meta;
 
@@ -47,7 +49,8 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	 * @param tables
 	 * @param step
 	 */
-	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, int step) {
+	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables,
+			int step) {
 		this.meta = meta;
 		iter = new GroupByKeyIterator<Integer, IOctreeIterator>(
 				IntegerComparator.instance);
@@ -147,12 +150,54 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 					treeIter = new OctreeMerger(treeIter, curIter);
 				}
 			}
-			OctreeZOrderBinaryWriter writer = new OctreeZOrderBinaryWriter(
-					this, treeIter, step);
-			writer.write();
-			writer.close();
-
+			writeOctree(treeIter);
 			endPostingList();// end a new posting list
+		}
+	}
+
+	/**
+		 * the visiting of the parent controls the setup of bucket
+		 * 
+		 * @param octreeNode
+		 * @throws IOException
+		 */
+	public void writeOctree(IOctreeIterator iter) throws IOException {
+		boolean first = true;
+		OctreeNode octreeNode = null;
+		int count = 0;
+		while (iter.hasNext()) {
+			octreeNode = iter.nextNode();
+			if (octreeNode.size() > 0
+					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+				int[] counters = octreeNode.histogram();
+				if (octreeNode.getEdgeLen() != 1
+						&& counters[0] > (MemoryOctree.size_threshold >> 1)) {
+					octreeNode.split();
+					for (int i = 0; i < 8; i++)
+						iter.addNode(octreeNode.getChild(i));
+				} else {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					DataOutputStream dos = new DataOutputStream(baos);
+					// first write the octant code, then write the octant
+					octreeNode.getEncoding().write(dos);
+					octreeNode.write(dos);
+					byte[] data = baos.toByteArray();
+					if (!buck.canStore(data.length)) {
+						buck.write(getDataDos());
+						logger.debug(buck);
+						newBucket();
+					}
+					logger.debug(octreeNode);
+					buck.storeOctant(data);
+					if (first) {
+						first = false;
+						startPostingList();
+					}
+					if (count++ % step == 0) {
+						addSample(octreeNode.getEncoding(), buck.blockIdx());
+					}
+				}
+			}
 		}
 	}
 

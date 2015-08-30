@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
+
+import com.sleepycat.je.rep.stream.Protocol.Commit;
+
 import Util.Configuration;
 import Util.Pair;
 import common.MidSegment;
@@ -28,20 +32,20 @@ import common.MidSegment;
  */
 public enum CommitLog {
 	INSTANCE;
-
+	private static final Logger logger = Logger.getLogger(Commit.class);
 	private DataOutputStream dos = null;
 	private File dir;
 	private int curVersion = -1;
-	private volatile int writeOpNum = 0;
 	// log files that are not deleted
 	private List<Integer> preVersions = new ArrayList<Integer>();
-
+	private int batchNum = 0;
 	// the set of words appearing in this log segment
 	// ConcurrentSkipListSet<String> words = new
 	// ConcurrentSkipListSet<String>();
 
 	public void init(Configuration conf) {
 		dir = conf.getCommitLogDir();
+		batchNum = conf.getBatchCommitNum();
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
@@ -59,6 +63,7 @@ public enum CommitLog {
 	 */
 	public void openNewLog(int version) {
 		if (dos != null) {
+			flush();
 			if (curVersion != -1) {
 				preVersions.add(curVersion);
 			}
@@ -76,16 +81,33 @@ public enum CommitLog {
 		}
 	}
 
+	List<Pair<String, MidSegment>> cached = new ArrayList<Pair<String, MidSegment>>();
+
 	public void write(String word, MidSegment seg) {
+		cached.add(new Pair<String, MidSegment>(word, seg));
+		if (cached.size() > batchNum) {
+			flush();
+		}
+	}
+
+	private void flush() {
+		for (Pair<String, MidSegment> pair : cached) {
+			write_intern(pair.getKey(), pair.getValue());
+		}
+		try {
+			dos.flush();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		cached.clear();
+	}
+
+	public void write_intern(String word, MidSegment seg) {
 		try {
 			byte[] wordBytes = word.getBytes(Charset.forName("utf8"));
 			dos.writeInt(wordBytes.length);
 			dos.write(wordBytes);
 			seg.write(dos);
-			if (writeOpNum++ > 100) {
-				writeOpNum = 0;
-				dos.flush();
-			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -116,18 +138,24 @@ public enum CommitLog {
 
 	private void redo(File file, LSMTInvertedIndex tree) throws IOException {
 		DataInputStream dis = new DataInputStream(new FileInputStream(file));
+		logger.info("recovering log file " + file.toString());
 		try {
+			int count = 0;
 			while (dis.available() > 0) {
 				MidSegment seg = new MidSegment();
 				int len = dis.readInt();
 				byte[] bytes = new byte[len];
 				dis.readFully(bytes);
 				String word = new String(bytes, Charset.forName("utf8"));
-				seg.read(dis);
+				seg.readFields(dis);
 				tree.insert(word, seg);
+				if (count++ % 1000 == 0) {
+					logger.info("have recovered " + count + " log items");
+				}
 			}
 		} catch (Exception ex) {
-
+			logger.error(ex.getMessage());
+			throw new RuntimeException(ex);
 		}
 		tree.maySwitchMemtable();
 	}
@@ -188,6 +216,7 @@ public enum CommitLog {
 	}
 
 	public void shutdown() throws IOException {
+		flush();
 		dos.close();
 	}
 }

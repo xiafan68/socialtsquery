@@ -123,7 +123,8 @@ public class Encoding extends Point implements IndexKey {
 	public void read(DataInput input) throws IOException {
 		paddingBitNum = ByteUtil.readVInt(input);
 		for (int i = 0; i < 3; i++) {
-			encodes[i] = ByteUtil.readVInt(input);
+			// encodes[i] = ByteUtil.readVInt(input);
+			encodes[i] = input.readInt();
 		}
 		decode();
 	}
@@ -132,7 +133,8 @@ public class Encoding extends Point implements IndexKey {
 	public void write(DataOutput output) throws IOException {
 		ByteUtil.writeVInt(output, paddingBitNum);
 		for (int code : encodes) {
-			ByteUtil.writeVInt(output, code);
+			// ByteUtil.writeVInt(output, code);
+			output.writeInt(code);
 		}
 	}
 
@@ -188,6 +190,7 @@ public class Encoding extends Point implements IndexKey {
 		Encoding newData = new Encoding();
 		newData.read(new DataInputStream(new ByteArrayInputStream(baos
 				.toByteArray())));
+
 		System.out.println(newData);
 
 		data = new Encoding(new Point(0, 696602, 1), 0);

@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import segmentation.Segment;
 import common.MidSegment;
+import core.commom.Encoding;
 import core.commom.Point;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 
@@ -28,12 +29,18 @@ public class OctreeNodeTest {
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(out);
+		node.getEncoding().write(dos);
 		node.write(dos);
 
 		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
 				out.toByteArray()));
 
-		OctreeNode oNode = new OctreeNode(null, 0);
+		Encoding code = new Encoding();
+		code.readFields(input);
+		OctreeNode oNode = new OctreeNode(code, code.getEdgeLen());
 		oNode.read(input);
+		System.out.println(node);
+		System.out.println(oNode);
+		
 	}
 }

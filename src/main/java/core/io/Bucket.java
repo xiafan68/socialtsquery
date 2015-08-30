@@ -125,7 +125,7 @@ public class Bucket {
 		}
 
 		public long getFileOffset() {
-			return blockID * BLOCK_SIZE;
+			return ((long) blockID) * BLOCK_SIZE;
 		}
 
 		/*
@@ -142,7 +142,7 @@ public class Bucket {
 		public int compareTo(BucketID o) {
 			int ret = Integer.compare(blockID, o.blockID);
 			if (ret == 0) {
-				ret = Integer.compare(offset, offset);
+				ret = Integer.compare(offset, o.offset);
 			}
 			return ret;
 		}
@@ -153,7 +153,7 @@ public class Bucket {
 	}
 
 	public BucketID blockIdx() {
-		return new BucketID(blockIdx, (short) octants.size());
+		return new BucketID(blockIdx, (short) (octants.size() - 1));
 	}
 
 	public int available() {
@@ -196,8 +196,8 @@ public class Bucket {
 	 */
 	@Override
 	public String toString() {
-		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock
-				+ ", totalSize=" + totalSize + ", octants=" + octants + "]";
+		return "Bucket [blockIdx=" + blockIdx + ", singleBlock=" + singleBlock + ", totalSize=" + totalSize
+				+ ", octants=" + octants + "]";
 	}
 
 	public void setBlockIdx(int blockIdx) {
