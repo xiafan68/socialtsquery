@@ -9,6 +9,7 @@ import java.util.Scanner;
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import segmentation.Interval;
 
@@ -18,7 +19,8 @@ public class IndexConsoleClient {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex client = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			client.init();
 		} catch (IOException e) {
@@ -26,12 +28,12 @@ public class IndexConsoleClient {
 			client = null;
 		}
 
-	/*	try {
-			System.setErr(new PrintStream(new FileOutputStream("/tmp/err.txt", false)));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-*/
+		/*	try {
+				System.setErr(new PrintStream(new FileOutputStream("/tmp/err.txt", false)));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		*/
 		Scanner scanner = new Scanner(System.in);
 		System.out.print("interval query>");
 		String line = scanner.nextLine();

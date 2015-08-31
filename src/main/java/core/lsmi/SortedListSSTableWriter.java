@@ -16,12 +16,19 @@ import org.apache.log4j.Logger;
 import xiafan.util.collection.CollectionUtils;
 import Util.GroupByKeyIterator;
 import Util.Pair;
+import Util.PeekIterDecorate;
+
 import common.MidSegment;
+
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmi.ListDiskSSTableReader.SegListKey;
+import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmo.OctreeSSTableWriter;
+import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
+import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import fanxia.file.ByteUtil;
 
@@ -41,7 +48,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	private static final Logger logger = Logger
 			.getLogger(SortedListSSTableWriter.class);
 
-	GroupByKeyIterator<Integer, IPostingListIterator> view;
+	GroupByKeyIterator<Integer, IPostingListIterator> view = new GroupByKeyIterator<Integer, IPostingListIterator>(
+			IntegerComparator.instance);
 	SSTableMeta meta;
 
 	FileOutputStream dataFileOs;
@@ -52,7 +60,85 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	private int step;
 
 	DirEntry curDir = new DirEntry();
-	Bucket buck = new Bucket(0);
+	Bucket buck = new Bucket(-1);
+
+	public SortedListSSTableWriter(List<IMemTable> tables, int step) {
+		int version = 0;
+		for (final IMemTable<SortedListPostinglist> table : tables) {
+			version = Math.max(version, table.getMeta().version);
+			view.add(PeekIterDecorate
+					.decorate(new Iterator<Entry<Integer, IPostingListIterator>>() {
+						Iterator<Integer> keyIter = table.getReader()
+								.keySetIter();
+
+						@Override
+						public boolean hasNext() {
+							return keyIter.hasNext();
+						}
+
+						@Override
+						public Entry<Integer, IPostingListIterator> next() {
+							Integer key = keyIter.next();
+							Entry<Integer, IPostingListIterator> ret = null;
+							try {
+								ret = new Pair<Integer, IPostingListIterator>(
+										key, table.getReader()
+												.getPostingListScanner(key));
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+							return ret;
+						}
+
+						@Override
+						public void remove() {
+
+						}
+
+					}));
+		}
+		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
+		this.step = step;
+	}
+
+	public SortedListSSTableWriter(SSTableMeta meta,
+			List<ISSTableReader> tables, int step) {
+		this.meta = meta;
+		for (final ISSTableReader table : tables) {
+			view.add(PeekIterDecorate
+					.decorate(new Iterator<Entry<Integer, IPostingListIterator>>() {
+						ISSTableReader reader = table;
+						Iterator<Integer> iter = table.keySetIter();
+
+						@Override
+						public boolean hasNext() {
+							return iter.hasNext();
+						}
+
+						@Override
+						public Entry<Integer, IPostingListIterator> next() {
+							Integer entry = iter.next();
+							Pair<Integer, IPostingListIterator> ret;
+							try {
+								ret = new Pair<Integer, IPostingListIterator>(
+										entry, reader
+												.getPostingListScanner(entry));
+							} catch (IOException e) {
+								e.printStackTrace();
+								ret = null;
+							}
+							return ret;
+						}
+
+						@Override
+						public void remove() {
+
+						}
+
+					}));
+		}
+		this.step = step;
+	}
 
 	@Override
 	public SSTableMeta getMeta() {
@@ -95,6 +181,16 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public void write(File dir) throws IOException {
+		if (!dir.exists())
+			dir.mkdirs();
+
+		dataFileOs = new FileOutputStream(dataFile(dir, meta));
+		dataDos = new DataOutputStream(dataFileOs);
+		indexFileDos = new FileOutputStream(idxFile(dir, meta));
+		indexDos = new DataOutputStream(indexFileDos);
+		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir,
+				meta)));
+
 		while (view.hasNext()) {
 			Entry<Integer, List<IPostingListIterator>> pair = view.next();
 			List<Iterator<MidSegment>> list = new ArrayList<Iterator<MidSegment>>();
@@ -102,58 +198,70 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				list.add(new PostingListDecorator(iter));
 			}
 			Iterator<MidSegment> iter = CollectionUtils.merge(list);
-			writePostingList(pair.getKey(), iter);
+			writePostingList(new WriterHelper(step), pair.getKey(), iter);
 		}
 	}
 
-	private void writePostingList(Integer key, Iterator<MidSegment> iter)
-			throws IOException {
+	private static class WriterHelper {
+		boolean first = true;
+		SubList list;
+		int numOfRecs = 0;
+
+		public WriterHelper(int sizeLimit) {
+			list = new SubList(sizeLimit);
+		}
+
+		public void init() {
+			list.init();
+		}
+	}
+
+	private void writePostingList(WriterHelper helper, Integer key,
+			Iterator<MidSegment> iter) throws IOException {
 		curDir.init();
 		curDir.curKey = key;
-		MidSegment cur = null;
-		int curSize = 0;
-		int preTop = Integer.MIN_VALUE;
-		int curStep = 0;
-		while (cur != null || iter.hasNext()) {
-			// write one buck
-			if (buck.available() < 4) {
-				newBucket();
-			}
-			ByteArrayOutputStream out = new ByteArrayOutputStream(
-					buck.available());
-			DataOutputStream output = new DataOutputStream(out);
-			try {
-				output.writeInt(0);// record the number segs
-			} catch (IOException e1) {
-			}
-
-			// fill current bucket
-			while (cur != null || iter.hasNext()) {
-				int preSize = output.size();
-				if (cur == null)
-					cur = iter.next();
-				try {
-					cur.write(output);
-				} catch (IOException e) {
-				}
-				if (output.size() > buck.available()) {
-					byte[] data = Arrays.copyOf(out.toByteArray(), preSize);
-					ByteUtil.writeInt(curSize, data, 0);
-					buck.storeOctant(data);
-					newBucket();
-					break;
-				} else {
-					if (cur.getPoint().getZ() != preTop) {
-						curStep++;
-						if (curStep > step) {
-							curStep = 0;
-							buildIndex(preTop, buck.blockIdx());
-						}
-					}
-					curSize++;
-				}
+		MidSegment seg = null;
+		while (iter.hasNext()) {
+			seg = iter.next();
+			helper.list.addSegment(seg);
+			curDir.size++;
+			curDir.minTime = Math.min(curDir.minTime, seg.getStart());
+			curDir.maxTime = Math.max(curDir.maxTime, seg.getEndTime());
+			if (helper.list.isFull()) {
+				writeSubList(helper);
 			}
 		}
+		writeSubList(helper);
+		curDir.endBucketID.copy(buck.blockIdx());
+		curDir.write(dirDos);
+	}
+
+	/**
+	 * write the sublist to a block
+	 * @param helper
+	 * @throws IOException
+	 */
+	private void writeSubList(WriterHelper helper) throws IOException {
+		if (!helper.list.isEmpty()) {
+			byte[] data = helper.list.toByteArray();
+			if (buck.blockIdx().blockID < 0) {
+				newBucket();
+			} else if (!buck.canStore(data.length)) {
+				buck.write(dataDos);
+				newBucket();
+			}
+			buck.storeOctant(data);
+			if (helper.first) {
+				helper.first = false;
+				curDir.startBucketID = buck.blockIdx();
+				curDir.indexStartOffset = indexFileDos.getChannel().position();
+			}
+			MidSegment cur = helper.list.get(0);
+			buildIndex(new SegListKey(cur.getPoint().getZ(), cur.getStart(),
+					cur.mid), buck.blockIdx());
+			helper.init();
+		}
+
 	}
 
 	@Override
@@ -201,9 +309,9 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	 * @param id
 	 * @throws IOException
 	 */
-	public void buildIndex(int key, BucketID id) throws IOException {
+	public void buildIndex(SegListKey key, BucketID id) throws IOException {
 		curDir.sampleNum++;
-		indexDos.writeInt(key);
+		key.write(indexDos);
 		id.write(indexDos);
 	}
 

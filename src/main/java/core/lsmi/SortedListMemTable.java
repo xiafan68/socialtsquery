@@ -16,7 +16,7 @@ import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 
 public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
-		implements IMemTable<List<MidSegment>> {
+		implements IMemTable<SortedListPostinglist> {
 	SSTableMeta meta;
 	// for the reason of multiple thread
 	private volatile boolean frezen = false;
@@ -67,8 +67,8 @@ public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
 	}
 
 	@Override
-	public Iterator<Entry<Integer, List<MidSegment>>> iterator() {
-		return this.iterator();
+	public Iterator<Entry<Integer, SortedListPostinglist>> iterator() {
+		return super.entrySet().iterator();
 	}
 
 	public static class SortedListPostinglist {

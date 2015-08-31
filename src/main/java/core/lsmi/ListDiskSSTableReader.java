@@ -23,78 +23,96 @@ import core.lsmt.PostingListMeta;
 
 public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 
-	public static class IntegerKey implements IndexKey {
-		int val;
+	public static class SegListKey implements IndexKey {
+		int top;
+		int start;
+		long mid;
 
-		public IntegerKey() {
+		public SegListKey() {
 
 		}
 
-		public IntegerKey(int val) {
-			this.val = val;
+		public SegListKey(int top, int start, long mid) {
+			this.top = top;
+			this.start = start;
+			this.mid = mid;
 		}
 
 		@Override
 		public int compareTo(IndexKey o) {
-			IntegerKey obj = (IntegerKey) o;
-			return Integer.compare(val, obj.val);
+			SegListKey obj = (SegListKey) o;
+			int ret = Integer.compare(top, obj.top);
+			if (ret == 0) {
+				ret = Integer.compare(start, obj.start);
+				if (ret == 0) {
+					ret = Long.compare(mid, obj.mid);
+				}
+			}
+			return ret;
 		}
 
 		@Override
 		public void write(DataOutput output) throws IOException {
-			output.writeInt(val);
+			output.writeInt(top);
+			output.writeInt(start);
+			output.writeLong(mid);
 		}
 
 		@Override
 		public void read(DataInput input) throws IOException {
-			val = input.readInt();
+			top = input.readInt();
+			start = input.readInt();
+			mid = input.readLong();
 		}
 	}
 
-	public static enum IntegerKeyFactory implements IndexKeyFactory {
+	public static enum SegListKeyFactory implements IndexKeyFactory {
 		INSTANCE;
 		@Override
 		public IndexKey createIndexKey() {
-			return new IntegerKey();
+			return new SegListKey();
 		}
 
 	}
 
 	public ListDiskSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta, IntegerKeyFactory.INSTANCE);
+		super(index, meta, SegListKeyFactory.INSTANCE);
 	}
 
 	@Override
 	public IPostingListIterator getPostingListScanner(int key)
 			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return new ListDiskPostingListIterator(dirMap.get(key), 0,
+				Integer.MAX_VALUE);
 	}
 
 	@Override
 	public IPostingListIterator getPostingListIter(int key, int start, int end)
 			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return new ListDiskPostingListIterator(dirMap.get(key), start, end);
 	}
 
 	class ListDiskPostingListIterator implements IPostingListIterator {
-		Bucket curBuck = null;
+		DirEntry dir;
+
 		BucketID nextBuckID;
 		int nextBlockID;
-		DataInputStream dis = null;
-		DirEntry dir;
-		int totalCount = 0;
-		int curBuckNum = 0;
-		int curBuckCount = 0;
-		MidSegment curSeg = null;
+
+		Bucket curBuck = null;
+		SubList curList = new SubList(0);
+		int curIdx = Integer.MAX_VALUE;
+
+		MidSegment cur = null;
 		int start;
 		int end;
 
 		public ListDiskPostingListIterator(DirEntry entry, int start, int end) {
-			this.dir = entry;
-			this.start = start;
-			this.end = end;
+			if (entry != null) {
+				this.dir = entry;
+				this.start = start;
+				this.end = end;
+				nextBuckID = new BucketID(entry.startBucketID);
+			}
 		}
 
 		@Override
@@ -108,53 +126,52 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 
 		private void advance() throws IOException {
-			if (curSeg == null) {
-				curSeg = new MidSegment();
-				boolean readed = false;
-				while (totalCount < dir.size) {
-					if (curBuckCount >= curBuckNum) {
-						if (curBuck == null
-								|| nextBuckID.offset >= curBuck.octNum()) {
-							nextBuckID.blockID = nextBlockID;
-							nextBlockID = getBucket(nextBuckID, curBuck);
-						}
-						dis = new DataInputStream(new ByteArrayInputStream(
-								curBuck.getOctree(nextBuckID.offset)));
-						curBuckCount = 0;
-						curBuckNum = dis.readInt();
-					}
-
-					while (curBuckCount++ < curBuckNum) {
-						totalCount++;
-						curSeg.read(dis);
-						if (curSeg.getStart() <= end
-								&& curSeg.getEndTime() >= start) {
-							readed = true;
-							break;
-						}
-					}
-					if (readed)
-						break;
+			while (cur == null
+					&& (curIdx < curList.size() || nextBuckID
+							.compareTo(dir.endBucketID) <= 0)) {
+				if (curIdx >= curList.size()) {
+					loadSubList();
 				}
-				if (!readed)
-					curSeg = null;
+				cur = curList.get(curIdx++);
+				if (cur.getStart() <= end && cur.getEndTime() >= start)
+					break;
+				else {
+					cur = null;
+				}
 			}
+		}
+
+		private void loadSubList() throws IOException {
+			if (curBuck == null) {
+				curBuck = new Bucket(0);
+				nextBlockID = getBucket(nextBuckID, curBuck);
+			} else if (nextBuckID.offset >= curBuck.octNum()) {
+				nextBuckID.blockID = nextBlockID;
+				nextBuckID.offset = 0;
+				nextBlockID = getBucket(nextBuckID, curBuck);
+			}
+			curList.init();
+			curIdx = 0;
+			curList.read(new DataInputStream(new ByteArrayInputStream(curBuck
+					.getOctree(nextBuckID.offset++))));
 		}
 
 		@Override
 		public boolean hasNext() throws IOException {
-			if (curSeg == null)
+			if (dir == null)
+				return false;
+			if (cur == null)
 				advance();
-			return curSeg != null;
+			return cur != null;
 		}
 
 		@Override
 		public Pair<Integer, List<MidSegment>> next() throws IOException {
-			if (curSeg == null)
+			if (cur == null)
 				advance();
 			Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
-					curSeg.getPoint().getZ(), Arrays.asList(curSeg));
-			curSeg = null;
+					cur.getPoint().getZ(), Arrays.asList(cur));
+			cur = null;
 			return ret;
 		}
 

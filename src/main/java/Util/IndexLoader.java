@@ -15,6 +15,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import common.MidSegment;
 import common.Tweet;
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
 import segmentation.ISegmentation.ISegSubscriber;
@@ -32,7 +33,8 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -63,7 +65,8 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -93,20 +96,23 @@ public class IndexLoader {
 				midTmp = Long.parseLong(tweet.getMid());
 			} catch (Exception ex) {
 				UUID uid = UUID.randomUUID();
-				midTmp = uid.getLeastSignificantBits() & uid.getMostSignificantBits();
+				midTmp = uid.getLeastSignificantBits()
+						& uid.getMostSignificantBits();
 			}
 			final long mid = midTmp;
 			final List<String> words = shingle.shingling(tweet.getContent());
-			SWSegmentation seg = new SWSegmentation(mid, 5, null, new ISegSubscriber() {
-				@Override
-				public void newSeg(Interval preInv, Segment seg) {
-					try {
-						index.insert(words, new MidSegment(mid, seg));
-					} catch (IOException e) {
-					}
-				}
-			});
-			Iterator<Entry<Double, Integer>> iter = hist.groupby(1000 * 60 * 30).iterator();
+			SWSegmentation seg = new SWSegmentation(mid, 5, null,
+					new ISegSubscriber() {
+						@Override
+						public void newSeg(Interval preInv, Segment seg) {
+							try {
+								index.insert(words, new MidSegment(mid, seg));
+							} catch (IOException e) {
+							}
+						}
+					});
+			Iterator<Entry<Double, Integer>> iter = hist
+					.groupby(1000 * 60 * 30).iterator();
 			while (iter.hasNext()) {
 				Entry<Double, Integer> entry = iter.next();
 				seg.advance(entry.getKey().intValue(), entry.getValue());
@@ -114,8 +120,8 @@ public class IndexLoader {
 			seg.finish();
 			if (++i % 1000 == 0) {
 				long time = System.currentTimeMillis() - start;
-				logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
-						+ " ms/i");
+				logger.info("inserting " + i + " items costs " + time + " ms, "
+						+ " average " + ((double) time / i) + " ms/i");
 			}
 		}
 		index.close();
@@ -127,7 +133,8 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -169,13 +176,14 @@ public class IndexLoader {
 			index.insert(words, new MidSegment(midTmp, seg));
 			if (i++ % 1000 == 0) {
 				long time = System.currentTimeMillis() - start;
-				logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
-						+ " ms/i");
+				logger.info("inserting " + i + " items costs " + time + " ms, "
+						+ " average " + ((double) time / i) + " ms/i");
 			}
 			if (Runtime.getRuntime().freeMemory() < 1024 * 1024 * 100)
 				break;
 		}
-		DataOutputStream output = new DataOutputStream(new FileOutputStream("/tmp/mapping.txt"));
+		DataOutputStream output = new DataOutputStream(new FileOutputStream(
+				"/tmp/mapping.txt"));
 		for (Entry<String, Long> entry : mapping.entrySet()) {
 			output.writeUTF(entry.getKey());
 			output.writeLong(entry.getValue());

@@ -5,11 +5,12 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import xiafan.file.DirLineReader;
 import xiafan.util.Histogram;
 import xiafan.util.Progress;
 
 import common.Tweet;
+
+import fanxia.file.DirLineReader;
 
 public class TweetLoader {
 	ITSeriesDB db;

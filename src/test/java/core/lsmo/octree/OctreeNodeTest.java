@@ -36,7 +36,7 @@ public class OctreeNodeTest {
 				out.toByteArray()));
 
 		Encoding code = new Encoding();
-		code.readFields(input);
+		code.read(input);
 		OctreeNode oNode = new OctreeNode(code, code.getEdgeLen());
 		oNode.read(input);
 		System.out.println(node);

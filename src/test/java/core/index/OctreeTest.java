@@ -7,9 +7,10 @@ import org.junit.Test;
 import segmentation.Segment;
 
 import common.MidSegment;
+
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.OctreeTextWriter;
-import core.lsmo.octree.MemoryOctree.PostingListMeta;
+import core.lsmt.PostingListMeta;
 
 public class OctreeTest {
 	@Test

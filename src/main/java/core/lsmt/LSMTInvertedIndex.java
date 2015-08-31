@@ -24,21 +24,22 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+import segmentation.Interval;
+import shingle.TextShingle;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.PartitionExecutor;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.OctreeSSTableWriter;
-import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
-import segmentation.Interval;
-import shingle.TextShingle;
 
 /**
  * 
@@ -50,6 +51,7 @@ public class LSMTInvertedIndex<PType> {
 			.getLogger(LSMTInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
+	final ILSMTFactory implFactory;
 	File dataDir;
 	boolean bootstrap = true;
 	volatile boolean stop = false;
@@ -63,8 +65,9 @@ public class LSMTInvertedIndex<PType> {
 	TextShingle shingle = new TextShingle(null);
 	DataOutputStream keyWriter;
 
-	public LSMTInvertedIndex(Configuration conf) {
+	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
 		this.conf = conf;
+		this.implFactory = factory;
 	}
 
 	/**
@@ -187,7 +190,7 @@ public class LSMTInvertedIndex<PType> {
 
 	Map<String, Integer> keyCode = new HashMap<String, Integer>();
 
-	int getKeywordCode(String keyword) throws IOException {
+	public int getKeywordCode(String keyword) throws IOException {
 		if (!keyCode.containsKey(keyword)) {
 			keyCode.put(keyword, keyCode.size());
 			keyWriter.writeUTF(keyword);
@@ -232,7 +235,7 @@ public class LSMTInvertedIndex<PType> {
 					// open new log
 					CommitLog.INSTANCE.openNewLog(nextVersion);
 					SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
-					tmp = MemTableFactory.newMemTable(this, meta);
+					tmp = implFactory.newMemTable(this, meta);
 					versionSet = versionSet.clone();
 					versionSet.newMemTable(tmp);
 					curTable = tmp;
@@ -270,13 +273,12 @@ public class LSMTInvertedIndex<PType> {
 		LockManager.INSTANCE.versionWriteUnLock();
 	}
 
-	public int getCompactNum() {
-		return 1;
-	}
-
-	public int getFlushNum() {
-		// TODO Auto-generated method stub
-		return 1;
+	/**
+	 * 
+	 * @return
+	 */
+	public ILSMTFactory getFactory() {
+		return implFactory;
 	}
 
 	public VersionSet getVersion() {
@@ -292,7 +294,8 @@ public class LSMTInvertedIndex<PType> {
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
 		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
-		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
+		exec.query(new TempKeywordQuery(wordArr,
+				new Interval(-1, start, end, 0), k));
 		return exec.getAnswer();
 	}
 

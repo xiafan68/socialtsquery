@@ -53,8 +53,8 @@ public abstract class ISSTableWriter {
 	public static class DirEntry extends PostingListMeta {
 		// runtime state
 		public int curKey;
-		public BucketID startBucketID;
-		public BucketID endBucketID;
+		public BucketID startBucketID = new BucketID();
+		public BucketID endBucketID = new BucketID();
 		public long indexStartOffset;
 		public int sampleNum;
 

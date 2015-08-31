@@ -19,6 +19,7 @@ import org.junit.Test;
 import Util.Configuration;
 import common.MidSegment;
 import core.lsmo.DiskSSTableReader;
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
@@ -37,10 +38,11 @@ public class DiskSSTableReaderTest {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		File dataDir = conf.getIndexDir();
-		List<File> files = new ArrayList<File>(
-				FileUtils.listFiles(dataDir, new RegexFileFilter("[0-9]+_[0-9]+.data"), null));
+		List<File> files = new ArrayList<File>(FileUtils.listFiles(dataDir,
+				new RegexFileFilter("[0-9]+_[0-9]+.data"), null));
 		;
 		Collections.sort(files, new Comparator<File>() {
 			@Override
@@ -56,14 +58,10 @@ public class DiskSSTableReaderTest {
 		});
 		for (File dataFile : files) {
 			System.out.println("examine data file of version:" + dataFile);
-<<<<<<< HEAD
 			int[] version = LSMTInvertedIndex.parseVersion(dataFile);
 			DiskSSTableReader reader = new DiskSSTableReader(index,
 					new SSTableMeta(version[0], version[1]));
-=======
-			int[] version = LSMOInvertedIndex.parseVersion(dataFile);
-			DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(version[0], version[1]));
->>>>>>> ec2f31a7f064673b4b0947465b30a51eff920ae8
+
 			reader.init();
 			readerTest(reader, conf, version[1]);
 			reader.close();
@@ -80,14 +78,10 @@ public class DiskSSTableReaderTest {
 		System.setOut(new PrintStream(new FileOutputStream("/tmp/7_0.txt")));
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-<<<<<<< HEAD
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		DiskSSTableReader reader = new DiskSSTableReader(index,
 				new SSTableMeta(131, 1));
-=======
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(131, 1));
->>>>>>> ec2f31a7f064673b4b0947465b30a51eff920ae8
 		reader.init();
 		readerTest(reader, conf, 1);
 
@@ -102,12 +96,13 @@ public class DiskSSTableReaderTest {
 			IOctreeIterator scanner = reader.getPostingListScanner(key);
 			OctreeNode cur = null;
 			while (scanner.hasNext()) {
-				cur = scanner.next();
+				cur = scanner.nextNode();
 				System.out.println(cur);
 				if (pre != null) {
 					if (pre.getEncoding().compareTo(cur.getEncoding()) >= 0)
 						System.out.println(key + "\n" + pre + "\n" + cur);
-					Assert.assertTrue(pre.getEncoding().compareTo(cur.getEncoding()) < 0);
+					Assert.assertTrue(pre.getEncoding().compareTo(
+							cur.getEncoding()) < 0);
 				}
 				pre = cur;
 			}
@@ -125,7 +120,8 @@ public class DiskSSTableReaderTest {
 	public void detectMissingSegs() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		int level = 7;
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		DiskSSTableReader reader = null;
@@ -148,14 +144,16 @@ public class DiskSSTableReaderTest {
 		readerTest(reader, conf, level);
 	}
 
-	public static void readerTest(ISSTableReader reader, HashSet<MidSegment> segs) throws IOException {
+	public static void readerTest(ISSTableReader reader,
+			HashSet<MidSegment> segs) throws IOException {
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
 			int key = iter.next();
-			IOctreeIterator scanner = reader.getPostingListScanner(key);
+			IOctreeIterator scanner = (IOctreeIterator) reader
+					.getPostingListScanner(key);
 			OctreeNode cur = null;
 			while (scanner.hasNext()) {
-				cur = scanner.next();
+				cur = scanner.nextNode();
 
 				for (MidSegment seg : cur.getSegs()) {
 					if (segs.contains(seg))
@@ -166,7 +164,8 @@ public class DiskSSTableReaderTest {
 		}
 	}
 
-	public static void readerTest(ISSTableReader reader, Configuration conf, int level) throws IOException {
+	public static void readerTest(ISSTableReader reader, Configuration conf,
+			int level) throws IOException {
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		int size = 0;
 		Iterator<Integer> iter = reader.keySetIter();
@@ -176,16 +175,19 @@ public class DiskSSTableReaderTest {
 			int key = iter.next();
 			System.out.println("scanning postinglist of " + key);
 			pre = null;
-			IOctreeIterator scanner = reader.getPostingListScanner(key);
+			IOctreeIterator scanner = (IOctreeIterator) reader
+					.getPostingListScanner(key);
 			OctreeNode cur = null;
 			int count = 0;
 			while (scanner.hasNext()) {
-				cur = scanner.next();
+				cur = scanner.nextNode();
 				count++;
 				if (pre != null) {
 					if (pre.getEncoding().compareTo(cur.getEncoding()) >= 0)
-						System.out.println("count "+ count + " "+key + "\n" + pre + "\n" + cur);
-					Assert.assertTrue(pre.getEncoding().compareTo(cur.getEncoding()) < 0);
+						System.out.println("count " + count + " " + key + "\n"
+								+ pre + "\n" + cur);
+					Assert.assertTrue(pre.getEncoding().compareTo(
+							cur.getEncoding()) < 0);
 				}
 				/*
 				 * for (MidSegment seg : cur.getSegs()) { if
@@ -196,7 +198,8 @@ public class DiskSSTableReaderTest {
 				size += cur.size();
 				// System.out.println(key + " " + cur);
 			}
-			System.out.println("expect size:" + expect + " cursize size:" + size);
+			System.out.println("expect size:" + expect + " cursize size:"
+					+ size);
 
 		}
 		if (expect != size)

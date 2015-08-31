@@ -8,7 +8,10 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import Util.Configuration;
+
 import common.MidSegment;
+
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
@@ -16,7 +19,6 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.SSTableWriterFactory;
 import fanxia.file.DirLineReader;
 
 public class SSTableWriterTest {
@@ -26,7 +28,8 @@ public class SSTableWriterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		DirLineReader reader = new DirLineReader(
 				"/home/xiafan/dataset/twitter/twitter_segs");
@@ -46,8 +49,8 @@ public class SSTableWriterTest {
 
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
-		ISSTableWriter writer = SSTableWriterFactory.INSTANCE
-				.newWriterForFlushing(tables, 128);
+		ISSTableWriter writer = OctreeBasedLSMTFactory.INSTANCE
+				.newSSTableWriterForFlushing(tables, 128);
 		writer.write(conf.getIndexDir());
 		writer.close();
 	}
