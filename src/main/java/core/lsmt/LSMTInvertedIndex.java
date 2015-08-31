@@ -190,7 +190,7 @@ public class LSMTInvertedIndex<PType> {
 
 	Map<String, Integer> keyCode = new HashMap<String, Integer>();
 
-	public int getKeywordCode(String keyword) throws IOException {
+	public synchronized int getKeywordCode(String keyword) throws IOException {
 		if (!keyCode.containsKey(keyword)) {
 			keyCode.put(keyword, keyCode.size());
 			keyWriter.writeUTF(keyword);
@@ -483,6 +483,11 @@ public class LSMTInvertedIndex<PType> {
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
 					delIndexFile(reader.getMeta());
 				}

@@ -13,10 +13,12 @@ public enum LockManager {
 	// public static LockManager instance = new LockManager();
 	private boolean bootstrap = false;
 
+	private final int PARALLEL = 10240;
+
 	private LockManager() {
-		postsLocks = new ReadWriteLock[1024];
+		postsLocks = new ReadWriteLock[PARALLEL];
 		versionLock = new ReentrantReadWriteLock();
-		for (int i = 0; i < 1024; i++) {
+		for (int i = 0; i < PARALLEL; i++) {
 			postsLocks[i] = new ReentrantReadWriteLock();
 		}
 	}

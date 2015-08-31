@@ -1,8 +1,7 @@
 package core.lsmo;
 
 import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import common.MidSegment;
 
@@ -12,7 +11,8 @@ import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 
-public class OctreeMemTable extends TreeMap<Integer, MemoryOctree> implements
+public class OctreeMemTable extends
+		ConcurrentSkipListMap<Integer, MemoryOctree> implements
 		IMemTable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;
 	private SSTableMeta meta;

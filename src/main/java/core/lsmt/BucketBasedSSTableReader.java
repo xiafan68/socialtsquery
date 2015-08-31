@@ -35,7 +35,7 @@ import core.lsmt.IndexKey.IndexKeyFactory;
 public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dataInput;
 	protected RandomAccessFile dirInput;
-	protected RandomAccessFile idxInput;
+	// protected RandomAccessFile idxInput;
 
 	protected Map<Integer, DirEntry> dirMap = new TreeMap<Integer, DirEntry>();
 	protected Map<Integer, List> skipList = new HashMap<Integer, List>();
@@ -196,5 +196,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 			dataInput.close();
 		if (dirInput != null)
 			dirInput.close();
+
+		skipList.clear();
+		dirMap.clear();
 	}
 }
