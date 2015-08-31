@@ -30,7 +30,7 @@ public class IndexLoader {
 	private static void loadSegs(String[] args) throws IOException {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load("conf/index_twitter.conf");
 
 		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		try {
@@ -61,7 +61,7 @@ public class IndexLoader {
 	private static void loadTweetsHist(String[] args) throws IOException {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load("conf/index_twitter.conf");
 
 		final LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		try {
@@ -76,56 +76,59 @@ public class IndexLoader {
 		String line = null;
 		int i = 0;
 		long start = System.currentTimeMillis();
-		while (null != (line = reader.readLine())) {
-			int idx = line.lastIndexOf('\t');
-			if (idx < 0) {
-				return;
-			}
-			Histogram hist = new Histogram();
-
-			String tweetField = line.substring(0, idx);
-			String histField = line.substring(idx + 1);
-			Tweet tweet = new Tweet();
-			tweet.parse(tweetField);
-			hist.fromString(histField);
-			long midTmp = -1;
-			try {
-				midTmp = Long.parseLong(tweet.getMid());
-			} catch (Exception ex) {
-				UUID uid = UUID.randomUUID();
-				midTmp = uid.getLeastSignificantBits() & uid.getMostSignificantBits();
-			}
-			final long mid = midTmp;
-			final List<String> words = shingle.shingling(tweet.getContent());
-			SWSegmentation seg = new SWSegmentation(mid, 5, null, new ISegSubscriber() {
-				@Override
-				public void newSeg(Interval preInv, Segment seg) {
-					try {
-						index.insert(words, new MidSegment(mid, seg));
-					} catch (IOException e) {
-					}
+		try {
+			while (null != (line = reader.readLine())) {
+				int idx = line.lastIndexOf('\t');
+				if (idx < 0) {
+					return;
 				}
-			});
-			Iterator<Entry<Double, Integer>> iter = hist.groupby(1000 * 60 * 30).iterator();
-			while (iter.hasNext()) {
-				Entry<Double, Integer> entry = iter.next();
-				seg.advance(entry.getKey().intValue(), entry.getValue());
+				Histogram hist = new Histogram();
+
+				String tweetField = line.substring(0, idx);
+				String histField = line.substring(idx + 1);
+				Tweet tweet = new Tweet();
+				tweet.parse(tweetField);
+				hist.fromString(histField);
+				long midTmp = -1;
+				try {
+					midTmp = Long.parseLong(tweet.getMid());
+				} catch (Exception ex) {
+					UUID uid = UUID.randomUUID();
+					midTmp = uid.getLeastSignificantBits() & uid.getMostSignificantBits();
+				}
+				final long mid = midTmp;
+				final List<String> words = shingle.shingling(tweet.getContent());
+				SWSegmentation seg = new SWSegmentation(mid, 5, null, new ISegSubscriber() {
+					@Override
+					public void newSeg(Interval preInv, Segment seg) {
+						try {
+							index.insert(words, new MidSegment(mid, seg));
+						} catch (IOException e) {
+						}
+					}
+				});
+				Iterator<Entry<Double, Integer>> iter = hist.groupby(1000 * 60 * 30).iterator();
+				while (iter.hasNext()) {
+					Entry<Double, Integer> entry = iter.next();
+					seg.advance(entry.getKey().intValue(), entry.getValue());
+				}
+				seg.finish();
+				if (++i % 1000 == 0) {
+					long time = System.currentTimeMillis() - start;
+					logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
+							+ " ms/i");
+				}
 			}
-			seg.finish();
-			if (++i % 1000 == 0) {
-				long time = System.currentTimeMillis() - start;
-				logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
-						+ " ms/i");
-			}
+		} finally {
+			index.close();
+			reader.close();
 		}
-		index.close();
-		reader.close();
 	}
 
 	private static void loadTweetsSegs(String[] args) throws IOException {
 		PropertyConfigurator.configure("conf/log4j-server.properties");
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load("conf/index_twitter.conf");
 
 		final LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
 		try {
@@ -141,52 +144,55 @@ public class IndexLoader {
 		int i = 0;
 		long start = System.currentTimeMillis();
 		Map<String, Long> mapping = new HashMap<String, Long>();
-		while (null != (line = reader.readLine())) {
-			int idx = line.lastIndexOf('\t');
-			if (idx < 0) {
-				return;
-			}
-			String tweetField = line.substring(0, idx);
-			String histField = line.substring(idx + 1);
-			Segment seg = new Segment();
-			seg.parse(histField);
-			Tweet tweet = new Tweet();
-			tweet.parse(tweetField);
-			long midTmp = -1;
-			try {
-				midTmp = Long.parseLong(tweet.getMid());
-			} catch (Exception ex) {
-				// logger.error(ex.getMessage());
-				if (mapping.containsKey(tweet.getMid())) {
-					midTmp = mapping.get(tweet.getMid());
-				} else {
-					midTmp = 0 - mapping.size();
-					mapping.put(tweet.getMid(), midTmp);
+		try {
+			while (null != (line = reader.readLine())) {
+				int idx = line.lastIndexOf('\t');
+				if (idx < 0) {
+					return;
 				}
+				String tweetField = line.substring(0, idx);
+				String histField = line.substring(idx + 1);
+				Segment seg = new Segment();
+				seg.parse(histField);
+				Tweet tweet = new Tweet();
+				tweet.parse(tweetField);
+				long midTmp = -1;
+				try {
+					midTmp = Long.parseLong(tweet.getMid());
+				} catch (Exception ex) {
+					// logger.error(ex.getMessage());
+					if (mapping.containsKey(tweet.getMid())) {
+						midTmp = mapping.get(tweet.getMid());
+					} else {
+						midTmp = 0 - mapping.size();
+						mapping.put(tweet.getMid(), midTmp);
+					}
+				}
+				final long mid = midTmp;
+				final List<String> words = shingle.shingling(tweet.getContent());
+				index.insert(words, new MidSegment(midTmp, seg));
+				if (i++ % 1000 == 0) {
+					long time = System.currentTimeMillis() - start;
+					logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
+							+ " ms/i");
+				}
+				if (Runtime.getRuntime().freeMemory() < 1024 * 1024 * 50)
+					break;
 			}
-			final long mid = midTmp;
-			final List<String> words = shingle.shingling(tweet.getContent());
-			index.insert(words, new MidSegment(midTmp, seg));
-			if (i++ % 1000 == 0) {
-				long time = System.currentTimeMillis() - start;
-				logger.info("inserting " + i + " items costs " + time + " ms, " + " average " + ((double) time / i)
-						+ " ms/i");
+			DataOutputStream output = new DataOutputStream(new FileOutputStream("/tmp/mapping.txt"));
+			for (Entry<String, Long> entry : mapping.entrySet()) {
+				output.writeUTF(entry.getKey());
+				output.writeLong(entry.getValue());
 			}
-			if (Runtime.getRuntime().freeMemory() < 1024 * 1024 * 100)
-				break;
+			output.close();
+		} finally {
+			index.close();
+			reader.close();
 		}
-		DataOutputStream output = new DataOutputStream(new FileOutputStream("/tmp/mapping.txt"));
-		for (Entry<String, Long> entry : mapping.entrySet()) {
-			output.writeUTF(entry.getKey());
-			output.writeLong(entry.getValue());
-		}
-		output.close();
-		index.close();
-		reader.close();
 	}
 
 	public static void main(String[] args) throws IOException {
-		loadTweetsHist(args);
-		// loadTweetsSegs(args);
+		// loadTweetsHist(args);
+		loadTweetsSegs(args);
 	}
 }
