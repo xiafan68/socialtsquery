@@ -3,17 +3,21 @@ package core.lsmo.octree;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
 import Util.Pair;
+import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.SSTableWriter.DirEntry;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.IndexKey;
+import core.lsmt.PostingListMeta;
 import fanxia.file.ByteUtil;
 
 /**
@@ -23,7 +27,8 @@ import fanxia.file.ByteUtil;
  *
  */
 public class OctreePostingListIter implements IOctreeIterator {
-	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
+	private static final Logger logger = Logger
+			.getLogger(OctreePostingListIter.class);
 	private DirEntry entry;
 	private DiskSSTableReader reader;
 	private int ts;
@@ -60,7 +65,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return entry;
 	}
 
@@ -153,7 +158,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @throws IOException
 	 */
 	private boolean skipToOctant() throws IOException {
-		Pair<Encoding, BucketID> pair = null;
+		Pair<IndexKey, BucketID> pair = null;
 		pair = reader.cellOffset(entry.curKey, curMin);
 		if (pair == null) {
 			pair = reader.floorOffset(entry.curKey, curMin);
@@ -186,8 +191,9 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private boolean readBucketNextOctant() throws IOException {
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
-		curCode.readFields(input);
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
+				data));
+		curCode.read(input);
 		// logger.info(curCode);
 
 		if (isCorrectCode(curCode)) {
@@ -202,7 +208,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private boolean diskHasMore() {
-		return curMin.compareTo(max) <= 0 && nextID.compareTo(entry.endBucketID) <= 0;
+		return curMin.compareTo(max) <= 0
+				&& nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
 	private void advance() throws IOException {
@@ -229,7 +236,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() throws IOException {
+	public OctreeNode nextNode() throws IOException {
 		advance();
 		OctreeNode ret = curNode;
 		curNode = null;
@@ -239,4 +246,19 @@ public class OctreePostingListIter implements IOctreeIterator {
 	@Override
 	public void close() throws IOException {
 	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		OctreeNode node = nextNode();
+		return new Pair<Integer, List<MidSegment>>(
+				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
+						node.getSegs()));
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
 }

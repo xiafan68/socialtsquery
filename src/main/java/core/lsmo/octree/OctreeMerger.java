@@ -2,11 +2,13 @@ package core.lsmo.octree;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
 
-import com.sun.org.apache.bcel.internal.generic.LSHL;
-
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import Util.Pair;
+import common.MidSegment;
+import core.lsmt.IndexKey;
+import core.lsmt.PostingListMeta;
 
 /**
  * merge leaf nodes of two octrees
@@ -18,7 +20,7 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator lhs;
 	IOctreeIterator rhs;
 	OctreeNode curNode;
-	OctreeMeta meta;
+	PostingListMeta meta;
 	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
 			256, new Comparator<OctreeNode>() {
 				@Override
@@ -31,10 +33,10 @@ public class OctreeMerger implements IOctreeIterator {
 		this.lhs = lhs;
 		this.rhs = rhs;
 		if (lhs.getMeta() == null || rhs.getMeta() == null) {
-			meta = new OctreeMeta(lhs.getMeta() != null ? lhs.getMeta()
+			meta = new PostingListMeta(lhs.getMeta() != null ? lhs.getMeta()
 					: rhs.getMeta());
 		} else {
-			meta = new OctreeMeta(lhs.getMeta(), rhs.getMeta());
+			meta = new PostingListMeta(lhs.getMeta(), rhs.getMeta());
 		}
 	}
 
@@ -49,12 +51,12 @@ public class OctreeMerger implements IOctreeIterator {
 
 	private void nextLNode() throws IOException {
 		if (lnode == null && lhs.hasNext())
-			lnode = lhs.next();
+			lnode = lhs.nextNode();
 	}
 
 	private void nextRNode() throws IOException {
 		if (rnode == null && rhs.hasNext())
-			rnode = rhs.next();
+			rnode = rhs.nextNode();
 	}
 
 	private void advance() throws IOException {
@@ -105,7 +107,7 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() throws IOException {
+	public OctreeNode nextNode() throws IOException {
 		OctreeNode ret = null;
 		advance();
 		if (!splittedNodes.isEmpty()) {
@@ -150,7 +152,18 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return meta;
+	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		throw new RuntimeException(
+				"next should never be invoked on instance of OctreeMerger");
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		throw new RuntimeException("skipto OctreeMerger");
 	}
 }

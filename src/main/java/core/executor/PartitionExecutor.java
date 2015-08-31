@@ -10,10 +10,9 @@ import java.util.Map;
 
 import segmentation.Interval;
 import Util.MyMath;
+import Util.Pair;
 import Util.Profile;
-
 import common.MidSegment;
-
 import core.commom.Encoding;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
@@ -22,7 +21,7 @@ import core.executor.domain.SortBestscore;
 import core.executor.domain.SortWorstscore;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
 
 /**
@@ -33,7 +32,7 @@ import core.lsmt.PartitionMeta;
  * 
  */
 public class PartitionExecutor extends IQueryExecutor {
-	LSMOInvertedIndex reader;
+	LSMTInvertedIndex reader;
 
 	TempKeywordQuery query;
 
@@ -47,7 +46,7 @@ public class PartitionExecutor extends IQueryExecutor {
 
 	boolean stop = false;
 
-	public PartitionExecutor(LSMOInvertedIndex reader) {
+	public PartitionExecutor(LSMTInvertedIndex reader) {
 		this.reader = reader;
 		maxLifeTime = Integer.MAX_VALUE;
 	}
@@ -61,7 +60,8 @@ public class PartitionExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
+	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map)
+			throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
@@ -86,8 +86,9 @@ public class PartitionExecutor extends IQueryExecutor {
 		String[] keywords = query.keywords;
 		cursors = new IOctreeIterator[keywords.length];
 		List<String> keywordList = Arrays.asList(keywords);
-		Map<String, IOctreeIterator> iters = reader.getPostingListIter(keywordList, query.queryInv.getStart(),
-				query.queryInv.getEnd());
+		Map<String, IOctreeIterator> iters = reader
+				.getPostingListIter(keywordList, query.queryInv.getStart(),
+						query.queryInv.getEnd());
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
@@ -112,10 +113,12 @@ public class PartitionExecutor extends IQueryExecutor {
 			for (float bestScore : bestScores) {
 				sum += bestScore;
 			}
-			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
+			sum *= Math.min(maxLifeTime,
+					query.getEndTime() - query.getStartTime());
 			boolean ret = true;
 			// 当前partition不可能有cand能够进入topk
-			if (cand.getMaxBestScore() < topk.getMinWorstScore() && sum < topk.getMinWorstScore()
+			if (cand.getMaxBestScore() < topk.getMinWorstScore()
+					&& sum < topk.getMinWorstScore()
 					&& topk.size() >= ctx.getQuery().k) {
 				ret = true;
 			} else {
@@ -182,7 +185,8 @@ public class PartitionExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k || newSeg.getWorstscore() > topk.getMinBestScore()) {
+		} else if (topk.size() < query.k
+				|| newSeg.getWorstscore() > topk.getMinBestScore()) {
 			topk.update(preSeg, newSeg);
 			if (topk.size() > query.k)
 				topk.poll();// 把bestScore最小的一个移除
@@ -211,16 +215,14 @@ public class PartitionExecutor extends IQueryExecutor {
 		}
 
 		IOctreeIterator plc = nextCursor();
-		OctreeNode node = plc.next();// 读取一个记录。
+		Pair<Integer, List<MidSegment>> node = plc.next();// 读取一个记录。
 
-		Encoding code = node.getEncoding();
-
-		bestScores[curListIdx] = code.getTopZ();
+		bestScores[curListIdx] = node.getKey();
 
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
 
-		for (MidSegment midseg : node.getSegs())
+		for (MidSegment midseg : node.getValue())
 			ret |= updateCandState(curListIdx, midseg, 1.0f);
 		Profile.instance.end(Profile.UPDATE_STATE);
 
@@ -241,7 +243,8 @@ public class PartitionExecutor extends IQueryExecutor {
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
 			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
+			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur
+					.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}

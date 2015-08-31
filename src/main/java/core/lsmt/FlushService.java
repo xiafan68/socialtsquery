@@ -1,6 +1,5 @@
 package core.lsmt;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,8 +9,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import Util.Configuration;
-import core.lsmo.OctreeMemTable;
-import core.lsmo.SSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 
 /**
@@ -22,10 +19,10 @@ import core.lsmt.IMemTable.SSTableMeta;
  */
 public class FlushService extends Thread {
 	private static final Logger logger = Logger.getLogger(FlushService.class);
-	LSMOInvertedIndex index;
+	LSMTInvertedIndex index;
 	Configuration conf;
 
-	public FlushService(LSMOInvertedIndex index) {
+	public FlushService(LSMTInvertedIndex index) {
 		super("flush thread");
 		this.index = index;
 		conf = index.getConf();
@@ -46,7 +43,7 @@ public class FlushService extends Thread {
 				}
 				logger.info(buf.toString());
 
-				ISSTableWriter writer = SSTableWriterFactory.INSTANCE.newWriterForFlushing(flushingTables.subList(0, 1),
+				ISSTableWriter writer = index.getFactory().newSSTableWriterForFlushing(flushingTables.subList(0, 1),
 						index.getStep());
 				try {
 					writer.write(conf.getTmpDir());
@@ -54,18 +51,14 @@ public class FlushService extends Thread {
 
 					// write succeed, now move file to the right place, update
 					// the versionset and commitlog
-					File tmpFile = SSTableWriter.idxFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.idxFile(conf.getIndexDir(), writer.getMeta()));
-					tmpFile = SSTableWriter.dirMetaFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dirMetaFile(conf.getIndexDir(), writer.getMeta()));
-					tmpFile = SSTableWriter.dataFile(conf.getTmpDir(), writer.getMeta());
-					tmpFile.renameTo(SSTableWriter.dataFile(conf.getIndexDir(), writer.getMeta()));
+					writer.moveToDir(conf.getTmpDir(), conf.getIndexDir());
 					Set<SSTableMeta> versions = new HashSet<SSTableMeta>();
 					for (IMemTable table : flushingTables) {
 						versions.add(table.getMeta());
 					}
 					index.flushTables(versions, writer.getMeta());
 				} catch (IOException e) {
+					logger.error("flushing error:" + e.getMessage());
 					throw new RuntimeException(e);
 				}
 			} else {

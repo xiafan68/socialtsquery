@@ -29,7 +29,7 @@ public class SSTableScanner implements
 		Pair<Integer, IOctreeIterator> ret;
 		try {
 			ret = new Pair<Integer, IOctreeIterator>(entry,
-					reader.getPostingListScanner(entry));
+					(IOctreeIterator) reader.getPostingListScanner(entry));
 		} catch (IOException e) {
 			e.printStackTrace();
 			ret = null;

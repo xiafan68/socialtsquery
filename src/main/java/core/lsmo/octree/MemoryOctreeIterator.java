@@ -1,10 +1,15 @@
 package core.lsmo.octree;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
 
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import Util.Pair;
+import common.MidSegment;
+import core.lsmt.IndexKey;
+import core.lsmt.PostingListMeta;
 
 /**
  * an iterator visiting a memory octree
@@ -13,15 +18,16 @@ import core.lsmo.octree.MemoryOctree.OctreeMeta;
  *
  */
 public class MemoryOctreeIterator implements IOctreeIterator {
-	OctreeMeta meta;
+	PostingListMeta meta;
 	int start = Integer.MIN_VALUE;
 	int end = Integer.MAX_VALUE;
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
+			256, new Comparator<OctreeNode>() {
+				@Override
+				public int compare(OctreeNode o1, OctreeNode o2) {
+					return o1.getEncoding().compareTo(o2.getEncoding());
+				}
+			});
 
 	public MemoryOctreeIterator(MemoryOctree tree) {
 		if (tree != null) {
@@ -43,7 +49,8 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	}
 
 	private boolean intersect(OctreeNode node) {
-		if (node.getCornerPoint().getX() <= end && node.getCornerPoint().getY() + node.getEdgeLen() > start)
+		if (node.getCornerPoint().getX() <= end
+				&& node.getCornerPoint().getY() + node.getEdgeLen() > start)
 			return true;
 		return false;
 	}
@@ -64,7 +71,7 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeNode next() {
+	public OctreeNode nextNode() {
 		while (!traverseQueue.isEmpty()) {
 			OctreeNode node = traverseQueue.poll();
 			if (node.isLeaf()) {
@@ -90,7 +97,21 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return meta;
+	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		OctreeNode node = nextNode();
+		return new Pair<Integer, List<MidSegment>>(
+				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
+						node.getSegs()));
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }

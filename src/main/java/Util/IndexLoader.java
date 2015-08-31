@@ -15,7 +15,8 @@ import org.apache.log4j.PropertyConfigurator;
 
 import common.MidSegment;
 import common.Tweet;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
@@ -32,7 +33,7 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
 
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -63,7 +64,7 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
 
-		final LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -130,7 +131,7 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
 
-		final LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		final LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {
@@ -192,7 +193,7 @@ public class IndexLoader {
 	}
 
 	public static void main(String[] args) throws IOException {
-		// loadTweetsHist(args);
-		loadTweetsSegs(args);
+		loadTweetsHist(args);
+		//loadTweetsSegs(args);
 	}
 }

@@ -24,32 +24,34 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+import segmentation.Interval;
+import shingle.TextShingle;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.PartitionExecutor;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
-import core.lsmo.SSTableWriter;
-import core.lsmo.octree.IOctreeIterator;
+import core.lsmo.OctreeSSTableWriter;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.OctreeMergeView;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
-import segmentation.Interval;
-import shingle.TextShingle;
 
 /**
  * 
  * @author xiafan
  *
  */
-public class LSMOInvertedIndex<PType> {
-	private static final Logger logger = Logger.getLogger(LSMOInvertedIndex.class);
+public class LSMTInvertedIndex<PType> {
+	private static final Logger logger = Logger
+			.getLogger(LSMTInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
+	final ILSMTFactory implFactory;
 	File dataDir;
 	boolean bootstrap = true;
 	volatile boolean stop = false;
@@ -63,8 +65,9 @@ public class LSMOInvertedIndex<PType> {
 	TextShingle shingle = new TextShingle(null);
 	DataOutputStream keyWriter;
 
-	public LSMOInvertedIndex(Configuration conf) {
+	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
 		this.conf = conf;
+		this.implFactory = factory;
 	}
 
 	/**
@@ -166,9 +169,10 @@ public class LSMOInvertedIndex<PType> {
 	 * @return
 	 */
 	private boolean validateDataFile(SSTableMeta meta) {
-		File dFile = SSTableWriter.dataFile(conf.getIndexDir(), meta);
-		File idxFile = SSTableWriter.idxFile(conf.getIndexDir(), meta);
-		File dirFile = SSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		File dFile = OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta);
+		File idxFile = OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta);
+		File dirFile = OctreeSSTableWriter
+				.dirMetaFile(conf.getIndexDir(), meta);
 		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
 			logger.warn("index file of version " + meta + " is not consistent");
 			return false;
@@ -186,7 +190,7 @@ public class LSMOInvertedIndex<PType> {
 
 	Map<String, Integer> keyCode = new HashMap<String, Integer>();
 
-	int getKeywordCode(String keyword) throws IOException {
+	public int getKeywordCode(String keyword) throws IOException {
 		if (!keyCode.containsKey(keyword)) {
 			keyCode.put(keyword, keyCode.size());
 			keyWriter.writeUTF(keyword);
@@ -195,7 +199,8 @@ public class LSMOInvertedIndex<PType> {
 		return keyCode.get(keyword);
 	}
 
-	public void insert(List<String> keywords, MidSegment seg) throws IOException {
+	public void insert(List<String> keywords, MidSegment seg)
+			throws IOException {
 		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
@@ -230,7 +235,7 @@ public class LSMOInvertedIndex<PType> {
 					// open new log
 					CommitLog.INSTANCE.openNewLog(nextVersion);
 					SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
-					tmp = MemTableFactory.newMemTable(this, meta);
+					tmp = implFactory.newMemTable(this, meta);
 					versionSet = versionSet.clone();
 					versionSet.newMemTable(tmp);
 					curTable = tmp;
@@ -268,13 +273,12 @@ public class LSMOInvertedIndex<PType> {
 		LockManager.INSTANCE.versionWriteUnLock();
 	}
 
-	public int getCompactNum() {
-		return 1;
-	}
-
-	public int getFlushNum() {
-		// TODO Auto-generated method stub
-		return 1;
+	/**
+	 * 
+	 * @return
+	 */
+	public ILSMTFactory getFactory() {
+		return implFactory;
 	}
 
 	public VersionSet getVersion() {
@@ -284,26 +288,30 @@ public class LSMOInvertedIndex<PType> {
 		return versionSet;
 	}
 
-	public Iterator<Interval> query(List<String> keywords, int start, int end, int k) throws IOException {
+	public Iterator<Interval> query(List<String> keywords, int start, int end,
+			int k) throws IOException {
 		IQueryExecutor exec = new PartitionExecutor(this);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
 		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
-		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
+		exec.query(new TempKeywordQuery(wordArr,
+				new Interval(-1, start, end, 0), k));
 		return exec.getAnswer();
 	}
 
-	public Map<String, IOctreeIterator> getPostingListIter(List<String> keywords, int start, int end)
-			throws IOException {
-		Map<String, IOctreeIterator> ret = new HashMap<String, IOctreeIterator>();
+	public Map<String, IPostingListIterator> getPostingListIter(
+			List<String> keywords, int start, int end) throws IOException {
+		Map<String, IPostingListIterator> ret = new HashMap<String, IPostingListIterator>();
 		for (String keyword : keywords) {
-			OctreeMergeView view = new OctreeMergeView();
+			PostingListMergeView view = new PostingListMergeView();
 			int key = getKeywordCode(keyword);
 			// add iter for current memtable
-			view.addIterator(versionSet.curTable.getReader().getPostingListIter(key, start, end));
+			view.addIterator(versionSet.curTable.getReader()
+					.getPostingListIter(key, start, end));
 			// add iter for flushing memtable
 			for (IMemTable table : versionSet.flushingTables) {
-				view.addIterator(table.getReader().getPostingListIter(key, start, end));
+				view.addIterator(table.getReader().getPostingListIter(key,
+						start, end));
 			}
 			for (SSTableMeta meta : versionSet.diskTreeMetas) {
 				ISSTableReader reader = getSSTableReader(versionSet, meta);
@@ -330,7 +338,8 @@ public class LSMOInvertedIndex<PType> {
 		int version;
 		int level;
 
-		public SSTableMetaKey(SSTableMeta referent, ReferenceQueue<SSTableMeta> queue) {
+		public SSTableMetaKey(SSTableMeta referent,
+				ReferenceQueue<SSTableMeta> queue) {
 			super(referent, queue);
 			version = referent.version;
 			level = referent.level;
@@ -428,7 +437,8 @@ public class LSMOInvertedIndex<PType> {
 
 		@Override
 		public String toString() {
-			StringBuffer ret = new StringBuffer("VersionSet [diskTreeMetas=" + diskTreeMetas + ",");
+			StringBuffer ret = new StringBuffer("VersionSet [diskTreeMetas="
+					+ diskTreeMetas + ",");
 			if (curTable != null)
 				ret.append("cur memtable:" + curTable.getMeta());
 			ret.append("flushing memtables:");
@@ -473,21 +483,22 @@ public class LSMOInvertedIndex<PType> {
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
 			if (reader != null) {
-				if (!conf.debugMode() && reader.meta.markAsDel.get()) {
-					delIndexFile(reader.meta);
+				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
+					delIndexFile(reader.getMeta());
 				}
 			}
 		}
 	}
 
 	private void delIndexFile(SSTableMeta meta) {
-		SSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
-		SSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
-		SSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
+		OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
 		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
 
-	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
+			throws IOException {
 		cleanupReaders();
 		if (snapshot.curTable == null) {
 			return null;

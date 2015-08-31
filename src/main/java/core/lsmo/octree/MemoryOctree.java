@@ -4,7 +4,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.IntegerUtil;
 import common.MidSegment;
+
 import core.commom.Point;
+import core.lsmt.PostingListMeta;
 
 /**
  * the in-memory implementation of octree: edges are power of 2
@@ -14,36 +16,14 @@ import core.commom.Point;
  */
 public class MemoryOctree {
 	public static int size_threshold = 100;
-	OctreeMeta meta;
+	PostingListMeta meta;
 	OctreeNode root = null;
 	// once true, no data can be inserted any further
 	private AtomicBoolean immutable = new AtomicBoolean(false);
 
-	public static class OctreeMeta {
-		// octant meta
-		// public Point cornerPoint = new Point(0, 0, 0);
-		public int size = 0;
-		public int maxTime = Integer.MIN_VALUE;
-		public int minTime = Integer.MAX_VALUE;
+	
 
-		public OctreeMeta() {
-
-		}
-
-		public OctreeMeta(OctreeMeta meta) {
-			size = meta.size;
-			minTime = meta.minTime;
-			maxTime = meta.maxTime;
-		}
-
-		public OctreeMeta(OctreeMeta a, OctreeMeta b) {
-			size = a.size + b.size;
-			minTime = Math.min(a.minTime, b.minTime);
-			maxTime = Math.max(a.maxTime, b.maxTime);
-		}
-	}
-
-	public MemoryOctree(OctreeMeta meta) {
+	public MemoryOctree(PostingListMeta meta) {
 		this.meta = meta;
 	}
 
@@ -51,7 +31,7 @@ public class MemoryOctree {
 		immutable.set(true);
 	}
 
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return meta;
 	}
 

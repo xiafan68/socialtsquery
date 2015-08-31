@@ -10,14 +10,13 @@ import org.junit.Test;
 
 import segmentation.Interval;
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.commom.Encoding;
 import core.commom.Point;
 import core.lsmo.DiskSSTableReader;
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
 
 public class OctreePostingListIterTest {
 	@Test
@@ -26,8 +25,12 @@ public class OctreePostingListIterTest {
 
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
-		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(255, 8));
+
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
+		DiskSSTableReader reader = new DiskSSTableReader(index,
+				new SSTableMeta(255, 8));
+
 		reader.init();
 		Iterator<Integer> iter = reader.keySetIter();
 		while (iter.hasNext()) {
@@ -53,13 +56,14 @@ public class OctreePostingListIterTest {
 			// 遍历所有的node，找到相关的segs
 			IOctreeIterator scanner = reader.getPostingListScanner(key);
 			while (scanner.hasNext()) {
-				cur = scanner.next();
+				cur = scanner.nextNode();
 				code = cur.getEncoding();
 				if (code.getX() < te && code.getY() + code.getEdgeLen() > ts) {
 					expectNodeNum++;
 					// System.out.print("hit ");
 					System.out.println(code);
-					System.out.println(((DiskOctreeIterator) scanner).nextBucketID);
+					System.out
+							.println(((DiskOctreeIterator) scanner).nextBucketID);
 				} else {
 					// System.out.print("not hit ");
 				}
@@ -69,7 +73,8 @@ public class OctreePostingListIterTest {
 				boolean print = false;
 
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd()
+							&& seg.getEndTime() >= window.getStart()) {
 						expect++;
 						if (!print) {
 							expectCodes.add(code);
@@ -91,10 +96,11 @@ public class OctreePostingListIterTest {
 			// System.setOut(new PrintStream(fos));
 			System.out.println(" skip");
 			int size = 0;
-			scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
+			scanner = reader.getPostingListIter(key, window.getStart(),
+					window.getEnd());
 			while (scanner.hasNext()) {
 				boolean print = false;
-				cur = scanner.next();
+				cur = scanner.nextNode();
 				code = cur.getEncoding();
 				if (code.getX() < te && code.getY() + code.getEdgeLen() > ts) {
 					expectNodeNum++;
@@ -103,7 +109,8 @@ public class OctreePostingListIterTest {
 					System.out.println(code);
 				}
 				for (MidSegment seg : cur.getSegs()) {
-					if (seg.getStart() <= window.getEnd() && seg.getEndTime() >= window.getStart()) {
+					if (seg.getStart() <= window.getEnd()
+							&& seg.getEndTime() >= window.getStart()) {
 						size++;
 						if (!print) {
 							if (!expectCodes.remove(code)) {

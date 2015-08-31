@@ -8,8 +8,7 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import org.apache.hadoop.io.WritableComparable;
-
+import core.lsmt.IndexKey;
 import fanxia.file.ByteUtil;
 
 /**
@@ -17,7 +16,7 @@ import fanxia.file.ByteUtil;
  * 
  * @author xiafan
  */
-public class Encoding extends Point implements WritableComparable<Encoding> {
+public class Encoding extends Point implements IndexKey {
 	private int paddingBitNum;// the number bits that are padded at the ends
 	private int edgeLen = -1;
 	private int[] encodes = new int[3];
@@ -121,7 +120,7 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	 */
 
 	@Override
-	public void readFields(DataInput input) throws IOException {
+	public void read(DataInput input) throws IOException {
 		paddingBitNum = ByteUtil.readVInt(input);
 		for (int i = 0; i < 3; i++) {
 			// encodes[i] = ByteUtil.readVInt(input);
@@ -140,13 +139,15 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 	}
 
 	@Override
-	public int compareTo(Encoding arg0) {
+	public int compareTo(IndexKey other) {
+		Encoding arg0 = (Encoding) other;
 		int ret = 0;
 		ret = 0 - Integer.compare(encodes[0], arg0.encodes[0]);
 		for (int i = 1; i < encodes.length; i++) {
 			if (ret != 0)
 				break;
-			ret = Long.compare((encodes[i] & 0xffffffffL), (arg0.encodes[i] & 0xffffffffL));
+			ret = Long.compare((encodes[i] & 0xffffffffL),
+					(arg0.encodes[i] & 0xffffffffL));
 		}
 		if (ret == 0)
 			ret = 0 - Integer.compare(paddingBitNum, arg0.paddingBitNum);
@@ -159,7 +160,8 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 			return false;
 		}
 		Encoding oCode = (Encoding) object;
-		return x == oCode.x && y == oCode.y && z == oCode.z && paddingBitNum == oCode.paddingBitNum;
+		return x == oCode.x && y == oCode.y && z == oCode.z
+				&& paddingBitNum == oCode.paddingBitNum;
 	}
 
 	@Override
@@ -169,8 +171,9 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 
 	@Override
 	public String toString() {
-		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x=" + getX() + "," + Integer.toBinaryString(x)
-				+ "\n, y=" + getY() + "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
+		String ret = "HybridEncoding [endBit=" + paddingBitNum + "\n, x="
+				+ getX() + "," + Integer.toBinaryString(x) + "\n, y=" + getY()
+				+ "," + Integer.toBinaryString(y) + "\n,z=" + getZ() + ","
 				+ Integer.toBinaryString(encodes[0]) + "]\n, encoding:";
 		for (int code : encodes) {
 			ret += Integer.toBinaryString(code) + ",";
@@ -185,7 +188,9 @@ public class Encoding extends Point implements WritableComparable<Encoding> {
 		DataOutputStream dao = new DataOutputStream(baos);
 		data.write(dao);
 		Encoding newData = new Encoding();
-		newData.readFields(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+		newData.read(new DataInputStream(new ByteArrayInputStream(baos
+				.toByteArray())));
+
 		System.out.println(newData);
 
 		data = new Encoding(new Point(0, 696602, 1), 0);

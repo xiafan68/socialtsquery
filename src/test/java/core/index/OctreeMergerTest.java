@@ -14,17 +14,20 @@ import org.junit.Test;
 import segmentation.Segment;
 import xiafan.util.collection.DefaultedPutMap;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.Encoding;
 import core.lsmo.DiskSSTableReader;
+import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
-import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
+import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMOInvertedIndex;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.PostingListMeta;
 
 public class OctreeMergerTest {
 	@Test
@@ -48,7 +51,7 @@ public class OctreeMergerTest {
 					tree1), new MemoryOctreeIterator(tree2));
 			Encoding pre = null;
 			while (merge.hasNext()) {
-				OctreeNode node = merge.next();
+				OctreeNode node = merge.nextNode();
 				if (pre != null) {
 					Assert.assertTrue(pre.compareTo(node.getEncoding()) < 0);
 				}
@@ -71,7 +74,7 @@ public class OctreeMergerTest {
 	private static void setupAnswers(MemoryOctreeIterator iter,
 			Map<MidSegment, Integer> segs) {
 		while (iter.hasNext()) {
-			OctreeNode node = iter.next();
+			OctreeNode node = iter.nextNode();
 			for (MidSegment seg : node.getSegs()) {
 				segs.put(seg, segs.get(seg) + 1);
 			}
@@ -79,7 +82,7 @@ public class OctreeMergerTest {
 	}
 
 	public static MemoryOctree insertAndReadTest(int seed) {
-		MemoryOctree octree = new MemoryOctree(new OctreeMeta());
+		MemoryOctree octree = new MemoryOctree(new PostingListMeta());
 		Random rand = new Random();
 		rand.setSeed(seed);
 		HashSet<MidSegment> segs = new HashSet<MidSegment>();
@@ -100,8 +103,9 @@ public class OctreeMergerTest {
 	public void merge2SStables() throws IOException {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		conf.load("conf/index_twitter.conf");
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		int level = 0;
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(0,
@@ -125,7 +129,7 @@ public class OctreeMergerTest {
 					rhs.getPostingListScanner(key));
 			OctreeNode pre = null;
 			while (merge.hasNext()) {
-				OctreeNode cur = merge.next();
+				OctreeNode cur = merge.nextNode();
 				// System.out.println(cur);
 				size += cur.size();
 				if (pre != null) {
@@ -144,7 +148,8 @@ public class OctreeMergerTest {
 	public void merge3SStables() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMOInvertedIndex index = new LSMOInvertedIndex(conf);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(
 				32, 0));
 		lhs.init();
@@ -160,7 +165,7 @@ public class OctreeMergerTest {
 		OctreeMerger merge3 = new OctreeMerger(merge,
 				rrhs.getPostingListScanner(0));
 		while (merge3.hasNext()) {
-			OctreeNode cur = merge3.next();
+			OctreeNode cur = merge3.nextNode();
 			System.out.println(cur);
 		}
 	}

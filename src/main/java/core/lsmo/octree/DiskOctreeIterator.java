@@ -3,15 +3,22 @@ package core.lsmo.octree;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import Util.Pair;
+
+import common.MidSegment;
 
 import core.commom.Encoding;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
-import core.lsmo.SSTableWriter.DirEntry;
-import core.lsmo.octree.MemoryOctree.OctreeMeta;
+import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.IndexKey;
+import core.lsmt.PostingListMeta;
 
 /**
  * an iterator visiting leaf nodes of disk octree
@@ -21,15 +28,16 @@ import core.lsmo.octree.MemoryOctree.OctreeMeta;
  */
 public class DiskOctreeIterator implements IOctreeIterator {
 	DirEntry entry;
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
+			256, new Comparator<OctreeNode>() {
+				@Override
+				public int compare(OctreeNode o1, OctreeNode o2) {
+					return o1.getEncoding().compareTo(o2.getEncoding());
+				}
+			});
 
 	Bucket bucket = new Bucket(-1);
-	BucketID nextBucketID;
+	BucketID nextBucketID = new BucketID(0, (short) 0);
 
 	int nextBlockID = -1;
 	private DiskSSTableReader reader;
@@ -45,17 +53,19 @@ public class DiskOctreeIterator implements IOctreeIterator {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
-			nextBucketID = new BucketID(entry.startBucketID);
+			nextBucketID.copy(entry.startBucketID);
 		}
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return entry != null && (!traverseQueue.isEmpty() || nextBucketID.compareTo(entry.endBucketID) <= 0);
+		return entry != null
+				&& (!traverseQueue.isEmpty() || nextBucketID
+						.compareTo(entry.endBucketID) <= 0);
 	}
 
 	@Override
-	public OctreeNode next() throws IOException {
+	public OctreeNode nextNode() throws IOException {
 		// load new bucket
 		OctreeNode ret = null;
 		if (nextBucketID.compareTo(entry.endBucketID) <= 0) {
@@ -70,9 +80,10 @@ public class DiskOctreeIterator implements IOctreeIterator {
 			}
 
 			assert nextBucketID.offset < bucket.octNum();
-			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bucket.getOctree(nextBucketID.offset)));
+			DataInputStream dis = new DataInputStream(new ByteArrayInputStream(
+					bucket.getOctree(nextBucketID.offset)));
 			Encoding coding = new Encoding();
-			coding.readFields(dis);
+			coding.read(dis);
 			ret = new OctreeNode(coding, coding.getEdgeLen());
 			ret.read(dis);
 			nextBucketID.offset++;
@@ -96,8 +107,9 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public void addNode(OctreeNode node) {
-		if (node.getEncoding().getX() == 699344 && node.getEncoding().getY() == 699344 && node.getEncoding().getZ() == 1
-				&& node.getEdgeLen() == 1) {
+		if (node.getEncoding().getX() == 699344
+				&& node.getEncoding().getY() == 699344
+				&& node.getEncoding().getZ() == 1 && node.getEdgeLen() == 1) {
 			System.out.println("debuging at addNode of DiskOctreeIterator");
 		}
 		traverseQueue.add(node);
@@ -109,12 +121,27 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public OctreeMeta getMeta() {
+	public PostingListMeta getMeta() {
 		return entry;
 	}
 
 	@Override
 	public void open() throws IOException {
+
+	}
+
+	@Override
+	public Pair<Integer, List<MidSegment>> next() throws IOException {
+		OctreeNode node = nextNode();
+		Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
+				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
+						node.segs));
+		return ret;
+	}
+
+	@Override
+	public void skipTo(IndexKey key) throws IOException {
+		// TODO Auto-generated method stub
 
 	}
 }

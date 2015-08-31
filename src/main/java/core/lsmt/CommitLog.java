@@ -115,7 +115,7 @@ public enum CommitLog {
 
 	private final static Pattern RLOG_FILE_PATTERN = Pattern.compile("^[0-9]+.rlog$");
 
-	public void recover(LSMOInvertedIndex tree) throws IOException {
+	public void recover(LSMTInvertedIndex tree) throws IOException {
 		File[] files = dir.listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -136,7 +136,7 @@ public enum CommitLog {
 		}
 	}
 
-	private void redo(File file, LSMOInvertedIndex tree) throws IOException {
+	private void redo(File file, LSMTInvertedIndex tree) throws IOException {
 		DataInputStream dis = new DataInputStream(new FileInputStream(file));
 		logger.info("recovering log file " + file.toString());
 		try {

@@ -9,11 +9,11 @@ import java.util.PriorityQueue;
 
 import Util.PeekIterDecorate.PeekableClosableIterator;
 
-public class MergeIterator<K, V> implements Iterator<Entry<K, List<V>>> {
+public class GroupByKeyIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 	PriorityQueue<PeekableClosableIterator<Entry<K, V>>> queue;
 	Comparator<K> comp;
 
-	public MergeIterator(final Comparator<K> comp) {
+	public GroupByKeyIterator(final Comparator<K> comp) {
 		this.comp = comp;
 		queue = new PriorityQueue<PeekableClosableIterator<Entry<K, V>>>(2,
 				new Comparator<PeekableClosableIterator<Entry<K, V>>>() {
@@ -33,7 +33,7 @@ public class MergeIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 				});
 	}
 
-	public MergeIterator(
+	public GroupByKeyIterator(
 			final List<PeekableClosableIterator<Entry<K, V>>> iters,
 			final Comparator<K> comp) {
 		this.comp = comp;
