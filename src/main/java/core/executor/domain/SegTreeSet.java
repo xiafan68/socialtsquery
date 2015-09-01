@@ -26,14 +26,12 @@ public class SegTreeSet extends ISegQueue {
 	/**
 	 * 使用红黑树
 	 */
-	protected TreeSet<MergedMidSeg> treeset;
+	protected TreeSet<MergedMidSeg> pOrderQueue;
+	protected TreeSet<MergedMidSeg> sOrderQueue;
 
-	protected float minBestScore = Float.MAX_VALUE;
-	boolean isTopkTree = false;
-
-	public SegTreeSet(Comparator comparator, boolean topk) {
-		treeset = new TreeSet<MergedMidSeg>(comparator);
-		isTopkTree = topk;
+	public SegTreeSet(Comparator comparator, Comparator sOrder) {
+		pOrderQueue = new TreeSet<MergedMidSeg>(comparator);
+		sOrderQueue = new TreeSet<MergedMidSeg>(sOrder);
 	}
 
 	/**
@@ -42,7 +40,7 @@ public class SegTreeSet extends ISegQueue {
 	 * @return
 	 */
 	public MergedMidSeg peek() {
-		return treeset.first();
+		return pOrderQueue.first();
 		// return priorityQueue.peek();
 	}
 
@@ -51,18 +49,13 @@ public class SegTreeSet extends ISegQueue {
 	 */
 	public void poll() {
 		// MergedMidSeg seg = priorityQueue.poll();
-		MergedMidSeg seg = treeset.pollFirst();
-		// 更新最小bestscore
-		if (isTopkTree && seg != null && seg.getBestscore() == minBestScore) {
-			minBestScore = Float.MAX_VALUE;
-			// Iterator<MergedMidSeg> iter = priorityQueue.iterator();
-			Iterator<MergedMidSeg> iter = treeset.iterator();
-			while (iter.hasNext()) {
-				MergedMidSeg cur = iter.next();
-				if (minBestScore > cur.getBestscore()) {
-					minBestScore = cur.getBestscore();
-				}
-			}
+		MergedMidSeg seg = pOrderQueue.pollFirst();
+		sOrderQueue.remove(seg);
+		while (seg != null && !seg.computeScore()) {
+			pOrderQueue.add(seg);
+			sOrderQueue.add(seg);
+			seg = pOrderQueue.pollFirst();
+			sOrderQueue.remove(seg);
 		}
 	}
 
@@ -75,12 +68,13 @@ public class SegTreeSet extends ISegQueue {
 		float ret = Float.MIN_VALUE;
 		// if (!priorityQueue.isEmpty())
 		// ret = priorityQueue.peek().getWorstscore();
-		if (!treeset.isEmpty()) {
+		if (!pOrderQueue.isEmpty()) {
 			while (true) {
-				MergedMidSeg cur = treeset.first();
-				treeset.remove(cur);
+				MergedMidSeg cur = pOrderQueue.pollFirst();
+				sOrderQueue.remove(cur);
 				boolean state = cur.computeScore();
-				treeset.add(cur);
+				pOrderQueue.add(cur);
+				sOrderQueue.add(cur);
 				if (!state) {
 					ret = cur.getWorstscore();
 					break;
@@ -108,12 +102,12 @@ public class SegTreeSet extends ISegQueue {
 		float ret = Float.MIN_VALUE;
 		// if (!priorityQueue.isEmpty())
 		// ret = priorityQueue.peek().getBestscore();
-		if (!treeset.isEmpty()) {
+		if (!pOrderQueue.isEmpty()) {
 			while (true) {
-				MergedMidSeg cur = treeset.first();
-				treeset.remove(cur);
+				MergedMidSeg cur = pOrderQueue.first();
+				pOrderQueue.remove(cur);
 				boolean state = cur.computeScore();
-				treeset.add(cur);
+				pOrderQueue.add(cur);
 				if (!state) {
 					ret = cur.getBestscore();
 					break;
@@ -126,23 +120,20 @@ public class SegTreeSet extends ISegQueue {
 	public boolean contains(MergedMidSeg seg) {
 		if (seg == null)
 			return false;
-		return treeset.contains(seg);
+		return pOrderQueue.contains(seg);
 		// return priorityQueue.contains(seg);
 	}
 
 	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
 		if (preSeg != null)
-			treeset.remove(preSeg);
+			pOrderQueue.remove(preSeg);
 		// priorityQueue.remove(preSeg);
-		treeset.add(newSeg);
-		// priorityQueue.offer(newSeg);
-		if (isTopkTree && minBestScore > newSeg.getBestscore()) {
-			minBestScore = newSeg.getBestscore();
-		}
+		pOrderQueue.add(newSeg);
+
 	}
 
 	public boolean isEmpty() {
-		return treeset.isEmpty();
+		return pOrderQueue.isEmpty();
 		// return priorityQueue.isEmpty();
 	}
 
@@ -152,7 +143,7 @@ public class SegTreeSet extends ISegQueue {
 		// MergedMidSeg t = (MergedMidSeg) iter.next();
 		// res.add(t.segList.get(0));
 		// }
-		for (Iterator iter = treeset.iterator(); iter.hasNext();) {
+		for (Iterator iter = pOrderQueue.iterator(); iter.hasNext();) {
 			MergedMidSeg t = (MergedMidSeg) iter.next();
 			res.add(t.segList.get(0));
 		}
@@ -160,17 +151,17 @@ public class SegTreeSet extends ISegQueue {
 	}
 
 	public Iterator<MergedMidSeg> iterator() {
-		return treeset.iterator();
+		return pOrderQueue.iterator();
 		// return priorityQueue.iterator();
 	}
 
 	public void remove(MergedMidSeg preSeg) {
-		treeset.remove(preSeg);
+		pOrderQueue.remove(preSeg);
 		// priorityQueue.remove(preSeg);
 	}
 
 	public int size() {
-		return treeset.size();
+		return pOrderQueue.size();
 		// return priorityQueue.size();
 	}
 
@@ -180,7 +171,7 @@ public class SegTreeSet extends ISegQueue {
 		// MergedMidSeg t = (MergedMidSeg) iter.next();
 		// System.out.println(t.toString());
 		// }
-		for (Iterator iter = treeset.iterator(); iter.hasNext();) {
+		for (Iterator iter = pOrderQueue.iterator(); iter.hasNext();) {
 			MergedMidSeg t = (MergedMidSeg) iter.next();
 			System.out.println(t.toString());
 		}

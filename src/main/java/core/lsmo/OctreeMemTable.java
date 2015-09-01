@@ -1,11 +1,10 @@
 package core.lsmo;
 
 import java.util.Iterator;
-import java.util.Map.Entry;
 
 import common.MidSegment;
+
 import core.lsmo.octree.MemoryOctree;
-import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
@@ -14,15 +13,12 @@ import core.lsmt.WritableComparableKey;
 
 public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;
-	private SSTableMeta meta;
-	// for the reason of multiple thread
-	private volatile boolean frezen = false;
-	private volatile int valueCount = 0;
-	private LSMTInvertedIndex index;
+
 	private final MemorySSTableReader reader;
+	protected LSMTInvertedIndex index;
 
 	public OctreeMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
-		this.meta = meta;
+		super(meta);
 		this.index = index;
 		this.reader = new MemorySSTableReader(this, meta);
 	}
@@ -39,14 +35,6 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 	 */
 	public SSTableMeta getMeta() {
 		return meta;
-	}
-
-	public void freeze() {
-		frezen = true;
-	}
-
-	public int size() {
-		return valueCount;
 	}
 
 	public void insert(WritableComparableKey key, MidSegment seg) {
