@@ -11,7 +11,7 @@ import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
-import core.lsmt.IndexKey;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
 
 public class SortedListMemTableReader implements ISSTableReader {
@@ -22,25 +22,21 @@ public class SortedListMemTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public Iterator<Integer> keySetIter() {
+	public Iterator<WritableComparableKey> keySetIter() {
 		return table.keySet().iterator();
 	}
 
 	@Override
-	public IPostingListIterator getPostingListScanner(int key)
-			throws IOException {
-		return new MemorySortedListIterator(table.get(key), 0,
-				Integer.MAX_VALUE);
+	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+		return new MemorySortedListIterator(table.get(key), 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(int key, int start, int end)
-			throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
 		return new MemorySortedListIterator(table.get(key), start, end);
 	}
 
-	private static class MemorySortedListIterator implements
-			IPostingListIterator {
+	private static class MemorySortedListIterator implements IPostingListIterator {
 		SortedListPostinglist postingList;
 		Iterator<MidSegment> iter;
 		int start;
@@ -48,8 +44,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 
 		MidSegment cur = null;
 
-		public MemorySortedListIterator(SortedListPostinglist postingList,
-				int start, int end) {
+		public MemorySortedListIterator(SortedListPostinglist postingList, int start, int end) {
 			this.postingList = postingList;
 			this.iter = postingList.iterator();
 			this.start = start;
@@ -89,8 +84,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 			if (cur == null)
 				advance();
 			Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
-					Math.max(cur.getStart(), cur.getEndCount()),
-					Arrays.asList(cur));
+					Math.max(cur.getStart(), cur.getEndCount()), Arrays.asList(cur));
 			cur = null;
 			return ret;
 		}
@@ -100,7 +94,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 		}
 
 		@Override
-		public void skipTo(IndexKey key) throws IOException {
+		public void skipTo(WritableComparableKey key) throws IOException {
 			// TODO Auto-generated method stub
 		}
 	}

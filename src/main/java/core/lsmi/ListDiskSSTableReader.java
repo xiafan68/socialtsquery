@@ -16,14 +16,14 @@ import core.lsmt.BucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.IPostingListIterator;
-import core.lsmt.IndexKey;
-import core.lsmt.IndexKey.IndexKeyFactory;
+import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 
 public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 
-	public static class SegListKey implements IndexKey {
+	public static class SegListKey implements WritableComparableKey {
 		int top;
 		int start;
 		long mid;
@@ -39,7 +39,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 
 		@Override
-		public int compareTo(IndexKey o) {
+		public int compareTo(WritableComparableKey o) {
 			SegListKey obj = (SegListKey) o;
 			int ret = Integer.compare(top, obj.top);
 			if (ret == 0) {
@@ -66,10 +66,10 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 	}
 
-	public static enum SegListKeyFactory implements IndexKeyFactory {
+	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
 		INSTANCE;
 		@Override
-		public IndexKey createIndexKey() {
+		public WritableComparableKey createIndexKey() {
 			return new SegListKey();
 		}
 
@@ -80,15 +80,12 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 	}
 
 	@Override
-	public IPostingListIterator getPostingListScanner(int key)
-			throws IOException {
-		return new ListDiskPostingListIterator(dirMap.get(key), 0,
-				Integer.MAX_VALUE);
+	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+		return new ListDiskPostingListIterator(dirMap.get(key), 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(int key, int start, int end)
-			throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
 		return new ListDiskPostingListIterator(dirMap.get(key), start, end);
 	}
 
@@ -126,9 +123,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 
 		private void advance() throws IOException {
-			while (cur == null
-					&& (curIdx < curList.size() || nextBuckID
-							.compareTo(dir.endBucketID) <= 0)) {
+			while (cur == null && (curIdx < curList.size() || nextBuckID.compareTo(dir.endBucketID) <= 0)) {
 				if (curIdx >= curList.size()) {
 					loadSubList();
 				}
@@ -152,8 +147,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 			}
 			curList.init();
 			curIdx = 0;
-			curList.read(new DataInputStream(new ByteArrayInputStream(curBuck
-					.getOctree(nextBuckID.offset++))));
+			curList.read(new DataInputStream(new ByteArrayInputStream(curBuck.getOctree(nextBuckID.offset++))));
 		}
 
 		@Override
@@ -169,14 +163,14 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		public Pair<Integer, List<MidSegment>> next() throws IOException {
 			if (cur == null)
 				advance();
-			Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
-					cur.getPoint().getZ(), Arrays.asList(cur));
+			Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(cur.getPoint().getZ(),
+					Arrays.asList(cur));
 			cur = null;
 			return ret;
 		}
 
 		@Override
-		public void skipTo(IndexKey key) throws IOException {
+		public void skipTo(WritableComparableKey key) throws IOException {
 			// TODO Auto-generated method stub
 
 		}

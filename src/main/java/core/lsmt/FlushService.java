@@ -44,7 +44,7 @@ public class FlushService extends Thread {
 				logger.info(buf.toString());
 
 				ISSTableWriter writer = index.getFactory().newSSTableWriterForFlushing(flushingTables.subList(0, 1),
-						index.getStep());
+						index.getConf());
 				try {
 					writer.write(conf.getTmpDir());
 					writer.close();

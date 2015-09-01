@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+
 public class Configuration {
 	Properties props = new Properties();
 
@@ -63,5 +66,9 @@ public class Configuration {
 
 	public int getBatchCommitNum() {
 		return Integer.parseInt(props.getProperty("batch_commit_num", "1000"));
+	}
+
+	public WritableComparableKeyFactory getMemTableKey() {
+		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
 }

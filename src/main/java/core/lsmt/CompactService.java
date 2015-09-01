@@ -2,6 +2,8 @@ package core.lsmt;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -68,15 +70,13 @@ public class CompactService extends Thread {
 			return ret;
 		}
 
-		Collections.sort(sortedLevelNum,
-				new Comparator<Entry<Integer, Integer>>() {
+		Collections.sort(sortedLevelNum, new Comparator<Entry<Integer, Integer>>() {
 
-					@Override
-					public int compare(Entry<Integer, Integer> o1,
-							Entry<Integer, Integer> o2) {
-						return o2.getValue().compareTo(o1.getValue());
-					}
-				});
+			@Override
+			public int compare(Entry<Integer, Integer> o1, Entry<Integer, Integer> o2) {
+				return o2.getValue().compareTo(o1.getValue());
+			}
+		});
 		ret = levelList.get(sortedLevelNum.get(0).getKey());
 		return ret;
 	}
@@ -121,14 +121,16 @@ public class CompactService extends Thread {
 				try {
 					readers.add(index.getSSTableReader(snapshot, meta));
 				} catch (Exception ex) {
-					logger.error(ex.getStackTrace());
+					StringWriter sw = new StringWriter();
+					PrintWriter printStream = new PrintWriter(sw);
+					ex.printStackTrace(printStream);
+					logger.error(sw.toString());
 				}
 			}
 
-			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact
-					.size() - 1).version, toCompact.get(0).level + 1);
-			OctreeSSTableWriter writer = new OctreeSSTableWriter(newMeta, readers,
-					index.getStep());
+			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact.size() - 1).version,
+					toCompact.get(0).level + 1);
+			OctreeSSTableWriter writer = new OctreeSSTableWriter(newMeta, readers, index.getConf());
 			try {
 				Configuration conf = index.getConf();
 				writer.write(conf.getTmpDir());
@@ -136,20 +138,13 @@ public class CompactService extends Thread {
 				// write succeed, now move file to the right place, update
 				// the versionset and commitlog
 
-				File tmpFile = OctreeSSTableWriter.idxFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(OctreeSSTableWriter.idxFile(conf.getIndexDir(),
-						writer.getMeta()));
-				tmpFile = OctreeSSTableWriter.dirMetaFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(),
-						writer.getMeta()));
-				tmpFile = OctreeSSTableWriter.dataFile(conf.getTmpDir(),
-						writer.getMeta());
-				tmpFile.renameTo(OctreeSSTableWriter.dataFile(conf.getIndexDir(),
-						writer.getMeta()));
-				index.compactTables(new HashSet<SSTableMeta>(toCompact),
-						writer.getMeta());
+				File tmpFile = OctreeSSTableWriter.idxFile(conf.getTmpDir(), writer.getMeta());
+				tmpFile.renameTo(OctreeSSTableWriter.idxFile(conf.getIndexDir(), writer.getMeta()));
+				tmpFile = OctreeSSTableWriter.dirMetaFile(conf.getTmpDir(), writer.getMeta());
+				tmpFile.renameTo(OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), writer.getMeta()));
+				tmpFile = OctreeSSTableWriter.dataFile(conf.getTmpDir(), writer.getMeta());
+				tmpFile.renameTo(OctreeSSTableWriter.dataFile(conf.getIndexDir(), writer.getMeta()));
+				index.compactTables(new HashSet<SSTableMeta>(toCompact), writer.getMeta());
 			} catch (IOException e) {
 				logger.error(e.getStackTrace());
 				throw new RuntimeException(e);
@@ -161,8 +156,7 @@ public class CompactService extends Thread {
 
 	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
 		for (SSTableMeta meta : toCompact) {
-			File file = OctreeSSTableWriter.dataFile(index.getConf().getIndexDir(),
-					meta);
+			File file = OctreeSSTableWriter.dataFile(index.getConf().getIndexDir(), meta);
 			FileUtil.markDel(file);
 		}
 	}

@@ -8,7 +8,7 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import core.lsmt.IndexKey;
+import core.lsmt.WritableComparableKey;
 import fanxia.file.ByteUtil;
 
 /**
@@ -16,7 +16,7 @@ import fanxia.file.ByteUtil;
  * 
  * @author xiafan
  */
-public class Encoding extends Point implements IndexKey {
+public class Encoding extends Point implements WritableComparableKey {
 	private int paddingBitNum;// the number bits that are padded at the ends
 	private int edgeLen = -1;
 	private int[] encodes = new int[3];
@@ -139,7 +139,7 @@ public class Encoding extends Point implements IndexKey {
 	}
 
 	@Override
-	public int compareTo(IndexKey other) {
+	public int compareTo(WritableComparableKey other) {
 		Encoding arg0 = (Encoding) other;
 		int ret = 0;
 		ret = 0 - Integer.compare(encodes[0], arg0.encodes[0]);

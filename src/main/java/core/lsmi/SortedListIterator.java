@@ -6,7 +6,7 @@ import java.util.List;
 import Util.Pair;
 import common.MidSegment;
 import core.lsmt.IPostingListIterator;
-import core.lsmt.IndexKey;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
 
 public class SortedListIterator implements IPostingListIterator {
@@ -47,7 +47,7 @@ public class SortedListIterator implements IPostingListIterator {
 	}
 
 	@Override
-	public void skipTo(IndexKey key) throws IOException {
+	public void skipTo(WritableComparableKey key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

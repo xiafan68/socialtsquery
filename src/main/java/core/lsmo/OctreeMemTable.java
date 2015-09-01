@@ -1,19 +1,18 @@
 package core.lsmo;
 
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.Map.Entry;
 
 import common.MidSegment;
-
 import core.lsmo.octree.MemoryOctree;
-import core.lsmt.IMemTable;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
+import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
+import core.lsmt.WritableComparableKey;
 
-public class OctreeMemTable extends
-		ConcurrentSkipListMap<Integer, MemoryOctree> implements
-		IMemTable<MemoryOctree> {
+public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;
 	private SSTableMeta meta;
 	// for the reason of multiple thread
@@ -50,7 +49,7 @@ public class OctreeMemTable extends
 		return valueCount;
 	}
 
-	public void insert(int key, MidSegment seg) {
+	public void insert(WritableComparableKey key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}
@@ -66,7 +65,7 @@ public class OctreeMemTable extends
 		postinglist.insert(seg.getPoint(), seg);
 	}
 
-	public Iterator<Entry<Integer, MemoryOctree>> iterator() {
+	public Iterator<Entry<WritableComparableKey, MemoryOctree>> iterator() {
 		return super.entrySet().iterator();
 	}
 

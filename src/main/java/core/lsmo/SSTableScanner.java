@@ -7,11 +7,11 @@ import java.util.Map.Entry;
 import Util.Pair;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.ISSTableReader;
+import core.lsmt.WritableComparableKey;
 
-public class SSTableScanner implements
-		Iterator<Entry<Integer, IOctreeIterator>> {
+public class SSTableScanner implements Iterator<Entry<WritableComparableKey, IOctreeIterator>> {
 	ISSTableReader reader;
-	Iterator<Integer> iter;
+	Iterator<WritableComparableKey> iter;
 
 	public SSTableScanner(ISSTableReader reader) {
 		this.reader = reader;
@@ -24,11 +24,11 @@ public class SSTableScanner implements
 	}
 
 	@Override
-	public Entry<Integer, IOctreeIterator> next() {
-		Integer entry = iter.next();
-		Pair<Integer, IOctreeIterator> ret;
+	public Entry<WritableComparableKey, IOctreeIterator> next() {
+		WritableComparableKey entry = iter.next();
+		Pair<WritableComparableKey, IOctreeIterator> ret;
 		try {
-			ret = new Pair<Integer, IOctreeIterator>(entry,
+			ret = new Pair<WritableComparableKey, IOctreeIterator>(entry,
 					(IOctreeIterator) reader.getPostingListScanner(entry));
 		} catch (IOException e) {
 			e.printStackTrace();

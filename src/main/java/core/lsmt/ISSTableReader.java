@@ -24,13 +24,12 @@ public interface ISSTableReader {
 
 	public void init() throws IOException;
 
-	public abstract Iterator<Integer> keySetIter();
+	public abstract Iterator<WritableComparableKey> keySetIter();
 
-	public abstract IPostingListIterator getPostingListScanner(int key)
+	public abstract IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException;
+
+	public abstract IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end)
 			throws IOException;
-
-	public abstract IPostingListIterator getPostingListIter(int key, int start,
-			int end) throws IOException;
 
 	public abstract void close() throws IOException;
 }

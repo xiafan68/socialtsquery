@@ -1,5 +1,6 @@
 package core.lsmt;
 
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -14,13 +15,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
 import com.sleepycat.je.rep.stream.Protocol.Commit;
-import com.sleepycat.persist.impl.Store.SyncHook;
 
 import Util.Configuration;
 import Util.Pair;
@@ -40,7 +41,7 @@ public enum CommitLog {
 	// log files that are not deleted
 	private List<Integer> preVersions = new ArrayList<Integer>();
 	private int batchNum = 0;
-
+	ConcurrentLinkedQueue<Pair<String, MidSegment>> cached = new ConcurrentLinkedQueue<Pair<String, MidSegment>>();
 	// the set of words appearing in this log segment
 	// ConcurrentSkipListSet<String> words = new
 	// ConcurrentSkipListSet<String>();
@@ -77,24 +78,24 @@ public enum CommitLog {
 			curVersion = version;
 		}
 		try {
-			dos = new DataOutputStream(new FileOutputStream(
-					versionFile(version), true));
+			dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(versionFile(version), true)));
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	List<Pair<String, MidSegment>> cached = new ArrayList<Pair<String, MidSegment>>();
-
-	public synchronized void write(String word, MidSegment seg) {
+	public void write(String word, MidSegment seg) {
 		cached.add(new Pair<String, MidSegment>(word, seg));
 		if (cached.size() > batchNum) {
 			flush();
 		}
 	}
 
-	private void flush() {
-		for (Pair<String, MidSegment> pair : cached) {
+	private synchronized void flush() {
+		while (true) {
+			Pair<String, MidSegment> pair = cached.poll();
+			if (pair == null)
+				break;
 			write_intern(pair.getKey(), pair.getValue());
 		}
 		try {
@@ -102,7 +103,6 @@ public enum CommitLog {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		cached.clear();
 	}
 
 	public void write_intern(String word, MidSegment seg) {
@@ -116,8 +116,7 @@ public enum CommitLog {
 		}
 	}
 
-	private final static Pattern RLOG_FILE_PATTERN = Pattern
-			.compile("^[0-9]+.rlog$");
+	private final static Pattern RLOG_FILE_PATTERN = Pattern.compile("^[0-9]+.rlog$");
 
 	public void recover(LSMTInvertedIndex tree) throws IOException {
 		File[] files = dir.listFiles(new FilenameFilter() {
@@ -130,10 +129,8 @@ public enum CommitLog {
 		Arrays.sort(files, new Comparator<File>() {
 			@Override
 			public int compare(File o1, File o2) {
-				int version1 = Integer.parseInt(o1.getName().substring(0,
-						o1.getName().indexOf('.')));
-				int version2 = Integer.parseInt(o2.getName().substring(0,
-						o2.getName().indexOf('.')));
+				int version1 = Integer.parseInt(o1.getName().substring(0, o1.getName().indexOf('.')));
+				int version2 = Integer.parseInt(o2.getName().substring(0, o2.getName().indexOf('.')));
 				return Integer.compare(version1, version2);
 			}
 		});
@@ -173,10 +170,8 @@ public enum CommitLog {
 	 * @return
 	 * @throws IOException
 	 */
-	public List<Pair<String, MidSegment>> dumpLog(int version)
-			throws IOException {
-		DataInputStream dis = new DataInputStream(new FileInputStream(
-				versionFile(version)));
+	public List<Pair<String, MidSegment>> dumpLog(int version) throws IOException {
+		DataInputStream dis = new DataInputStream(new FileInputStream(versionFile(version)));
 		List<Pair<String, MidSegment>> ret = new ArrayList<Pair<String, MidSegment>>();
 		try {
 			while (dis.available() > 0) {

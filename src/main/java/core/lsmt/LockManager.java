@@ -28,19 +28,19 @@ public enum LockManager {
 	}
 
 	public void postReadLock(int keyword) {
-		postsLocks[keyword % postsLocks.length].readLock().lock();
+		postsLocks[Math.abs(keyword % postsLocks.length)].readLock().lock();
 	}
 
 	public void postReadUnLock(int keyword) {
-		postsLocks[keyword % postsLocks.length].readLock().unlock();
+		postsLocks[Math.abs(keyword % postsLocks.length)].readLock().unlock();
 	}
 
 	public void postWriteLock(int keyword) {
-		postsLocks[keyword % postsLocks.length].writeLock().lock();
+		postsLocks[Math.abs(keyword % postsLocks.length)].writeLock().lock();
 	}
 
 	public void postWriteUnLock(int keyword) {
-		postsLocks[keyword % postsLocks.length].writeLock().unlock();
+		postsLocks[Math.abs(keyword % postsLocks.length)].writeLock().unlock();
 	}
 
 	public void versionReadLock() {

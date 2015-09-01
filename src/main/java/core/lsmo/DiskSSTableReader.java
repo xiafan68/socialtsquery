@@ -8,11 +8,9 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.BucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.IndexKey;
-import core.lsmt.IndexKey.IndexKeyFactory;
+import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.LSMTInvertedIndex;
-
-
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,
@@ -23,10 +21,10 @@ import core.lsmt.LSMTInvertedIndex;
  *
  */
 public class DiskSSTableReader extends BucketBasedSSTableReader {
-	private static enum EncodingFactory implements IndexKeyFactory {
+	private static enum EncodingFactory implements WritableComparableKeyFactory {
 		INSTANCE;
 		@Override
-		public IndexKey createIndexKey() {
+		public WritableComparableKey createIndexKey() {
 			return new Encoding();
 		}
 	}
@@ -35,14 +33,12 @@ public class DiskSSTableReader extends BucketBasedSSTableReader {
 		super(index, meta, EncodingFactory.INSTANCE);
 	}
 
-	public IOctreeIterator getPostingListScanner(int key) {
+	public IOctreeIterator getPostingListScanner(WritableComparableKey key) {
 		return new DiskOctreeIterator(dirMap.get(key), this);
 	}
 
-	public IOctreeIterator getPostingListIter(int key, int start, int end)
-			throws IOException {
-		IOctreeIterator iter = new OctreePostingListIter(dirMap.get(key), this,
-				start, end);
+	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+		IOctreeIterator iter = new OctreePostingListIter(dirMap.get(key), this, start, end);
 		iter.open();
 		return iter;
 	}

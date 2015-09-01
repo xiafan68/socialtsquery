@@ -12,9 +12,15 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import common.MidSegment;
+import common.Tweet;
+import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmt.LSMTInvertedIndex;
+import fanxia.file.DirLineReader;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
 import segmentation.SWSegmentation;
@@ -22,18 +28,10 @@ import segmentation.Segment;
 import shingle.TextShingle;
 import xiafan.util.Histogram;
 
-import common.MidSegment;
-import common.Tweet;
-
-import core.lsmo.OctreeBasedLSMTFactory;
-import core.lsmt.LSMTInvertedIndex;
-import fanxia.file.DirLineReader;
-
 public class IndexLoader {
 	private static Logger logger = Logger.getLogger(IndexLoader.class);
 
-	BlockingQueue<Pair<List<String>, MidSegment>> queue = new ArrayBlockingQueue<Pair<List<String>, MidSegment>>(
-			10000);
+	BlockingQueue<Pair<List<String>, MidSegment>> queue = new ArrayBlockingQueue<Pair<List<String>, MidSegment>>(10000);
 	String inputFile;
 	LSMTInvertedIndex index;
 	volatile boolean noMore = false;
@@ -47,6 +45,10 @@ public class IndexLoader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
+		FileUtils.deleteDirectory(conf.getIndexDir());
+		conf.getIndexDir().mkdirs();
+		FileUtils.deleteDirectory(conf.getCommitLogDir());
+		conf.getCommitLogDir().mkdirs();
 		index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
@@ -59,7 +61,7 @@ public class IndexLoader {
 	Thread producer;
 
 	private void startProducer() {
-		producer = new Thread() {
+		producer = new Thread("producer") {
 			@Override
 			public void run() {
 				DirLineReader reader = null;
@@ -76,9 +78,8 @@ public class IndexLoader {
 
 					if (++i % 1000 == 0) {
 						long time = System.currentTimeMillis() - start;
-						logger.info("inserting " + i + " items costs " + time
-								+ " ms, " + " average " + ((double) time / i)
-								+ " ms/i");
+						logger.info("inserting " + i + " items costs " + time + " ms, " + " average "
+								+ ((double) time / i) + " ms/i");
 					}
 				}
 				try {
@@ -97,8 +98,7 @@ public class IndexLoader {
 				seg.parse(line);
 				while (true) {
 					try {
-						queue.put(new Pair<List<String>, MidSegment>(Arrays
-								.asList(Long.toString(seg.getMid())), seg));
+						queue.put(new Pair<List<String>, MidSegment>(Arrays.asList(Long.toString(seg.getMid())), seg));
 						break;
 					} catch (InterruptedException e) {
 					}
@@ -130,12 +130,10 @@ public class IndexLoader {
 				}
 
 				try {
-					final List<String> words = shingle.shingling(tweet
-							.getContent());
+					final List<String> words = shingle.shingling(tweet.getContent());
 					while (true) {
 						try {
-							queue.put(new Pair<List<String>, MidSegment>(words,
-									new MidSegment(mid, seg)));
+							queue.put(new Pair<List<String>, MidSegment>(words, new MidSegment(mid, seg)));
 							break;
 						} catch (InterruptedException e) {
 						}
@@ -162,8 +160,7 @@ public class IndexLoader {
 					midTmp = Long.parseLong(tweet.getMid());
 				} catch (Exception ex) {
 					UUID uid = UUID.randomUUID();
-					midTmp = uid.getLeastSignificantBits()
-							& uid.getMostSignificantBits();
+					midTmp = uid.getLeastSignificantBits() & uid.getMostSignificantBits();
 				}
 				final long mid = midTmp;
 				final List<String> words = new ArrayList<String>();
@@ -172,22 +169,19 @@ public class IndexLoader {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				SWSegmentation seg = new SWSegmentation(mid, 5, null,
-						new ISegSubscriber() {
-							@Override
-							public void newSeg(Interval preInv, Segment seg) {
-								while (true) {
-									try {
-										queue.put(new Pair<List<String>, MidSegment>(
-												words, new MidSegment(mid, seg)));
-										break;
-									} catch (InterruptedException e) {
-									}
-								}
+				SWSegmentation seg = new SWSegmentation(mid, 5, null, new ISegSubscriber() {
+					@Override
+					public void newSeg(Interval preInv, Segment seg) {
+						while (true) {
+							try {
+								queue.put(new Pair<List<String>, MidSegment>(words, new MidSegment(mid, seg)));
+								break;
+							} catch (InterruptedException e) {
 							}
-						});
-				Iterator<Entry<Double, Integer>> iter = hist.groupby(
-						1000 * 60 * 30).iterator();
+						}
+					}
+				});
+				Iterator<Entry<Double, Integer>> iter = hist.groupby(1000 * 60 * 30).iterator();
 				while (iter.hasNext()) {
 					Entry<Double, Integer> entry = iter.next();
 					seg.advance(entry.getKey().intValue(), entry.getValue());
@@ -202,15 +196,14 @@ public class IndexLoader {
 
 	private void startConsumers() {
 		for (int i = 0; i < 10; i++) {
-			consumersThreads[i] = new Thread() {
+			consumersThreads[i] = new Thread("consumer") {
 
 				@Override
 				public void run() {
 					Pair<List<String>, MidSegment> cur = null;
 					while (!queue.isEmpty() || !noMore) {
 						try {
-							while (null != (cur = queue.poll(10,
-									TimeUnit.MILLISECONDS)) || !noMore) {
+							while (null != (cur = queue.poll(10, TimeUnit.MILLISECONDS)) || !noMore) {
 								if (cur != null)
 									index.insert(cur.getKey(), cur.getValue());
 							}

@@ -1,5 +1,6 @@
 package core.lsmt;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -19,6 +20,7 @@ public interface IMemTable<VType> {
 
 	/**
 	 * 返回读取当前memtable的reader类
+	 * 
 	 * @return the reader
 	 */
 	public ISSTableReader getReader();
@@ -32,25 +34,29 @@ public interface IMemTable<VType> {
 
 	/**
 	 * 当前memtable包含的entry的个数
+	 * 
 	 * @return
 	 */
 	public int size();
 
 	/**
 	 * 插入一个key, seg
+	 * 
 	 * @param key
 	 * @param seg
 	 */
-	public void insert(int key, MidSegment seg);
+	public void insert(WritableComparableKey key, MidSegment seg);
+
+	public void writeStats(File dir);
 
 	/**
 	 * 用于遍历memtable的每个key，value对
+	 * 
 	 * @return
 	 */
-	public Iterator<Entry<Integer, VType>> iterator();
+	public Iterator<Entry<WritableComparableKey, VType>> iterator();
 
-	public static class SSTableMeta implements Serializable,
-			Comparable<SSTableMeta> {
+	public static class SSTableMeta implements Serializable, Comparable<SSTableMeta> {
 		public int version;
 		public int level = 0;
 		transient boolean persisted = true;
@@ -106,9 +112,8 @@ public interface IMemTable<VType> {
 		 */
 		@Override
 		public String toString() {
-			return "SSTableMeta [version=" + version + ", level=" + level
-					+ ", persisted=" + persisted + ", markAsDel=" + markAsDel
-					+ "]";
+			return "SSTableMeta [version=" + version + ", level=" + level + ", persisted=" + persisted + ", markAsDel="
+					+ markAsDel + "]";
 		}
 	}
 

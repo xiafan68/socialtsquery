@@ -17,7 +17,7 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.DiskSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.IndexKey;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -140,7 +140,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(IndexKey key) throws IOException {
+	public void skipTo(WritableComparableKey key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

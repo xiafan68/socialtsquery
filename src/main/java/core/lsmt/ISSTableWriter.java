@@ -9,6 +9,7 @@ import java.util.Comparator;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
 public abstract class ISSTableWriter {
 
@@ -16,6 +17,7 @@ public abstract class ISSTableWriter {
 
 	/**
 	 * 将索引文件写入到dir中
+	 * 
 	 * @param dir
 	 * @throws IOException
 	 */
@@ -23,6 +25,7 @@ public abstract class ISSTableWriter {
 
 	/**
 	 * 将已写出的索引文件移到dir中
+	 * 
 	 * @param dir
 	 */
 	public abstract void moveToDir(File preDir, File dir);
@@ -40,30 +43,37 @@ public abstract class ISSTableWriter {
 
 	/**
 	 * return a bucket
+	 * 
 	 * @return
 	 */
 	public abstract Bucket getBucket();
 
 	/**
 	 * create a new bucket
+	 * 
 	 * @return
 	 */
 	public abstract Bucket newBucket();
 
 	public static class DirEntry extends PostingListMeta {
+		final WritableComparableKeyFactory factory;
 		// runtime state
-		public int curKey;
+		public WritableComparableKey curKey;
 		public BucketID startBucketID = new BucketID();
 		public BucketID endBucketID = new BucketID();
 		public long indexStartOffset;
 		public int sampleNum;
+
+		public DirEntry(WritableComparableKeyFactory factory) {
+			this.factory = factory;
+		}
 
 		public long getIndexOffset() {
 			return indexStartOffset;
 		}
 
 		public void init() {
-			curKey = 0;
+			curKey = factory.createIndexKey();
 			size = 0;
 			minTime = Integer.MAX_VALUE;
 			maxTime = Integer.MIN_VALUE;
@@ -79,7 +89,7 @@ public abstract class ISSTableWriter {
 		 */
 		public void write(DataOutput output) throws IOException {
 			super.write(output);
-			output.writeInt(curKey);
+			curKey.write(output);
 			startBucketID.write(output);
 			endBucketID.write(output);
 			output.writeLong(indexStartOffset);
@@ -94,22 +104,23 @@ public abstract class ISSTableWriter {
 		 */
 		public void read(DataInput input) throws IOException {
 			super.read(input);
-			curKey = input.readInt();
+			curKey = factory.createIndexKey();
+			curKey.read(input);
 			startBucketID.read(input);
 			endBucketID.read(input);
 			indexStartOffset = input.readLong();
 			sampleNum = input.readInt();
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see java.lang.Object#toString()
 		 */
 		@Override
 		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", startBucketID="
-					+ startBucketID + ", endBucketID=" + endBucketID
-					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
-					+ sampleNum + "]";
+			return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
 		}
 	}
 }

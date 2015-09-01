@@ -28,7 +28,7 @@ public interface IPostingListIterator {
 	 */
 	public Pair<Integer, List<MidSegment>> next() throws IOException;
 
-	public void skipTo(IndexKey key) throws IOException;
+	public void skipTo(WritableComparableKey key) throws IOException;
 
 	public void close() throws IOException;
 

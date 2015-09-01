@@ -4,19 +4,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import common.MidSegment;
-
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
-import core.lsmt.IMemTable;
 import core.lsmt.ISSTableReader;
+import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
+import core.lsmt.WritableComparableKey;
 
-public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
-		implements IMemTable<SortedListPostinglist> {
+public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> {
 	SSTableMeta meta;
 	// for the reason of multiple thread
 	private volatile boolean frezen = false;
@@ -50,7 +47,7 @@ public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
 	}
 
 	@Override
-	public void insert(int key, MidSegment seg) {
+	public void insert(WritableComparableKey key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}
@@ -67,7 +64,7 @@ public class SortedListMemTable extends TreeMap<Integer, SortedListPostinglist>
 	}
 
 	@Override
-	public Iterator<Entry<Integer, SortedListPostinglist>> iterator() {
+	public Iterator<Entry<WritableComparableKey, SortedListPostinglist>> iterator() {
 		return super.entrySet().iterator();
 	}
 

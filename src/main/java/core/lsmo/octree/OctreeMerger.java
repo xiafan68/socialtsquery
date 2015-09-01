@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 
 import Util.Pair;
 import common.MidSegment;
-import core.lsmt.IndexKey;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -163,7 +163,7 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(IndexKey key) throws IOException {
+	public void skipTo(WritableComparableKey key) throws IOException {
 		throw new RuntimeException("skipto OctreeMerger");
 	}
 }

@@ -22,6 +22,7 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import fanxia.file.DirLineReader;
 
 public class ReaderWriterTest {
@@ -31,20 +32,18 @@ public class ReaderWriterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
-				SortedListBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, SortedListBasedLSMTFactory.INSTANCE);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		// "/home/xiafan/dataset/twitter/twitter_segs"
-		DirLineReader reader = new DirLineReader(
-				"/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
+		DirLineReader reader = new DirLineReader("/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
 		String line = null;
 		SSTableMeta meta = new SSTableMeta(0, 0);
 		SortedListMemTable tree = new SortedListMemTable(index, meta);
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(Math.abs(Long.toString(seg.getMid()).hashCode()) % 10,
-					seg);
+			tree.insert(new WritableComparableKey.StringKey(
+					Long.toString(Math.abs(Long.toString(seg.getMid()).hashCode()) % 10)), seg);
 			if (tree.size() == conf.getFlushLimit() + 1) {
 				break;
 			}
@@ -53,24 +52,21 @@ public class ReaderWriterTest {
 
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
-		ISSTableWriter writer = SortedListBasedLSMTFactory.INSTANCE
-				.newSSTableWriterForFlushing(tables, 128);
+		ISSTableWriter writer = SortedListBasedLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
 		writer.write(conf.getIndexDir());
 		writer.close();
 
-		ISSTableReader treader = SortedListBasedLSMTFactory.INSTANCE
-				.newSSTableReader(index, meta);
+		ISSTableReader treader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta);
 		treader.init();
 		readerVerify(treader, conf, 0);
 	}
 
-	public static void readerVerify(ISSTableReader reader, Configuration conf,
-			int level) throws IOException {
+	public static void readerVerify(ISSTableReader reader, Configuration conf, int level) throws IOException {
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		int size = 0;
-		Iterator<Integer> iter = reader.keySetIter();
+		Iterator<WritableComparableKey> iter = reader.keySetIter();
 		while (iter.hasNext()) {
-			int key = iter.next();
+			WritableComparableKey key = iter.next();
 			System.out.println("scanning postinglist of " + key);
 			IPostingListIterator scanner = reader.getPostingListScanner(key);
 			Pair<Integer, List<MidSegment>> cur = null;
@@ -78,8 +74,7 @@ public class ReaderWriterTest {
 				cur = scanner.next();
 				size += cur.getValue().size();
 			}
-			System.out.println("expect size:" + expect + " cursize size:"
-					+ size);
+			System.out.println("expect size:" + expect + " cursize size:" + size);
 
 		}
 		if (expect != size)

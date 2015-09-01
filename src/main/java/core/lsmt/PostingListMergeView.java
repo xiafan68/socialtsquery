@@ -71,7 +71,7 @@ public class PostingListMergeView implements IPostingListIterator {
 	}
 
 	@Override
-	public void skipTo(IndexKey key) throws IOException {
+	public void skipTo(WritableComparableKey key) throws IOException {
 		// TODO Auto-generated method stub
 	}
 }

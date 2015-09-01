@@ -2,6 +2,7 @@ package core.lsmo;
 
 import java.util.List;
 
+import Util.Configuration;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
@@ -12,15 +13,14 @@ import core.lsmt.LSMTInvertedIndex;
 public enum OctreeBasedLSMTFactory implements ILSMTFactory {
 	INSTANCE;
 	@Override
-	public ISSTableWriter newSSTableWriterForFlushing(List<IMemTable> tables,
-			int step) {
-		return new OctreeSSTableWriter(tables, step);
+	public ISSTableWriter newSSTableWriterForFlushing(List<IMemTable> tables, Configuration conf) {
+		return new OctreeSSTableWriter(tables, conf);
 	}
 
 	@Override
-	public ISSTableWriter newSSTableWriterForCompaction(SSTableMeta meta,
-			List<ISSTableReader> tables, int step) {
-		return new OctreeSSTableWriter(meta, tables, step);
+	public ISSTableWriter newSSTableWriterForCompaction(SSTableMeta meta, List<ISSTableReader> tables,
+			Configuration conf) {
+		return new OctreeSSTableWriter(meta, tables, conf);
 	}
 
 	@Override
@@ -29,8 +29,7 @@ public enum OctreeBasedLSMTFactory implements ILSMTFactory {
 	}
 
 	@Override
-	public ISSTableReader newSSTableReader(LSMTInvertedIndex index,
-			SSTableMeta meta) {
+	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
 		return new DiskSSTableReader(index, meta);
 	}
 

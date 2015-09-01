@@ -19,6 +19,7 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import fanxia.file.DirLineReader;
 
 public class SSTableWriterTest {
@@ -28,19 +29,16 @@ public class SSTableWriterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
-				OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
-		DirLineReader reader = new DirLineReader(
-				"/home/xiafan/dataset/twitter/twitter_segs");
+		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");
 		String line = null;
 		SSTableMeta meta = new SSTableMeta(0, 0);
 		OctreeMemTable tree = new OctreeMemTable(index, meta);
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(Math.abs(Long.toString(seg.getMid()).hashCode()) % 10,
-					seg);
+			tree.insert(new WritableComparableKey.StringKey(Long.toString(seg.getMid())), seg);
 			if (tree.size() == conf.getFlushLimit()) {
 				break;
 			}
@@ -49,8 +47,7 @@ public class SSTableWriterTest {
 
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
-		ISSTableWriter writer = OctreeBasedLSMTFactory.INSTANCE
-				.newSSTableWriterForFlushing(tables, 128);
+		ISSTableWriter writer = OctreeBasedLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
 		writer.write(conf.getIndexDir());
 		writer.close();
 	}

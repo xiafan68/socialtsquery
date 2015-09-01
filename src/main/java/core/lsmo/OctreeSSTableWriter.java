@@ -1,9 +1,12 @@
 package core.lsmo;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -11,6 +14,7 @@ import java.util.Map.Entry;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
+import Util.Configuration;
 import Util.GroupByKeyIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
@@ -26,11 +30,11 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
+import core.lsmt.WritableComparableKey;
 
 public class OctreeSSTableWriter extends ISSTableWriter {
-	private static final Logger logger = Logger
-			.getLogger(OctreeSSTableWriter.class);
-	GroupByKeyIterator<Integer, IOctreeIterator> iter;
+	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
+	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
 	SSTableMeta meta;
 
 	FileOutputStream dataFileOs;
@@ -39,9 +43,13 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	DataOutputStream indexDos; // write down the encoding of each block
 	DataOutputStream dirDos; // write directory meta
 	private int step;
-
-	DirEntry curDir = new DirEntry();
+	Configuration conf;
+	DirEntry curDir;
 	Bucket buck = new Bucket(0);
+	private BufferedOutputStream dataBuffer;
+	private BufferedOutputStream indexBuffer;
+	private BufferedOutputStream dirBuffer;
+	private FileOutputStream dirFileOs;
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -49,51 +57,59 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	 * @param tables
 	 * @param step
 	 */
-	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables,
-			int step) {
+	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		this.meta = meta;
-		iter = new GroupByKeyIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+			@Override
+			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+				return o1.compareTo(o2);
+			}
+		});
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
-		this.step = step;
+		this.conf = conf;
+		this.step = conf.getIndexStep();
+		curDir = new DirEntry(conf.getMemTableKey());
 	}
 
-	public OctreeSSTableWriter(List<IMemTable> tables, int step) {
-		iter = new GroupByKeyIterator<Integer, IOctreeIterator>(
-				IntegerComparator.instance);
+	public OctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
+		this.conf = conf;
+		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+			@Override
+			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+				return o1.compareTo(o2);
+			}
+		});
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate
-					.decorate(new Iterator<Entry<Integer, IOctreeIterator>>() {
-						Iterator<Entry<Integer, MemoryOctree>> iter = table
-								.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IOctreeIterator>>() {
+				Iterator<Entry<WritableComparableKey, MemoryOctree>> iter = table.iterator();
 
-						@Override
-						public boolean hasNext() {
-							return iter.hasNext();
-						}
+				@Override
+				public boolean hasNext() {
+					return iter.hasNext();
+				}
 
-						@Override
-						public Entry<Integer, IOctreeIterator> next() {
-							Entry<Integer, MemoryOctree> entry = iter.next();
-							Entry<Integer, IOctreeIterator> ret = new Pair<Integer, IOctreeIterator>(
-									entry.getKey(), new MemoryOctreeIterator(
-											entry.getValue()));
-							return ret;
-						}
+				@Override
+				public Entry<WritableComparableKey, IOctreeIterator> next() {
+					Entry<WritableComparableKey, MemoryOctree> entry = iter.next();
+					Entry<WritableComparableKey, IOctreeIterator> ret = new Pair<WritableComparableKey, IOctreeIterator>(
+							entry.getKey(), new MemoryOctreeIterator(entry.getValue()));
+					return ret;
+				}
 
-						@Override
-						public void remove() {
+				@Override
+				public void remove() {
 
-						}
+				}
 
-					}));
+			}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
-		this.step = step;
+		this.step = conf.getIndexStep();
+		curDir = new DirEntry(conf.getMemTableKey());
 	}
 
 	public SSTableMeta getMeta() {
@@ -101,18 +117,15 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
 	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.idx", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.idx", meta.version, meta.level));
 	}
 
 	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.meta", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.meta", meta.version, meta.level));
 	}
 
 	/**
@@ -123,18 +136,10 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	 * @throws IOException
 	 */
 	public void write(File dir) throws IOException {
-		if (!dir.exists())
-			dir.mkdirs();
-
-		dataFileOs = new FileOutputStream(dataFile(dir, meta));
-		dataDos = new DataOutputStream(dataFileOs);
-		indexFileDos = new FileOutputStream(idxFile(dir, meta));
-		indexDos = new DataOutputStream(indexFileDos);
-		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir,
-				meta)));
+		openIndexFileWithBuffer(dir);
 
 		while (iter.hasNext()) {
-			Entry<Integer, List<IOctreeIterator>> entry = iter.next();
+			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
 			startPostingList();// reset the curDir
 			// setup meta values
 			curDir.curKey = entry.getKey();
@@ -155,23 +160,49 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		}
 	}
 
+	private void openIndexFile(File dir) throws FileNotFoundException {
+		if (!dir.exists())
+			dir.mkdirs();
+
+		dataFileOs = new FileOutputStream(dataFile(dir, meta));
+		dataDos = new DataOutputStream(dataFileOs);
+		indexFileDos = new FileOutputStream(idxFile(dir, meta));
+		indexDos = new DataOutputStream(indexFileDos);
+		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir, meta)));
+	}
+
+	private void openIndexFileWithBuffer(File dir) throws FileNotFoundException {
+		if (!dir.exists())
+			dir.mkdirs();
+
+		dataFileOs = new FileOutputStream(dataFile(dir, meta));
+		dataBuffer = new BufferedOutputStream(dataFileOs);
+		dataDos = new DataOutputStream(dataBuffer);
+
+		indexFileDos = new FileOutputStream(idxFile(dir, meta));
+		indexBuffer = new BufferedOutputStream(indexFileDos);
+		indexDos = new DataOutputStream(indexBuffer);
+
+		dirFileOs = new FileOutputStream(dirMetaFile(dir, meta));
+		dirBuffer = new BufferedOutputStream(dirFileOs);
+		dirDos = new DataOutputStream(dirBuffer);
+	}
+
 	/**
-		 * the visiting of the parent controls the setup of bucket
-		 * 
-		 * @param octreeNode
-		 * @throws IOException
-		 */
+	 * the visiting of the parent controls the setup of bucket
+	 * 
+	 * @param octreeNode
+	 * @throws IOException
+	 */
 	public void writeOctree(IOctreeIterator iter) throws IOException {
 		boolean first = true;
 		OctreeNode octreeNode = null;
 		int count = 0;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
-			if (octreeNode.size() > 0
-					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				int[] counters = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() != 1
-						&& counters[0] > (MemoryOctree.size_threshold >> 1)) {
+				if (octreeNode.getEdgeLen() != 1 && counters[0] > (MemoryOctree.size_threshold >> 1)) {
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));
@@ -206,12 +237,19 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 			buck.write(getDataDos());
 			logger.debug("last bucket:" + buck.toString());
 		}
-
-		dataFileOs.close();
 		dataDos.close();
-		indexFileDos.close();
 		indexDos.close();
 		dirDos.close();
+
+		if (dirBuffer != null)
+			dirBuffer.close();
+		if (indexBuffer != null)
+			indexBuffer.close();
+		if (dataBuffer != null)
+			dataBuffer.close();
+
+		dataFileOs.close();
+		indexFileDos.close();
 	}
 
 	public void addSample(Encoding code, BucketID id) throws IOException {
@@ -224,6 +262,8 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		curDir.startBucketID.copy(buck.blockIdx());
 		// curDir.dataStartBlockID = (int) (dataFileOs.getChannel().position() /
 		// Bucket.BLOCK_SIZE);
+		if (indexBuffer != null)
+			indexBuffer.flush();
 		curDir.indexStartOffset = indexFileDos.getChannel().position();
 		curDir.sampleNum = 0;
 		curDir.size = 0;
@@ -264,6 +304,8 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	public Bucket newBucket() {
 		buck.reset();
 		try {
+			if (dataBuffer != null)
+				dataBuffer.flush();
 			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE));
 		} catch (IOException e) {
 			throw new RuntimeException(e);

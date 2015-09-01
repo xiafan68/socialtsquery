@@ -8,6 +8,7 @@ import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
+import core.lsmt.WritableComparableKey;
 
 public class MemorySSTableReader implements ISSTableReader {
 	OctreeMemTable table;
@@ -19,18 +20,18 @@ public class MemorySSTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public IOctreeIterator getPostingListScanner(int key) {
+	public IOctreeIterator getPostingListScanner(WritableComparableKey key) {
 		return new MemoryOctreeIterator(table.get(key));
 	}
 
 	@Override
-	public IOctreeIterator getPostingListIter(int key, int start, int end) {
+	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) {
 		MemoryOctree tree = table.get(key);
 		return new MemoryOctreeIterator(tree, start, end);
 	}
 
 	@Override
-	public Iterator<Integer> keySetIter() {
+	public Iterator<WritableComparableKey> keySetIter() {
 		return table.keySet().iterator();
 	}
 
