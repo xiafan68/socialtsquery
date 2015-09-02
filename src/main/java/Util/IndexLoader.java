@@ -12,7 +12,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.tools.distcp2.OptionsParser;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -21,6 +23,8 @@ import common.Tweet;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
 import segmentation.SWSegmentation;
@@ -33,22 +37,30 @@ public class IndexLoader {
 
 	BlockingQueue<Pair<List<String>, MidSegment>> queue = new ArrayBlockingQueue<Pair<List<String>, MidSegment>>(10000);
 	String inputFile;
+	String confFile;
+	String log;
 	LSMTInvertedIndex index;
 	volatile boolean noMore = false;
 
-	public IndexLoader(String inputFile) {
+	public IndexLoader(String conf, String log, String inputFile) {
 		this.inputFile = inputFile;
+		this.confFile = conf;
+		this.log = log;
 	}
 
 	public void init() throws IOException {
-		PropertyConfigurator.configure("conf/log4j-server.properties");
+		PropertyConfigurator.configure(log);
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load(confFile);
 
-		FileUtils.deleteDirectory(conf.getIndexDir());
-		conf.getIndexDir().mkdirs();
-		FileUtils.deleteDirectory(conf.getCommitLogDir());
-		conf.getCommitLogDir().mkdirs();
+		try {
+			FileUtils.deleteDirectory(conf.getIndexDir());
+			conf.getIndexDir().mkdirs();
+			FileUtils.deleteDirectory(conf.getCommitLogDir());
+			conf.getCommitLogDir().mkdirs();
+		} catch (Exception exception) {
+
+		}
 		index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
@@ -237,7 +249,20 @@ public class IndexLoader {
 	}
 
 	public static void main(String[] args) throws IOException {
-		IndexLoader loader = new IndexLoader(args[0]);
+		OptionParser parser = new OptionParser();
+		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
+		parser.accepts("l", "log4j configuration file").withRequiredArg().ofType(String.class);
+		parser.accepts("d", "data file location").withRequiredArg().ofType(String.class);
+		OptionSet opts = null;
+		try {
+			opts = parser.parse(args);
+		} catch (Exception exception) {
+			parser.printHelpOn(System.out);
+			return;
+		}
+
+		IndexLoader loader = new IndexLoader(opts.valueOf("c").toString(), opts.valueOf("l").toString(),
+				opts.valueOf("d").toString());
 		loader.init();
 		loader.dump();
 	}
