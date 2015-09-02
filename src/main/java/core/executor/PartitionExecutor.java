@@ -18,8 +18,6 @@ import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
-import core.executor.domain.SortBestscore;
-import core.executor.domain.SortWorstscore;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
@@ -66,8 +64,8 @@ public class PartitionExecutor extends IQueryExecutor {
 		if (topk != null)
 			this.topk = topk;
 		else
-			this.topk = ISegQueue.create(new SortWorstscore(), true);
-		cand = ISegQueue.create(SortBestscore.INSTANCE, false);
+			this.topk = ISegQueue.create(true);
+		cand = ISegQueue.create(false);
 
 		ctx = new ExecContext(query);
 		int part = MyMath.getCeil(maxLifeTime);

@@ -9,6 +9,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 最后还是决定使用一个独立的模块来统计每个单词的频率
+ * @author xiafan
+ *
+ * @param <VType>
+ */
 public abstract class InvertedMemtable<VType> extends
 		ConcurrentSkipListMap<WritableComparableKey, VType> implements
 		IMemTable<VType> {

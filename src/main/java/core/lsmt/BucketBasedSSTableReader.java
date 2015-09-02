@@ -39,7 +39,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 
 	protected Map<WritableComparableKey, DirEntry> dirMap = new TreeMap<WritableComparableKey, DirEntry>();
 	protected Map<WritableComparableKey, List> skipList = new HashMap<WritableComparableKey, List>();
-	private Map<WritableComparableKey, Integer> wordFreq = new HashMap<WritableComparableKey, Integer>();
+	// private Map<WritableComparableKey, Integer> wordFreq = new
+	// HashMap<WritableComparableKey, Integer>();
 
 	protected AtomicBoolean init = new AtomicBoolean(false);
 
@@ -65,7 +66,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 					File dataDir = index.getConf().getIndexDir();
 					dataInput = new RandomAccessFile(
 							OctreeSSTableWriter.dataFile(dataDir, meta), "r");
-					loadStats();
+					// loadStats();
 					loadDirMeta();
 					loadIndex();
 				}
@@ -74,7 +75,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		}
 	}
 
-	private void loadStats() throws IOException {
+	/*private void loadStats() throws IOException {
 		File dataDir = index.getConf().getIndexDir();
 		FileInputStream fis = new FileInputStream(
 				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
@@ -87,7 +88,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 			int count = dirInput.readInt();
 			wordFreq.put(key, count);
 		}
-	}
+	}*/
 
 	private void loadDirMeta() throws IOException {
 		File dataDir = index.getConf().getIndexDir();

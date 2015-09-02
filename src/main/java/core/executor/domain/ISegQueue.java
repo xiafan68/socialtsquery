@@ -3,6 +3,8 @@ package core.executor.domain;
 import java.util.Comparator;
 import java.util.Iterator;
 
+import org.apache.commons.collections.ComparatorUtils;
+
 import common.MidSegment;
 
 /**
@@ -55,8 +57,14 @@ public abstract class ISegQueue {
 
 	public abstract void printTop();
 
-	public static ISegQueue create(Comparator comparator, boolean topk) {
-		return new SegTreeSet(comparator, topk);
-		// return new SegQueue(comparator, topk);
+	public static ISegQueue create(boolean topk) {
+		if (topk)
+			return new SegTreeSet(SortWorstscore.INSTANCE,
+					SortBestscore.INSTANCE, topk);
+		else {
+			return new SegTreeSet(
+					ComparatorUtils.reversedComparator(SortBestscore.INSTANCE),
+					SortWorstscore.INSTANCE, topk);
+		}
 	}
 }

@@ -21,7 +21,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 	LSMTInvertedIndex index;
 
 	public SortedListMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
-		this.meta = meta;
+		super(meta);
 		this.index = index;
 	}
 
