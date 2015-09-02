@@ -8,10 +8,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
 import Util.Profile;
-import segmentation.Interval;
 import core.commom.TempKeywordQuery;
-import core.lsmt.IndexReader;
 import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
 public class PartitionExecutorTest {
 	@Test

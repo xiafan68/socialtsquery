@@ -58,6 +58,7 @@ public class IndexLoader {
 			conf.getIndexDir().mkdirs();
 			FileUtils.deleteDirectory(conf.getCommitLogDir());
 			conf.getCommitLogDir().mkdirs();
+			System.out.println(conf.toString());
 		} catch (Exception exception) {
 
 		}

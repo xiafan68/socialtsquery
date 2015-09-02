@@ -25,6 +25,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Segment;
 import xiafan.util.collection.DefaultedPutMap;
 
@@ -143,10 +144,10 @@ public class OctreeMergerTest {
 		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(33, 0));
 		rhs.init();
 
-		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(0), rhs.getPostingListScanner(0));
+		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(new StringKey("0")), rhs.getPostingListScanner(new StringKey("0")));
 		DiskSSTableReader rrhs = new DiskSSTableReader(index, new SSTableMeta(34, 0));
 		rrhs.init();
-		OctreeMerger merge3 = new OctreeMerger(merge, rrhs.getPostingListScanner(0));
+		OctreeMerger merge3 = new OctreeMerger(merge, rrhs.getPostingListScanner(new StringKey("0")));
 		while (merge3.hasNext()) {
 			OctreeNode cur = merge3.nextNode();
 			System.out.println(cur);

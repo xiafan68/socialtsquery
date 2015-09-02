@@ -71,4 +71,10 @@ public class Configuration {
 	public WritableComparableKeyFactory getMemTableKey() {
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
+
+	@Override
+	public String toString() {
+		return "Configuration [props=" + props + "]";
+	}
+
 }
