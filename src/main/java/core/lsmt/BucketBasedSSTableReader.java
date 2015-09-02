@@ -1,5 +1,6 @@
 package core.lsmt;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +39,9 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 
 	protected Map<WritableComparableKey, DirEntry> dirMap = new TreeMap<WritableComparableKey, DirEntry>();
 	protected Map<WritableComparableKey, List> skipList = new HashMap<WritableComparableKey, List>();
+	// private Map<WritableComparableKey, Integer> wordFreq = new
+	// HashMap<WritableComparableKey, Integer>();
+
 	protected AtomicBoolean init = new AtomicBoolean(false);
 
 	protected LSMTInvertedIndex index;
@@ -60,7 +64,9 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					dataInput = new RandomAccessFile(
+							OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					// loadStats();
 					loadDirMeta();
 					loadIndex();
 				}
@@ -69,9 +75,25 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		}
 	}
 
+	/*private void loadStats() throws IOException {
+		File dataDir = index.getConf().getIndexDir();
+		FileInputStream fis = new FileInputStream(
+				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
+		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
+				fis));
+		WritableComparableKeyFactory factory = index.getConf().getMemTableKey();
+		while (dirInput.available() > 0) {
+			WritableComparableKey key = factory.createIndexKey();
+			key.read(dirInput);
+			int count = dirInput.readInt();
+			wordFreq.put(key, count);
+		}
+	}*/
+
 	private void loadDirMeta() throws IOException {
 		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.dirMetaFile(dataDir, meta));
+		FileInputStream fis = new FileInputStream(
+				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
 		DataInputStream dirInput = new DataInputStream(fis);
 		DirEntry entry = null;
 		while (dirInput.available() > 0) {
@@ -84,13 +106,15 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	private void loadIndex() throws IOException {
 		// load index
 		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.idxFile(dataDir, meta));
+		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.idxFile(
+				dataDir, meta));
 		DataInputStream indexDis = new DataInputStream(fis);
 		try {
 			WritableComparableKey curCode = null;
 			BucketID buck = null;
 			List<Pair<WritableComparableKey, BucketID>> curList = null;
-			for (Entry<WritableComparableKey, DirEntry> entry : dirMap.entrySet()) {
+			for (Entry<WritableComparableKey, DirEntry> entry : dirMap
+					.entrySet()) {
 				if (!skipList.containsKey(entry.getKey())) {
 					curList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
 					skipList.put(entry.getKey(), curList);
@@ -103,7 +127,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 					curCode.read(indexDis);
 					buck = new BucketID();
 					buck.read(indexDis);
-					curList.add(new Pair<WritableComparableKey, BucketID>(curCode, buck));
+					curList.add(new Pair<WritableComparableKey, BucketID>(
+							curCode, buck));
 				}
 			}
 		} finally {
@@ -120,7 +145,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	 * @return the last offset
 	 * @throws IOException
 	 */
-	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
+	public synchronized int getBucket(BucketID id, Bucket bucket)
+			throws IOException {
 		bucket.reset();
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
@@ -129,7 +155,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 
 	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {
 		@Override
-		public int compare(Pair<WritableComparableKey, BucketID> o1, Pair<WritableComparableKey, BucketID> o2) {
+		public int compare(Pair<WritableComparableKey, BucketID> o1,
+				Pair<WritableComparableKey, BucketID> o2) {
 			return o1.getKey().compareTo(o2.getKey());
 		}
 
@@ -143,12 +170,17 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey key, WritableComparableKey code)
+	public Pair<WritableComparableKey, BucketID> cellOffset(
+			WritableComparableKey key, WritableComparableKey code)
 			throws IOException {
 		Pair<WritableComparableKey, BucketID> ret = null;
 		if (skipList.containsKey(key)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList.get(key);
-			int idx = Collections.binarySearch(list, new Pair<WritableComparableKey, BucketID>(code, null), comp);
+			List<Pair<WritableComparableKey, BucketID>> list = skipList
+					.get(key);
+			int idx = Collections
+					.binarySearch(list,
+							new Pair<WritableComparableKey, BucketID>(code,
+									null), comp);
 			if (idx < 0) {
 				idx = Math.abs(idx + 1);
 				idx = (idx > 0) ? idx - 1 : 0;
@@ -158,12 +190,15 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		return ret;
 	}
 
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) {
+	public Pair<WritableComparableKey, BucketID> floorOffset(
+			WritableComparableKey curKey, WritableComparableKey curCode) {
 		Pair<WritableComparableKey, BucketID> ret = null;
 		if (skipList.containsKey(curKey)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList.get(curKey);
-			int idx = Collections.binarySearch(list, new Pair<WritableComparableKey, BucketID>(curCode, null), comp);
+			List<Pair<WritableComparableKey, BucketID>> list = skipList
+					.get(curKey);
+			int idx = Collections.binarySearch(list,
+					new Pair<WritableComparableKey, BucketID>(curCode, null),
+					comp);
 			if (idx < 0) {
 				idx = Math.abs(idx + 1);
 			}

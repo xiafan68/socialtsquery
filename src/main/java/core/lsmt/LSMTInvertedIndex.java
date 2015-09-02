@@ -1,10 +1,6 @@
 package core.lsmt;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
@@ -24,8 +20,12 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+import segmentation.Interval;
+import shingle.TextShingle;
 import Util.Configuration;
+
 import common.MidSegment;
+
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.PartitionExecutor;
@@ -37,8 +37,6 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.StringKey;
-import segmentation.Interval;
-import shingle.TextShingle;
 
 /**
  * 

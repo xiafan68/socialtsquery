@@ -1,6 +1,7 @@
 package core.lsmt;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -47,7 +48,7 @@ public interface IMemTable<VType> {
 	 */
 	public void insert(WritableComparableKey key, MidSegment seg);
 
-	public void writeStats(File dir);
+	public void writeStats(File dir) throws IOException;
 
 	/**
 	 * 用于遍历memtable的每个key，value对
@@ -56,7 +57,8 @@ public interface IMemTable<VType> {
 	 */
 	public Iterator<Entry<WritableComparableKey, VType>> iterator();
 
-	public static class SSTableMeta implements Serializable, Comparable<SSTableMeta> {
+	public static class SSTableMeta implements Serializable,
+			Comparable<SSTableMeta> {
 		public int version;
 		public int level = 0;
 		transient boolean persisted = true;
@@ -112,8 +114,9 @@ public interface IMemTable<VType> {
 		 */
 		@Override
 		public String toString() {
-			return "SSTableMeta [version=" + version + ", level=" + level + ", persisted=" + persisted + ", markAsDel="
-					+ markAsDel + "]";
+			return "SSTableMeta [version=" + version + ", level=" + level
+					+ ", persisted=" + persisted + ", markAsDel=" + markAsDel
+					+ "]";
 		}
 	}
 

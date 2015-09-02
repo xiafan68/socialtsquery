@@ -54,7 +54,7 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	@Override
 	public void query(TempKeywordQuery query) throws IOException {
 		this.query = query;
-		topk = ISegQueue.create(new SortWorstscore(), true);
+		topk = ISegQueue.create(true);
 		Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
 		for (PartitionMeta meta : reader.getPartitions()) {
 			PartitionExecutor exe = new PartitionExecutor(reader);

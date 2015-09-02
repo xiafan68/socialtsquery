@@ -15,7 +15,10 @@ import common.MidSegment;
 import segmentation.Segment;
 import Util.MyFile;
 
-//import com.sun.scenario.effect.Merge;
+/**
+ * TOPK: 需要知道最小worst，会poll最小worst，需要知道最小best
+ * cand：需要知道最大best,是否需要最大worst？
+ */
 
 /**
  * Created by teisei on 15-3-24.
@@ -26,14 +29,14 @@ public class SegTreeSet extends ISegQueue {
 	/**
 	 * 使用红黑树
 	 */
-	protected TreeSet<MergedMidSeg> treeset;
+	protected TreeSet<MergedMidSeg> worstQueue;
+	protected TreeSet<MergedMidSeg> bestQueue;
+	boolean topk = false;
 
-	protected float minBestScore = Float.MAX_VALUE;
-	boolean isTopkTree = false;
-
-	public SegTreeSet(Comparator comparator, boolean topk) {
-		treeset = new TreeSet<MergedMidSeg>(comparator);
-		isTopkTree = topk;
+	public SegTreeSet(Comparator comparator, Comparator sOrder, boolean topk) {
+		worstQueue = new TreeSet<MergedMidSeg>(comparator);
+		bestQueue = new TreeSet<MergedMidSeg>(sOrder);
+		this.topk = topk;
 	}
 
 	/**
@@ -42,27 +45,42 @@ public class SegTreeSet extends ISegQueue {
 	 * @return
 	 */
 	public MergedMidSeg peek() {
-		return treeset.first();
-		// return priorityQueue.peek();
+		refreshScore();
+		return worstQueue.first();
+	}
+
+	private void refreshScore() {
+		TreeSet<MergedMidSeg> queueA = worstQueue;
+		TreeSet<MergedMidSeg> queueB = bestQueue;
+		if (!topk) {
+			queueA = bestQueue;
+			queueB = worstQueue;
+		}
+		MergedMidSeg seg = queueA.pollFirst();
+		queueB.remove(seg);
+		while (seg != null && !seg.computeScore()) {
+			queueA.add(seg);
+			queueB.add(seg);
+			seg = queueA.pollFirst();
+			queueB.remove(seg);
+		}
+		if (!queueA.contains(seg)) {
+			queueA.add(seg);
+			queueB.add(seg);
+		}
 	}
 
 	/**
 	 * 移除bestScore最小的一个元素，更新worstScore。
 	 */
 	public void poll() {
-		// MergedMidSeg seg = priorityQueue.poll();
-		MergedMidSeg seg = treeset.pollFirst();
-		// 更新最小bestscore
-		if (isTopkTree && seg != null && seg.getBestscore() == minBestScore) {
-			minBestScore = Float.MAX_VALUE;
-			// Iterator<MergedMidSeg> iter = priorityQueue.iterator();
-			Iterator<MergedMidSeg> iter = treeset.iterator();
-			while (iter.hasNext()) {
-				MergedMidSeg cur = iter.next();
-				if (minBestScore > cur.getBestscore()) {
-					minBestScore = cur.getBestscore();
-				}
-			}
+		refreshScore();
+		if (topk) {
+			MergedMidSeg seg = worstQueue.pollFirst();
+			bestQueue.remove(seg);
+		} else {
+			MergedMidSeg seg = bestQueue.pollFirst();
+			worstQueue.remove(seg);
 		}
 	}
 
@@ -73,18 +91,11 @@ public class SegTreeSet extends ISegQueue {
 	 */
 	public float getMinWorstScore() {
 		float ret = Float.MIN_VALUE;
-		// if (!priorityQueue.isEmpty())
-		// ret = priorityQueue.peek().getWorstscore();
-		if (!treeset.isEmpty()) {
-			while (true) {
-				MergedMidSeg cur = treeset.first();
-				treeset.remove(cur);
-				boolean state = cur.computeScore();
-				treeset.add(cur);
-				if (!state) {
-					ret = cur.getWorstscore();
-					break;
-				}
+		refreshScore();
+		if (!worstQueue.isEmpty()) {
+			if (topk) {
+				MergedMidSeg cur = worstQueue.first();
+				ret = cur.getWorstscore();
 			}
 		}
 		return ret;
@@ -96,7 +107,15 @@ public class SegTreeSet extends ISegQueue {
 	 * @return
 	 */
 	public float getMinBestScore() {
-		return minBestScore;
+		float ret = Float.MIN_VALUE;
+		refreshScore();
+		if (!worstQueue.isEmpty()) {
+			if (topk) {
+				MergedMidSeg cur = bestQueue.first();
+				ret = cur.getBestscore();
+			}
+		}
+		return ret;
 	}
 
 	/**
@@ -106,19 +125,9 @@ public class SegTreeSet extends ISegQueue {
 	 */
 	public float getMaxBestScore() {
 		float ret = Float.MIN_VALUE;
-		// if (!priorityQueue.isEmpty())
-		// ret = priorityQueue.peek().getBestscore();
-		if (!treeset.isEmpty()) {
-			while (true) {
-				MergedMidSeg cur = treeset.first();
-				treeset.remove(cur);
-				boolean state = cur.computeScore();
-				treeset.add(cur);
-				if (!state) {
-					ret = cur.getBestscore();
-					break;
-				}
-			}
+		refreshScore();
+		if (!topk && !worstQueue.isEmpty()) {
+			ret = bestQueue.first().getBestscore();
 		}
 		return ret;
 	}
@@ -126,33 +135,22 @@ public class SegTreeSet extends ISegQueue {
 	public boolean contains(MergedMidSeg seg) {
 		if (seg == null)
 			return false;
-		return treeset.contains(seg);
-		// return priorityQueue.contains(seg);
+		return worstQueue.contains(seg);
 	}
 
 	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
 		if (preSeg != null)
-			treeset.remove(preSeg);
-		// priorityQueue.remove(preSeg);
-		treeset.add(newSeg);
-		// priorityQueue.offer(newSeg);
-		if (isTopkTree && minBestScore > newSeg.getBestscore()) {
-			minBestScore = newSeg.getBestscore();
-		}
+			worstQueue.remove(preSeg);
+		worstQueue.add(newSeg);
 	}
 
 	public boolean isEmpty() {
-		return treeset.isEmpty();
-		// return priorityQueue.isEmpty();
+		return worstQueue.isEmpty();
 	}
 
 	public Iterator<MidSegment> getIter() {
 		List<MidSegment> res = new ArrayList<MidSegment>();
-		// for (Iterator iter = priorityQueue.iterator(); iter.hasNext();) {
-		// MergedMidSeg t = (MergedMidSeg) iter.next();
-		// res.add(t.segList.get(0));
-		// }
-		for (Iterator iter = treeset.iterator(); iter.hasNext();) {
+		for (Iterator iter = worstQueue.iterator(); iter.hasNext();) {
 			MergedMidSeg t = (MergedMidSeg) iter.next();
 			res.add(t.segList.get(0));
 		}
@@ -160,18 +158,16 @@ public class SegTreeSet extends ISegQueue {
 	}
 
 	public Iterator<MergedMidSeg> iterator() {
-		return treeset.iterator();
-		// return priorityQueue.iterator();
+		return worstQueue.iterator();
 	}
 
 	public void remove(MergedMidSeg preSeg) {
-		treeset.remove(preSeg);
-		// priorityQueue.remove(preSeg);
+		worstQueue.remove(preSeg);
+		bestQueue.remove(preSeg);
 	}
 
 	public int size() {
-		return treeset.size();
-		// return priorityQueue.size();
+		return worstQueue.size();
 	}
 
 	public void printTop() {
@@ -180,7 +176,7 @@ public class SegTreeSet extends ISegQueue {
 		// MergedMidSeg t = (MergedMidSeg) iter.next();
 		// System.out.println(t.toString());
 		// }
-		for (Iterator iter = treeset.iterator(); iter.hasNext();) {
+		for (Iterator iter = worstQueue.iterator(); iter.hasNext();) {
 			MergedMidSeg t = (MergedMidSeg) iter.next();
 			System.out.println(t.toString());
 		}
