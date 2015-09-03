@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
@@ -16,9 +19,24 @@ import segmentation.Interval;
 public class IndexConsoleClient {
 
 	public static void main(String[] args) throws IOException {
-		PropertyConfigurator.configure("conf/log4j-server.properties");
+		OptionParser parser = new OptionParser();
+		parser.accepts("c", "index configuration file").withRequiredArg()
+				.ofType(String.class);
+		parser.accepts("l", "log4j configuration file").withRequiredArg()
+				.ofType(String.class);
+		parser.accepts("d", "data file location").withRequiredArg()
+				.ofType(String.class);
+		OptionSet opts = null;
+		try {
+			opts = parser.parse(args);
+		} catch (Exception exception) {
+			parser.printHelpOn(System.out);
+			return;
+		}
+
+		PropertyConfigurator.configure(opts.valueOf("l").toString());
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load(opts.valueOf("c").toString());
 		LSMTInvertedIndex client = new LSMTInvertedIndex(conf,
 				OctreeBasedLSMTFactory.INSTANCE);
 		try {
