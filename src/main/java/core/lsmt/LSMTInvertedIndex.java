@@ -44,7 +44,8 @@ import core.lsmt.WritableComparableKey.StringKey;
  *
  */
 public class LSMTInvertedIndex<PType> {
-	private static final Logger logger = Logger.getLogger(LSMTInvertedIndex.class);
+	private static final Logger logger = Logger
+			.getLogger(LSMTInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
 	final ILSMTFactory implFactory;
@@ -59,6 +60,7 @@ public class LSMTInvertedIndex<PType> {
 	CompactService compactService;
 	Configuration conf;
 	TextShingle shingle = new TextShingle(null);
+
 	// DataOutputStream keyWriter;
 
 	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
@@ -161,7 +163,8 @@ public class LSMTInvertedIndex<PType> {
 	private boolean validateDataFile(SSTableMeta meta) {
 		File dFile = OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta);
 		File idxFile = OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta);
-		File dirFile = OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta);
+		File dirFile = OctreeSSTableWriter
+				.dirMetaFile(conf.getIndexDir(), meta);
 		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
 			logger.warn("index file of version " + meta + " is not consistent");
 			return false;
@@ -187,7 +190,8 @@ public class LSMTInvertedIndex<PType> {
 	 * }
 	 */
 
-	public void insert(List<String> keywords, MidSegment seg) throws IOException {
+	public void insert(List<String> keywords, MidSegment seg)
+			throws IOException {
 		LockManager.INSTANCE.versionReadLock();
 		try {
 			for (String keyword : keywords) {
@@ -214,7 +218,9 @@ public class LSMTInvertedIndex<PType> {
 	// TODO check whether we need to switch the memtable
 	public void maySwitchMemtable() {
 		IMemTable<PType> tmp = curTable;
-		if (tmp.size() > conf.getFlushLimit()) {
+		if (tmp.size() > conf.getFlushLimit()
+				|| System.currentTimeMillis() - tmp.createAt() > conf
+						.getDurationTime()) {
 			LockManager.INSTANCE.versionWriteLock();
 			try {
 				// check for violation again
@@ -275,30 +281,35 @@ public class LSMTInvertedIndex<PType> {
 		return versionSet;
 	}
 
-	public Iterator<Interval> query(List<String> keywords, int start, int end, int k) throws IOException {
+	public Iterator<Interval> query(List<String> keywords, int start, int end,
+			int k) throws IOException {
 		IQueryExecutor exec = new PartitionExecutor(this);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
 		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
-		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
+		exec.query(new TempKeywordQuery(wordArr,
+				new Interval(-1, start, end, 0), k));
 		return exec.getAnswer();
 	}
 
-	public Map<String, IPostingListIterator> getPostingListIter(List<String> keywords, int start, int end)
-			throws IOException {
+	public Map<String, IPostingListIterator> getPostingListIter(
+			List<String> keywords, int start, int end) throws IOException {
 		Map<String, IPostingListIterator> ret = new HashMap<String, IPostingListIterator>();
 		for (String keyword : keywords) {
 			PostingListMergeView view = new PostingListMergeView();
 			// int key = getKeywordCode(keyword);
 			// add iter for current memtable
-			view.addIterator(versionSet.curTable.getReader().getPostingListIter(new StringKey(keyword), start, end));
+			view.addIterator(versionSet.curTable.getReader()
+					.getPostingListIter(new StringKey(keyword), start, end));
 			// add iter for flushing memtable
 			for (IMemTable table : versionSet.flushingTables) {
-				view.addIterator(table.getReader().getPostingListIter(new StringKey(keyword), start, end));
+				view.addIterator(table.getReader().getPostingListIter(
+						new StringKey(keyword), start, end));
 			}
 			for (SSTableMeta meta : versionSet.diskTreeMetas) {
 				ISSTableReader reader = getSSTableReader(versionSet, meta);
-				view.addIterator(reader.getPostingListIter(new StringKey(keyword), start, end));
+				view.addIterator(reader.getPostingListIter(new StringKey(
+						keyword), start, end));
 			}
 			ret.put(keyword, view);
 		}
@@ -321,7 +332,8 @@ public class LSMTInvertedIndex<PType> {
 		int version;
 		int level;
 
-		public SSTableMetaKey(SSTableMeta referent, ReferenceQueue<SSTableMeta> queue) {
+		public SSTableMetaKey(SSTableMeta referent,
+				ReferenceQueue<SSTableMeta> queue) {
 			super(referent, queue);
 			version = referent.version;
 			level = referent.level;
@@ -419,7 +431,8 @@ public class LSMTInvertedIndex<PType> {
 
 		@Override
 		public String toString() {
-			StringBuffer ret = new StringBuffer("VersionSet [diskTreeMetas=" + diskTreeMetas + ",");
+			StringBuffer ret = new StringBuffer("VersionSet [diskTreeMetas="
+					+ diskTreeMetas + ",");
 			if (curTable != null)
 				ret.append("cur memtable:" + curTable.getMeta());
 			ret.append("flushing memtables:");
@@ -483,7 +496,8 @@ public class LSMTInvertedIndex<PType> {
 		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
 
-	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta) throws IOException {
+	public ISSTableReader getSSTableReader(VersionSet snapshot, SSTableMeta meta)
+			throws IOException {
 		cleanupReaders();
 		if (snapshot.curTable == null) {
 			return null;

@@ -16,6 +16,7 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 
 	private final MemorySSTableReader reader;
 	protected LSMTInvertedIndex index;
+	private long createAt = System.currentTimeMillis();
 
 	public OctreeMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
 		super(meta);
@@ -55,6 +56,11 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 
 	public Iterator<Entry<WritableComparableKey, MemoryOctree>> iterator() {
 		return super.entrySet().iterator();
+	}
+
+	@Override
+	public long createAt() {
+		return createAt;
 	}
 
 }

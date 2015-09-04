@@ -48,7 +48,8 @@ public class Configuration {
 	}
 
 	public int getFlushLimit() {
-		return Integer.parseInt(props.getProperty("memtable_size_limit", "2000000"));
+		return Integer.parseInt(props.getProperty("memtable_size_limit",
+				"2000000"));
 	}
 
 	public boolean debugMode() {
@@ -75,6 +76,10 @@ public class Configuration {
 	@Override
 	public String toString() {
 		return "Configuration [props=" + props + "]";
+	}
+
+	public long getDurationTime() {
+		return Long.parseLong(props.getProperty("duration_time", "3600000"));
 	}
 
 }

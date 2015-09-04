@@ -19,6 +19,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 	private volatile boolean frezen = false;
 	private volatile int valueCount = 0;
 	LSMTInvertedIndex index;
+	private long createAt = System.currentTimeMillis();
 
 	public SortedListMemTable(LSMTInvertedIndex index, SSTableMeta meta) {
 		super(meta);
@@ -90,6 +91,11 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 		public Iterator<MidSegment> iterator() {
 			return list.iterator();
 		}
+	}
+
+	@Override
+	public long createAt() {
+		return createAt;
 	}
 
 }

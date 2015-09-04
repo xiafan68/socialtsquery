@@ -33,6 +33,8 @@ public interface IMemTable<VType> {
 
 	public void freeze();
 
+	public long createAt();
+
 	/**
 	 * 当前memtable包含的entry的个数
 	 * 

@@ -1,5 +1,6 @@
 package core.lsmt;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +32,7 @@ import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
  * @author xiafan
  *
  */
-public abstract class BucketBasedSSTableReader implements ISSTableReader {
+public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dataInput;
 	protected RandomAccessFile dirInput;
 	// protected RandomAccessFile idxInput;
@@ -47,8 +48,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	protected SSTableMeta meta;
 	WritableComparableKeyFactory keyFactory;
 
-	public BucketBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta,
-			WritableComparableKeyFactory keyFactory) {
+	public BucketBasedBDBSSTableReader(LSMTInvertedIndex index,
+			SSTableMeta meta, WritableComparableKeyFactory keyFactory) {
 		this.index = index;
 		this.meta = meta;
 		this.keyFactory = keyFactory;
@@ -93,13 +94,16 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		File dataDir = index.getConf().getIndexDir();
 		FileInputStream fis = new FileInputStream(
 				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
-		DataInputStream dirInput = new DataInputStream(fis);
+		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
+				fis));
 		DirEntry entry = null;
 		while (dirInput.available() > 0) {
 			entry = new DirEntry(index.getConf().getMemTableKey());
 			entry.read(dirInput);
 			dirMap.put(entry.curKey, entry);
 		}
+		dirInput.close();
+		fis.close();
 	}
 
 	private void loadIndex() throws IOException {
@@ -107,7 +111,8 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		File dataDir = index.getConf().getIndexDir();
 		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.idxFile(
 				dataDir, meta));
-		DataInputStream indexDis = new DataInputStream(fis);
+		DataInputStream indexDis = new DataInputStream(new BufferedInputStream(
+				fis));
 		try {
 			WritableComparableKey curCode = null;
 			BucketID buck = null;
