@@ -5,12 +5,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
 import xiafan.util.collection.CollectionUtils;
@@ -32,7 +30,6 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.WritableComparableKey;
-import fanxia.file.ByteUtil;
 
 /**
  * dirMeta, index, datafile
