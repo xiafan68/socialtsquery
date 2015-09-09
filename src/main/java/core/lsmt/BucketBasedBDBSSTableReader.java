@@ -18,6 +18,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
+import core.commom.BDBBtree;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
@@ -37,8 +38,8 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dirInput;
 	// protected RandomAccessFile idxInput;
 
-	protected Map<WritableComparableKey, DirEntry> dirMap = new TreeMap<WritableComparableKey, DirEntry>();
-	protected Map<WritableComparableKey, List> skipList = new HashMap<WritableComparableKey, List>();
+	protected BDBBtree dirMap = null;
+	protected BDBBtree skipList = null;
 	// private Map<WritableComparableKey, Integer> wordFreq = new
 	// HashMap<WritableComparableKey, Integer>();
 
@@ -91,54 +92,11 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	}*/
 
 	private void loadDirMeta() throws IOException {
-		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(
-				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
-		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
-				fis));
-		DirEntry entry = null;
-		while (dirInput.available() > 0) {
-			entry = new DirEntry(index.getConf().getMemTableKey());
-			entry.read(dirInput);
-			dirMap.put(entry.curKey, entry);
-		}
-		dirInput.close();
-		fis.close();
+		// TODO
 	}
 
 	private void loadIndex() throws IOException {
-		// load index
-		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.idxFile(
-				dataDir, meta));
-		DataInputStream indexDis = new DataInputStream(new BufferedInputStream(
-				fis));
-		try {
-			WritableComparableKey curCode = null;
-			BucketID buck = null;
-			List<Pair<WritableComparableKey, BucketID>> curList = null;
-			for (Entry<WritableComparableKey, DirEntry> entry : dirMap
-					.entrySet()) {
-				if (!skipList.containsKey(entry.getKey())) {
-					curList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
-					skipList.put(entry.getKey(), curList);
-				} else {
-					curList = skipList.get(entry.getKey());
-				}
-
-				for (int i = 0; i < entry.getValue().sampleNum; i++) {
-					curCode = keyFactory.createIndexKey();
-					curCode.read(indexDis);
-					buck = new BucketID();
-					buck.read(indexDis);
-					curList.add(new Pair<WritableComparableKey, BucketID>(
-							curCode, buck));
-				}
-			}
-		} finally {
-			fis.close();
-			indexDis.close();
-		}
+		// TODO
 	}
 
 	/**
@@ -175,41 +133,14 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	 * @throws IOException
 	 */
 	public Pair<WritableComparableKey, BucketID> cellOffset(
-			WritableComparableKey key, WritableComparableKey code)
+			WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
-		Pair<WritableComparableKey, BucketID> ret = null;
-		if (skipList.containsKey(key)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList
-					.get(key);
-			int idx = Collections
-					.binarySearch(list,
-							new Pair<WritableComparableKey, BucketID>(code,
-									null), comp);
-			if (idx < 0) {
-				idx = Math.abs(idx + 1);
-				idx = (idx > 0) ? idx - 1 : 0;
-			}
-			ret = list.get(idx);
-		}
-		return ret;
+		return skipList.cellOffset(curKey, curCode);
 	}
 
 	public Pair<WritableComparableKey, BucketID> floorOffset(
 			WritableComparableKey curKey, WritableComparableKey curCode) {
-		Pair<WritableComparableKey, BucketID> ret = null;
-		if (skipList.containsKey(curKey)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList
-					.get(curKey);
-			int idx = Collections.binarySearch(list,
-					new Pair<WritableComparableKey, BucketID>(curCode, null),
-					comp);
-			if (idx < 0) {
-				idx = Math.abs(idx + 1);
-			}
-			if (idx < list.size())
-				ret = list.get(idx);
-		}
-		return ret;
+		return skipList.floorOffset(curKey, curCode);
 	}
 
 	@Override
@@ -219,7 +150,7 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 
 	@Override
 	public Iterator<WritableComparableKey> keySetIter() {
-		return dirMap.keySet().iterator();
+		return dirMap.keyIterator();
 	}
 
 	@Override
@@ -229,7 +160,7 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 		if (dirInput != null)
 			dirInput.close();
 
-		skipList.clear();
-		dirMap.clear();
+		skipList.close();
+		dirMap.close();
 	}
 }

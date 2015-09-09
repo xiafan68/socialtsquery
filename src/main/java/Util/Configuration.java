@@ -82,4 +82,14 @@ public class Configuration {
 		return Long.parseLong(props.getProperty("duration_time", "3600000"));
 	}
 
+	public WritableComparableKeyFactory getIndexValueFactory() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public long getBTreeCacheSize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }
