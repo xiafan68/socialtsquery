@@ -80,7 +80,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
 		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
 				fis));
-		WritableComparableKeyFactory factory = index.getConf().getMemTableKey();
+		WritableComparableKeyFactory factory = index.getConf().getIndexKeyFactory();
 		while (dirInput.available() > 0) {
 			WritableComparableKey key = factory.createIndexKey();
 			key.read(dirInput);
@@ -96,7 +96,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		DataInputStream dirInput = new DataInputStream(fis);
 		DirEntry entry = null;
 		while (dirInput.available() > 0) {
-			entry = new DirEntry(index.getConf().getMemTableKey());
+			entry = new DirEntry(index.getConf().getIndexKeyFactory());
 			entry.read(dirInput);
 			dirMap.put(entry.curKey, entry);
 		}

@@ -70,7 +70,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		}
 		this.conf = conf;
 		this.step = conf.getIndexStep();
-		curDir = new DirEntry(conf.getMemTableKey());
+		curDir = new DirEntry(conf.getIndexKeyFactory());
 	}
 
 	public OctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
@@ -109,7 +109,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
-		curDir = new DirEntry(conf.getMemTableKey());
+		curDir = new DirEntry(conf.getIndexKeyFactory());
 	}
 
 	public SSTableMeta getMeta() {

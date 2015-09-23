@@ -1,5 +1,8 @@
 package core.lsmt;
 
+import core.commom.Encoding;
+import core.lsmi.ListDiskSSTableReader;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -21,6 +24,10 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 	public static interface WritableComparableKeyFactory {
 		WritableComparableKey createIndexKey();
 	}
+//
+//	public static enum SegKeyList  WritableComparableKeyFactory {
+//		WritableComparableKey createIndexKey();
+//	}
 
 	public static enum StringKeyFactory implements WritableComparableKeyFactory {
 		INSTANCE;
@@ -28,6 +35,21 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 			return new StringKey();
 		}
 	}
+
+	public static enum EncodingFactory implements WritableComparableKeyFactory {
+		INSTANCE;
+		public WritableComparableKey createIndexKey() {
+			return new Encoding();
+		}
+	}
+
+	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
+		INSTANCE;
+		public WritableComparableKey createIndexKey() {
+			return new ListDiskSSTableReader.SegListKey();
+		}
+	}
+
 
 	public static class StringKey implements WritableComparableKey {
 		String val;
@@ -67,6 +89,10 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 				return true;
 			StringKey o = (StringKey) object;
 			return val.equals(o.val);
+		}
+		@Override
+		public String toString(){
+			return val;
 		}
 	}
 }

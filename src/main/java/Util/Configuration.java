@@ -17,7 +17,7 @@ public class Configuration {
 
 	/**
 	 * this value specifies the sampling gap of the encoding of octants
-	 * 
+	 *
 	 * @return
 	 */
 	public int getIndexStep() {
@@ -27,7 +27,7 @@ public class Configuration {
 
 	/**
 	 * the directory
-	 * 
+	 *
 	 * @return
 	 */
 	public File getIndexDir() {
@@ -36,7 +36,7 @@ public class Configuration {
 
 	/**
 	 * the directory
-	 * 
+	 *
 	 * @return
 	 */
 	public File getTmpDir() {
@@ -58,7 +58,7 @@ public class Configuration {
 
 	/**
 	 * determine the max number of blocks an octant may occupy
-	 * 
+	 *
 	 * @return
 	 */
 	public int getOctantSizeLimit() {
@@ -69,9 +69,24 @@ public class Configuration {
 		return Integer.parseInt(props.getProperty("batch_commit_num", "1000"));
 	}
 
-	public WritableComparableKeyFactory getMemTableKey() {
+
+
+
+
+	public WritableComparableKeyFactory getIndexKeyFactory() {
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
+
+
+	public WritableComparableKeyFactory getIndexValueFactory() {
+		// TODO : implement two factories:one for [seglistkey], one for [encoding]
+		//不需要bucketID
+		String valueClass = props.getProperty("value_factory","core.lsmt.WritableComparableKey.StringKeyFactory");
+		return WritableComparableKey.StringKeyFactory.INSTANCE;
+	}
+
+
+
 
 	@Override
 	public String toString() {
@@ -82,10 +97,6 @@ public class Configuration {
 		return Long.parseLong(props.getProperty("duration_time", "3600000"));
 	}
 
-	public WritableComparableKeyFactory getIndexValueFactory() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	public long getBTreeCacheSize() {
 		// TODO Auto-generated method stub

@@ -97,7 +97,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 	public SortedListSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		this.conf = conf;
-		curDir = new DirEntry(conf.getMemTableKey());
+		curDir = new DirEntry(conf.getIndexKeyFactory());
 		this.meta = meta;
 		for (final ISSTableReader table : tables) {
 			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {

@@ -1,20 +1,10 @@
 package core.lsmt;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
@@ -23,7 +13,6 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
 /**
@@ -82,7 +71,7 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
 		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
 				fis));
-		WritableComparableKeyFactory factory = index.getConf().getMemTableKey();
+		WritableComparableKeyFactory factory = index.getConf().getIndexKeyFactory();
 		while (dirInput.available() > 0) {
 			WritableComparableKey key = factory.createIndexKey();
 			key.read(dirInput);
@@ -125,22 +114,22 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	};
 
 	/**
-	 * 找到第一个不大于key, code的octant的offset
+	 * 找到第一个key相同，不大于code的octant的offset,
 	 * 
-	 * @param key
-	 * @param code
+	 * @param curKey
+	 * @param curCode
 	 * @return
 	 * @throws IOException
 	 */
 	public Pair<WritableComparableKey, BucketID> cellOffset(
 			WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
-		return skipList.cellOffset(curKey, curCode);
+		return skipList.floorOffset(curKey, curCode);
 	}
 
 	public Pair<WritableComparableKey, BucketID> floorOffset(
-			WritableComparableKey curKey, WritableComparableKey curCode) {
-		return skipList.floorOffset(curKey, curCode);
+			WritableComparableKey curKey, WritableComparableKey curCode) throws IOException {
+		return skipList.cellOffset(curKey, curCode);
 	}
 
 	@Override

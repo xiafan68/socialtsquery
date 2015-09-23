@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -40,6 +41,54 @@ public class BDBBtree {
 		this.conf = conf;
 	}
 
+
+	 static enum keyComparator implements Comparator<byte[]>  {
+		INSTACE;
+
+		 Configuration conf;
+		 public void setConf(Configuration conf){
+			 this.conf = conf;
+		 }
+		@Override
+		public int compare(byte[] a, byte[] a2) {
+			//TODO:实现String的比较
+			WritableComparableKey t = conf.getIndexKeyFactory().createIndexKey();
+			WritableComparableKey t2 = conf.getIndexKeyFactory().createIndexKey();
+
+			try {
+				t.read(new DataInputStream(new ByteArrayInputStream(a)));
+				t2.read(new DataInputStream(new ByteArrayInputStream(a2)));
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return t.compareTo(t2);
+		}
+	}
+
+	static enum valueComparator implements Comparator<byte[]> {
+		INSTACE;
+
+		Configuration conf;
+		public void setConf(Configuration conf){
+			this.conf = conf;
+		}
+		@Override
+		public int compare(byte[] a, byte[] a2) {
+			//这里byte[]是[code/seglistkey]
+			WritableComparableKey t = conf.getIndexValueFactory().createIndexKey();
+			WritableComparableKey t2 = conf.getIndexValueFactory().createIndexKey();
+			try {
+				t.read(new DataInputStream(new ByteArrayInputStream(a)));
+				t2.read(new DataInputStream(new ByteArrayInputStream(a2)));
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return t.compareTo(t2);
+		}
+	}
+
 	public void open(boolean readOnly, boolean duplicatesAllowed) {
 		if (!dir.exists()) {
 			dir.mkdir();
@@ -66,9 +115,17 @@ public class BDBBtree {
 		myDbConfig.setTransactional(false);
 
 		myDbConfig.setDeferredWrite(true);
-		myDbConfig.setBtreeComparator(btreeComparatorClass);
-		if (duplicatesAllowed)
-			myDbConfig.setDuplicateComparator(NodeComparator.class);
+
+
+		keyComparator.INSTACE.setConf(conf);
+		myDbConfig.setBtreeComparator(keyComparator.INSTACE);
+
+		if (duplicatesAllowed) {
+			valueComparator.INSTACE.setConf(conf);
+			myDbConfig.setDuplicateComparator(valueComparator.INSTACE);
+		}
+
+
 		// myDbConfig.setCacheMode(CacheMode.DYNAMIC);
 		mutableConfig.setCacheSize(conf.getBTreeCacheSize());
 
@@ -96,6 +153,30 @@ public class BDBBtree {
 		env.close();
 	}
 
+
+	/**
+	 * insert "hello", "10", 1
+	 * "hello", "12", 12
+	 * "9","13"
+	 * @param curkey
+	 * @param value
+	 * @param id
+	 * @throws IOException
+	 */
+
+	//将key和code插入Btree索引
+	//value: [value, id]
+	public void insert(WritableComparableKey curkey, WritableComparableKey value, BucketID id) throws IOException {
+
+
+		DatabaseEntry key = getDBEntry(curkey);
+		DatabaseEntry data = writeEntry(value, id);
+
+		Cursor cursor = nodeDb.openCursor(null, null);
+		cursor.put(key, data);
+		cursor.close();
+	}
+
 	private Pair<WritableComparableKey, BucketID> getKeyLast(
 			WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
@@ -106,17 +187,19 @@ public class BDBBtree {
 			OperationStatus status = cursor.getSearchKeyRange(key, data,
 					LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				WritableComparableKey readKey = conf.getMemTableKey()
+				WritableComparableKey readKey = conf.getIndexKeyFactory()
 						.createIndexKey();
 				DataInputStream dis = new DataInputStream(
-						new ByteArrayInputStream(data.getData()));
+						new ByteArrayInputStream(key.getData()));
 				readKey.read(dis);
 				if (readKey.compareTo(curKey) == 0) {
 					status = cursor.getNextNoDup(key, data, LockMode.DEFAULT);
 					if (status == OperationStatus.SUCCESS) {
 						return parsePair(data);
 					} else {
-						return null;
+						//TODO
+						cursor.getLast(key, data, LockMode.DEFAULT);
+						return parsePair(data);
 					}
 				} else {
 					return null;
@@ -127,6 +210,18 @@ public class BDBBtree {
 		} finally {
 			cursor.close();
 		}
+	}
+
+	private DatabaseEntry writeEntry(WritableComparableKey key, BucketID id) throws IOException {
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(outputStream);
+		key.write(dos);
+		id.write(dos);
+		DatabaseEntry ret = new DatabaseEntry();
+		ret.setData(outputStream.toByteArray());
+
+		return ret;
 	}
 
 	private Pair<WritableComparableKey, BucketID> parsePair(DatabaseEntry data)
@@ -141,13 +236,25 @@ public class BDBBtree {
 		return new Pair<>(value, ret);
 	}
 
-	public Pair<WritableComparableKey, BucketID> cellOffset(
+	/**
+	 * 找到第一个key相同，小于等于code的octant的offset,
+	 *
+	 * @param curKey
+	 * @param curCode:Encoding或者SegListKey類型
+	 * @return
+	 * @throws IOException
+	 * */
+	public Pair<WritableComparableKey, BucketID> floorOffset(
 			WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
+
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(curCode);
+
 		Cursor cursor = nodeDb.openCursor(null, null);
+
 		try {
+			//找到第一个大于等于data的
 			OperationStatus status = cursor.getSearchBothRange(key, data,
 					LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
@@ -169,13 +276,21 @@ public class BDBBtree {
 		}
 	}
 
-	public Pair<WritableComparableKey, BucketID> floorOffset(
+	/**
+	 * 找到第一个key相同，大于等于code的octant的offset,
+	 * @param curKey
+	 * @param curCode
+	 * @return
+	 * @throws IOException
+	 */
+	public Pair<WritableComparableKey, BucketID> cellOffset(
 			WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(curCode);
 		Cursor cursor = nodeDb.openCursor(null, null);
 		try {
+			//找到第一个大于等于data的
 			OperationStatus status = cursor.getSearchBothRange(key, data,
 					LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
