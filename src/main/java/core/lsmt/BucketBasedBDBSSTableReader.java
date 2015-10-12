@@ -24,7 +24,7 @@ import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
  */
 public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dataInput;
-	protected RandomAccessFile dirInput;
+	//protected RandomAccessFile dirInput;
 	// protected RandomAccessFile idxInput;
 
 	protected BDBBtree dirMap = null;
@@ -146,8 +146,8 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 	public void close() throws IOException {
 		if (dataInput != null)
 			dataInput.close();
-		if (dirInput != null)
-			dirInput.close();
+		//if (dirInput != null)
+		//	dirInput.close();
 
 		skipList.close();
 		dirMap.close();

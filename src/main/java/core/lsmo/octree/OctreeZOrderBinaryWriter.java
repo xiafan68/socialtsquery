@@ -27,7 +27,7 @@ public class OctreeZOrderBinaryWriter {
 		this.writer = writer;
 		this.iter = iter;
 		this.step = step;
-		cur = writer.getBucket();
+		cur = writer.getDataBucket();
 	}
 
 

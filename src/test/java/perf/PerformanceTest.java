@@ -14,7 +14,7 @@ import xiafan.util.Pair;
 import Util.MyFile;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
-import core.executor.PartitionExecutor;
+import core.executor.WeightedQueryExecutor;
 import core.lsmt.IndexReader;
 import core.lsmt.PartitionMeta;
 import expr.QueryGen;
@@ -54,7 +54,7 @@ public class PerformanceTest {
 						while (gen.hasNext()) {
 							Pair<List<String>, Integer> cur = gen.nextQuery();
 							int offset = cur.arg1 + offsets[u];
-							PartitionExecutor executor = new PartitionExecutor(
+							WeightedQueryExecutor executor = new WeightedQueryExecutor(
 									indexReader);
 							executor.setMaxLifeTime((int) Math.pow(2, 31));
 							Interval window = new Interval(1, offset, offset
@@ -120,7 +120,7 @@ public class PerformanceTest {
 		IndexReader indexReader = new IndexReader();
 		try {
 			indexReader.addPartition(new PartitionMeta(31), dir, conf);
-			PartitionExecutor executor = new PartitionExecutor(indexReader);
+			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 
 			String keyword[] = new String[] { "日本", "钓鱼岛" };
@@ -134,7 +134,7 @@ public class PerformanceTest {
 			while (res.hasNext())
 				System.out.println(res.next());
 
-			executor = new PartitionExecutor(indexReader);
+			executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 			keyword = new String[] { "中国", "钓鱼岛" };
 			window = new Interval(1, 747236, 747236 + 1440, 1);

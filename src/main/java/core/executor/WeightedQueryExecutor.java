@@ -29,7 +29,7 @@ import core.lsmt.PartitionMeta;
  * @author dingcheng
  * 
  */
-public class PartitionExecutor extends IQueryExecutor {
+public class WeightedQueryExecutor extends IQueryExecutor {
 	LSMTInvertedIndex reader;
 
 	TempKeywordQuery query;
@@ -44,7 +44,7 @@ public class PartitionExecutor extends IQueryExecutor {
 
 	boolean stop = false;
 
-	public PartitionExecutor(LSMTInvertedIndex reader) {
+	public WeightedQueryExecutor(LSMTInvertedIndex reader) {
 		this.reader = reader;
 		maxLifeTime = Integer.MAX_VALUE;
 	}

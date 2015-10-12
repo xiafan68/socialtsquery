@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.ftpserver.command.impl.RETR;
 
 import fanxia.file.ByteUtil;
 

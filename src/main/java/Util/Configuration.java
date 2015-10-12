@@ -69,24 +69,18 @@ public class Configuration {
 		return Integer.parseInt(props.getProperty("batch_commit_num", "1000"));
 	}
 
-
-
-
-
 	public WritableComparableKeyFactory getIndexKeyFactory() {
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
 
-
 	public WritableComparableKeyFactory getIndexValueFactory() {
-		// TODO : implement two factories:one for [seglistkey], one for [encoding]
-		//不需要bucketID
-		String valueClass = props.getProperty("value_factory","core.lsmt.WritableComparableKey.StringKeyFactory");
+		// TODO : implement two factories:one for [seglistkey], one for
+		// [encoding]
+		// 不需要bucketID
+		String valueClass = props.getProperty("value_factory",
+				"core.lsmt.WritableComparableKey.StringKeyFactory");
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
-
-
-
 
 	@Override
 	public String toString() {
@@ -97,10 +91,14 @@ public class Configuration {
 		return Long.parseLong(props.getProperty("duration_time", "3600000"));
 	}
 
-
 	public long getBTreeCacheSize() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	public String getIndexHelper() {
+		return props.getProperty("indexhelper",
+				"core.lsmt.FileBasedIndexHelper");
 	}
 
 }

@@ -29,16 +29,20 @@ public class SSTableWriterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf,
+				OctreeBasedLSMTFactory.INSTANCE);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
-		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");
+		DirLineReader reader = new DirLineReader(
+				"/home/xiafan/dataset/twitter/twitter_segs");
 		String line = null;
 		SSTableMeta meta = new SSTableMeta(0, 0);
 		OctreeMemTable tree = new OctreeMemTable(index, meta);
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(new WritableComparableKey.StringKey(Long.toString(seg.getMid())), seg);
+			tree.insert(
+					new WritableComparableKey.StringKey(Long.toString(seg
+							.getMid())), seg);
 			if (tree.size() == conf.getFlushLimit()) {
 				break;
 			}
@@ -47,8 +51,10 @@ public class SSTableWriterTest {
 
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
-		ISSTableWriter writer = OctreeBasedLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
-		writer.write(conf.getIndexDir());
+		ISSTableWriter writer = OctreeBasedLSMTFactory.INSTANCE
+				.newSSTableWriterForFlushing(tables, conf);
+		writer.open(conf.getIndexDir());
+		writer.write();
 		writer.close();
 	}
 }

@@ -29,7 +29,7 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	private static final int MAX_LIFETIME = 31;
 	private LSMTInvertedIndex reader;
 
-	List<PartitionExecutor> executors = new ArrayList<PartitionExecutor>();
+	List<WeightedQueryExecutor> executors = new ArrayList<WeightedQueryExecutor>();
 	ISegQueue topk;
 	TempKeywordQuery query;
 
@@ -39,9 +39,9 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 
 	@Override
 	public boolean advance() {
-		Iterator<PartitionExecutor> iter = executors.iterator();
+		Iterator<WeightedQueryExecutor> iter = executors.iterator();
 		while (iter.hasNext()) {
-			PartitionExecutor cur = iter.next();
+			WeightedQueryExecutor cur = iter.next();
 			for (int i = 0; i < 1 && cur.advance(); i++)
 				;
 			if (cur.isTerminated()) {
@@ -57,7 +57,7 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 		topk = ISegQueue.create(true);
 		Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
 		for (PartitionMeta meta : reader.getPartitions()) {
-			PartitionExecutor exe = new PartitionExecutor(reader);
+			WeightedQueryExecutor exe = new WeightedQueryExecutor(reader);
 			exe.query(query);
 			exe.setMaxLifeTime(meta.getLifetimeBound());
 			exe.setupQueryContext(topk, map);

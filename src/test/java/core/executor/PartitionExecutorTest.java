@@ -22,7 +22,7 @@ public class PartitionExecutorTest {
 		IndexReader indexReader = new IndexReader();
 		try {
 			indexReader.addPartition(new PartitionMeta(16), dir, conf);
-			PartitionExecutor executor = new PartitionExecutor(indexReader);
+			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 16));
 			String keyword[] = new String[] { "伦敦","奥运会"};
 			Interval window = new Interval(1, 747056, 748056, 1);

@@ -34,7 +34,7 @@ import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.MultiPartitionExecutor;
-import core.executor.PartitionExecutor;
+import core.executor.WeightedQueryExecutor;
 import core.lsmt.IndexReader;
 import core.lsmt.PartitionMeta;
 import expr.QueryGen;
@@ -81,7 +81,7 @@ public class DiskBasedPerfTest {
 		if (multiPart) {
 			indexExec = new MultiPartitionExecutor(indexReader);
 		} else {
-			indexExec = new PartitionExecutor(indexReader);
+			indexExec = new WeightedQueryExecutor(indexReader);
 			indexExec.setMaxLifeTime((int) Math.pow(2, 17));
 		}
 	}

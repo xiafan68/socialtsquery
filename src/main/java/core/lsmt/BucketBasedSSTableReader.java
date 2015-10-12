@@ -74,25 +74,10 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 		}
 	}
 
-	/*private void loadStats() throws IOException {
-		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(
-				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
-		DataInputStream dirInput = new DataInputStream(new BufferedInputStream(
-				fis));
-		WritableComparableKeyFactory factory = index.getConf().getIndexKeyFactory();
-		while (dirInput.available() > 0) {
-			WritableComparableKey key = factory.createIndexKey();
-			key.read(dirInput);
-			int count = dirInput.readInt();
-			wordFreq.put(key, count);
-		}
-	}*/
-
 	private void loadDirMeta() throws IOException {
 		File dataDir = index.getConf().getIndexDir();
 		FileInputStream fis = new FileInputStream(
-				OctreeSSTableWriter.dirMetaFile(dataDir, meta));
+				FileBasedIndexHelper.dirMetaFile(dataDir, meta));
 		DataInputStream dirInput = new DataInputStream(fis);
 		DirEntry entry = null;
 		while (dirInput.available() > 0) {
@@ -105,7 +90,7 @@ public abstract class BucketBasedSSTableReader implements ISSTableReader {
 	private void loadIndex() throws IOException {
 		// load index
 		File dataDir = index.getConf().getIndexDir();
-		FileInputStream fis = new FileInputStream(OctreeSSTableWriter.idxFile(
+		FileInputStream fis = new FileInputStream(FileBasedIndexHelper.idxFile(
 				dataDir, meta));
 		DataInputStream indexDis = new DataInputStream(fis);
 		try {

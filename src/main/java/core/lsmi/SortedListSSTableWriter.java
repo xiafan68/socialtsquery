@@ -2,6 +2,7 @@ package core.lsmi;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,11 +17,8 @@ import Util.Configuration;
 import Util.GroupByKeyIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
-
 import common.MidSegment;
-
 import core.io.Bucket;
-import core.io.Bucket.BucketID;
 import core.lsmi.ListDiskSSTableReader.SegListKey;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmo.OctreeSSTableWriter;
@@ -29,6 +27,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
+import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
 
 /**
@@ -40,22 +39,18 @@ import core.lsmt.WritableComparableKey;
  *
  */
 public class SortedListSSTableWriter extends ISSTableWriter {
-	private static final Logger logger = Logger.getLogger(SortedListSSTableWriter.class);
+	private static final Logger logger = Logger
+			.getLogger(SortedListSSTableWriter.class);
 
 	GroupByKeyIterator<WritableComparableKey, IPostingListIterator> view = new GroupByKeyIterator<WritableComparableKey, IPostingListIterator>(
 			WritableComparableKey.WritableComparableKeyComp.INSTANCE);;
-	SSTableMeta meta;
 
 	FileOutputStream dataFileOs;
 	DataOutputStream dataDos;
-	FileOutputStream indexFileDos;
-	DataOutputStream indexDos; // write down the encoding of each block
-	DataOutputStream dirDos; // write directory meta
 	private int step;
-
-	DirEntry curDir;
 	Bucket buck = new Bucket(-1);
 	Configuration conf;
+	IndexHelper indexHelper;
 
 	public SortedListSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		this.conf = conf;
@@ -63,72 +58,78 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 		for (final IMemTable<SortedListPostinglist> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
-				Iterator<WritableComparableKey> keyIter = table.getReader().keySetIter();
+			view.add(PeekIterDecorate
+					.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
+						Iterator<WritableComparableKey> keyIter = table
+								.getReader().keySetIter();
 
-				@Override
-				public boolean hasNext() {
-					return keyIter.hasNext();
-				}
+						@Override
+						public boolean hasNext() {
+							return keyIter.hasNext();
+						}
 
-				@Override
-				public Entry<WritableComparableKey, IPostingListIterator> next() {
-					WritableComparableKey key = keyIter.next();
-					Entry<WritableComparableKey, IPostingListIterator> ret = null;
-					try {
-						ret = new Pair<WritableComparableKey, IPostingListIterator>(key,
-								table.getReader().getPostingListScanner(key));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					return ret;
-				}
+						@Override
+						public Entry<WritableComparableKey, IPostingListIterator> next() {
+							WritableComparableKey key = keyIter.next();
+							Entry<WritableComparableKey, IPostingListIterator> ret = null;
+							try {
+								ret = new Pair<WritableComparableKey, IPostingListIterator>(
+										key, table.getReader()
+												.getPostingListScanner(key));
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+							return ret;
+						}
 
-				@Override
-				public void remove() {
+						@Override
+						public void remove() {
 
-				}
+						}
 
-			}));
+					}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = step;
 	}
 
-	public SortedListSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
+	public SortedListSSTableWriter(SSTableMeta meta,
+			List<ISSTableReader> tables, Configuration conf) {
 		this.conf = conf;
-		curDir = new DirEntry(conf.getIndexKeyFactory());
 		this.meta = meta;
 		for (final ISSTableReader table : tables) {
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
-				ISSTableReader reader = table;
-				Iterator<WritableComparableKey> iter = table.keySetIter();
+			view.add(PeekIterDecorate
+					.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
+						ISSTableReader reader = table;
+						Iterator<WritableComparableKey> iter = table
+								.keySetIter();
 
-				@Override
-				public boolean hasNext() {
-					return iter.hasNext();
-				}
+						@Override
+						public boolean hasNext() {
+							return iter.hasNext();
+						}
 
-				@Override
-				public Entry<WritableComparableKey, IPostingListIterator> next() {
-					WritableComparableKey entry = iter.next();
-					Pair<WritableComparableKey, IPostingListIterator> ret;
-					try {
-						ret = new Pair<WritableComparableKey, IPostingListIterator>(entry,
-								reader.getPostingListScanner(entry));
-					} catch (IOException e) {
-						e.printStackTrace();
-						ret = null;
-					}
-					return ret;
-				}
+						@Override
+						public Entry<WritableComparableKey, IPostingListIterator> next() {
+							WritableComparableKey entry = iter.next();
+							Pair<WritableComparableKey, IPostingListIterator> ret;
+							try {
+								ret = new Pair<WritableComparableKey, IPostingListIterator>(
+										entry, reader
+												.getPostingListScanner(entry));
+							} catch (IOException e) {
+								e.printStackTrace();
+								ret = null;
+							}
+							return ret;
+						}
 
-				@Override
-				public void remove() {
+						@Override
+						public void remove() {
 
-				}
+						}
 
-			}));
+					}));
 		}
 		this.step = step;
 	}
@@ -173,18 +174,20 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public void write(File dir) throws IOException {
+	public void open(File dir) throws FileNotFoundException {
 		if (!dir.exists())
 			dir.mkdirs();
 
 		dataFileOs = new FileOutputStream(dataFile(dir, meta));
 		dataDos = new DataOutputStream(dataFileOs);
-		indexFileDos = new FileOutputStream(idxFile(dir, meta));
-		indexDos = new DataOutputStream(indexFileDos);
-		dirDos = new DataOutputStream(new FileOutputStream(dirMetaFile(dir, meta)));
+		indexHelper.openIndexFile(dir, meta);
+	}
 
+	@Override
+	public void write() throws IOException {
 		while (view.hasNext()) {
-			Entry<WritableComparableKey, List<IPostingListIterator>> pair = view.next();
+			Entry<WritableComparableKey, List<IPostingListIterator>> pair = view
+					.next();
 			List<Iterator<MidSegment>> list = new ArrayList<Iterator<MidSegment>>();
 			for (IPostingListIterator iter : pair.getValue()) {
 				list.add(new PostingListDecorator(iter));
@@ -208,24 +211,22 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		}
 	}
 
-	private void writePostingList(WriterHelper helper, WritableComparableKey key, Iterator<MidSegment> iter)
+	private void writePostingList(WriterHelper helper,
+			WritableComparableKey key, Iterator<MidSegment> iter)
 			throws IOException {
-		curDir.init();
-		curDir.curKey = key;
+		indexHelper.startPostingList(key, null);
 		MidSegment seg = null;
 		while (iter.hasNext()) {
 			seg = iter.next();
 			helper.list.addSegment(seg);
-			curDir.size++;
-			curDir.minTime = Math.min(curDir.minTime, seg.getStart());
-			curDir.maxTime = Math.max(curDir.maxTime, seg.getEndTime());
+			indexHelper.process(seg.getStart(), seg.getEndTime());
+
 			if (helper.list.isFull()) {
 				writeSubList(helper);
 			}
 		}
 		writeSubList(helper);
-		curDir.endBucketID.copy(buck.blockIdx());
-		curDir.write(dirDos);
+		indexHelper.endPostingList(buck.blockIdx());
 	}
 
 	/**
@@ -238,19 +239,20 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		if (!helper.list.isEmpty()) {
 			byte[] data = helper.list.toByteArray();
 			if (buck.blockIdx().blockID < 0) {
-				newBucket();
+				newDataBucket();
 			} else if (!buck.canStore(data.length)) {
 				buck.write(dataDos);
-				newBucket();
+				newDataBucket();
 			}
 			buck.storeOctant(data);
 			if (helper.first) {
 				helper.first = false;
-				curDir.startBucketID = buck.blockIdx();
-				curDir.indexStartOffset = indexFileDos.getChannel().position();
+				indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 			}
 			MidSegment cur = helper.list.get(0);
-			buildIndex(new SegListKey(cur.getPoint().getZ(), cur.getStart(), cur.mid), buck.blockIdx());
+			indexHelper.buildIndex(
+					new SegListKey(cur.getPoint().getZ(), cur.getStart(),
+							cur.mid), buck.blockIdx());
 			helper.init();
 		}
 
@@ -258,24 +260,14 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public void moveToDir(File preDir, File dir) {
-		File tmpFile = OctreeSSTableWriter.idxFile(preDir, getMeta());
-		tmpFile.renameTo(OctreeSSTableWriter.idxFile(dir, getMeta()));
-		tmpFile = OctreeSSTableWriter.dirMetaFile(preDir, getMeta());
-		tmpFile.renameTo(OctreeSSTableWriter.dirMetaFile(dir, getMeta()));
-		tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
+		indexHelper.moveToDir(preDir, dir, meta);
+		File tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
 		tmpFile.renameTo(OctreeSSTableWriter.dataFile(dir, getMeta()));
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
-	}
-
-	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.idx", meta.version, meta.level));
-	}
-
-	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.meta", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version,
+				meta.level));
 	}
 
 	@Override
@@ -287,31 +279,17 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 		dataFileOs.close();
 		dataDos.close();
-		indexFileDos.close();
-		indexDos.close();
-		dirDos.close();
-	}
 
-	/**
-	 * 这个实现目前记录的是某个max value对应的bucket offset
-	 * 
-	 * @param key
-	 * @param id
-	 * @throws IOException
-	 */
-	public void buildIndex(SegListKey key, BucketID id) throws IOException {
-		curDir.sampleNum++;
-		key.write(indexDos);
-		id.write(indexDos);
+		indexHelper.close();
 	}
 
 	@Override
-	public Bucket getBucket() {
+	public Bucket getDataBucket() {
 		return buck;
 	}
 
 	@Override
-	public Bucket newBucket() {
+	public Bucket newDataBucket() {
 		buck.reset();
 		try {
 			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE));
@@ -319,6 +297,20 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 			throw new RuntimeException(e);
 		}
 		return buck;
+	}
+
+	@Override
+	public boolean validate(SSTableMeta meta) {
+		File dFile = dataFile(conf.getIndexDir(), meta);
+		if (!dFile.exists())
+			return false;
+		return indexHelper.validate(meta);
+	}
+
+	@Override
+	public void delete(File indexDir, SSTableMeta meta) {
+		dataFile(conf.getIndexDir(), meta).delete();
+		indexHelper.delete(conf.getIndexDir(), meta);
 	}
 
 }

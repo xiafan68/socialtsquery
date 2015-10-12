@@ -37,7 +37,7 @@ public class PartitionExecutorTest1 {
 			Configuration conf = new Configuration();
 			IndexReader indexReader = new IndexReader();
 			indexReader.addPartition(new PartitionMeta(31), dir, conf);
-			PartitionExecutor executor = new PartitionExecutor(indexReader);
+			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 
 			String record = myFile.readLine();
@@ -97,7 +97,7 @@ public class PartitionExecutorTest1 {
 		IndexReader indexReader = new IndexReader();
 		try {
 			indexReader.addPartition(new PartitionMeta(31), dir, conf);
-			PartitionExecutor executor = new PartitionExecutor(indexReader);
+			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 
 			String keyword[] = new String[] { "伦敦", "奥运会" };

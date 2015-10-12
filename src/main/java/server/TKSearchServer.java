@@ -22,7 +22,7 @@ import org.apache.thrift.transport.TTransportException;
 import Util.Configuration;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
-import core.executor.PartitionExecutor;
+import core.executor.WeightedQueryExecutor;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import dataserver.JDBC;
@@ -72,7 +72,7 @@ public class TKSearchServer implements TweetService.Iface {
 	@Override
 	public List<Long> search(TKeywordQuery query) throws TException {
 		List<Long> ret = new ArrayList<Long>();
-		PartitionExecutor executor = new PartitionExecutor(indexReader);
+		WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 		executor.setMaxLifeTime((int) Math.pow(2, 31));
 		Interval window = new Interval(1, query.startTime, query.endTime, 1);
 		String[] keywords = new String[query.keywords.size()];

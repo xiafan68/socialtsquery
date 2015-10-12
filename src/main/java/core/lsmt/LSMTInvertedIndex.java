@@ -28,7 +28,7 @@ import common.MidSegment;
 
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
-import core.executor.PartitionExecutor;
+import core.executor.WeightedQueryExecutor;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.OctreeSSTableWriter;
@@ -61,11 +61,15 @@ public class LSMTInvertedIndex<PType> {
 	Configuration conf;
 	TextShingle shingle = new TextShingle(null);
 
+	ISSTableWriter valWriter;
+
 	// DataOutputStream keyWriter;
 
 	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
 		this.conf = conf;
 		this.implFactory = factory;
+		valWriter = implFactory.newSSTableWriterForCompaction(null,
+				new ArrayList<ISSTableReader>(), conf);
 	}
 
 	/**
@@ -161,15 +165,15 @@ public class LSMTInvertedIndex<PType> {
 	 * @return
 	 */
 	private boolean validateDataFile(SSTableMeta meta) {
-		File dFile = OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta);
-		File idxFile = OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta);
-		File dirFile = OctreeSSTableWriter
-				.dirMetaFile(conf.getIndexDir(), meta);
-		if (!dFile.exists() || !idxFile.exists() || !dirFile.exists()) {
-			logger.warn("index file of version " + meta + " is not consistent");
-			return false;
+		boolean ret = valWriter.validate(meta);
+		if (!ret) {
+			logger.error("index file of version " + meta + " is not consistent");
 		}
-		return true;
+		return ret;
+	}
+
+	public ILSMTFactory getLSMTFactory() {
+		return null;
 	}
 
 	public static int[] parseVersion(File file) {
@@ -283,7 +287,7 @@ public class LSMTInvertedIndex<PType> {
 
 	public Iterator<Interval> query(List<String> keywords, int start, int end,
 			int k) throws IOException {
-		IQueryExecutor exec = new PartitionExecutor(this);
+		IQueryExecutor exec = new WeightedQueryExecutor(this);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
 		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
@@ -490,9 +494,7 @@ public class LSMTInvertedIndex<PType> {
 	}
 
 	private void delIndexFile(SSTableMeta meta) {
-		OctreeSSTableWriter.dataFile(conf.getIndexDir(), meta).delete();
-		OctreeSSTableWriter.idxFile(conf.getIndexDir(), meta).delete();
-		OctreeSSTableWriter.dirMetaFile(conf.getIndexDir(), meta).delete();
+		valWriter.delete(conf.getIndexDir(), meta);
 		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
 

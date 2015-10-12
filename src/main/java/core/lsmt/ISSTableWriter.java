@@ -3,6 +3,7 @@ package core.lsmt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -12,8 +13,11 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
 public abstract class ISSTableWriter {
+	protected SSTableMeta meta;
 
 	public abstract SSTableMeta getMeta();
+
+	public abstract void open(File dir) throws FileNotFoundException;
 
 	/**
 	 * 将索引文件写入到dir中
@@ -21,7 +25,14 @@ public abstract class ISSTableWriter {
 	 * @param dir
 	 * @throws IOException
 	 */
-	public abstract void write(File dir) throws IOException;
+	public abstract void write() throws IOException;
+
+	/**
+	 * 验证磁盘上面的数据文件是否全部存在
+	 * @param meta
+	 * @return
+	 */
+	public abstract boolean validate(SSTableMeta meta);
 
 	/**
 	 * 将已写出的索引文件移到dir中
@@ -46,14 +57,14 @@ public abstract class ISSTableWriter {
 	 * 
 	 * @return
 	 */
-	public abstract Bucket getBucket();
+	public abstract Bucket getDataBucket();
 
 	/**
 	 * create a new bucket
 	 * 
 	 * @return
 	 */
-	public abstract Bucket newBucket();
+	public abstract Bucket newDataBucket();
 
 	public static class DirEntry extends PostingListMeta {
 		final WritableComparableKeyFactory factory;
@@ -119,8 +130,12 @@ public abstract class ISSTableWriter {
 		 */
 		@Override
 		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
-					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
+			return "DirEntry [curKey=" + curKey + ", startBucketID="
+					+ startBucketID + ", endBucketID=" + endBucketID
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
+					+ sampleNum + "]";
 		}
 	}
+
+	public abstract void delete(File indexDir, SSTableMeta meta);
 }

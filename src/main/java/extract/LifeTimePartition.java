@@ -20,8 +20,9 @@ import org.apache.log4j.Logger;
 
 import xiafan.util.Histogram;
 import xiafan.util.Pair;
+
 import common.Tweet;
-import core.mr.InvertedIndexBuilder;
+
 import extract.common.MRDataFormat;
 
 /**
