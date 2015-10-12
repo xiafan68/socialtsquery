@@ -19,8 +19,7 @@ public class BDBBasedIndexHelper extends IndexHelper {
 		super(conf);
 	}
 
-	public void openIndexFile(File dir, SSTableMeta meta)
-			throws FileNotFoundException {
+	public void openIndexFile(File dir, SSTableMeta meta) throws FileNotFoundException {
 		if (!dir.exists())
 			dir.mkdirs();
 
@@ -31,8 +30,7 @@ public class BDBBasedIndexHelper extends IndexHelper {
 	}
 
 	@Override
-	public void startPostingList(WritableComparableKey key,
-			BucketID newListStart) throws IOException {
+	public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
 		super.startPostingList(key, newListStart);
 		curKey = key;
 		curDir.indexStartOffset = -1;// it is not used in this setup
@@ -52,18 +50,17 @@ public class BDBBasedIndexHelper extends IndexHelper {
 		tmpFile.renameTo(dirMetaFile(dir, meta));
 	}
 
-	public void buildIndex(WritableComparableKey code, BucketID id)
-			throws IOException {
+	public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
 		curDir.sampleNum++;
 		skipList.insert(curKey, code, id);
 	}
 
 	public static File idxFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d_idx", meta.version, meta.level));
 	}
 
 	public static File dirMetaFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d", meta.version, meta.level));
+		return new File(dir, String.format("%d_%d_dir", meta.version, meta.level));
 	}
 
 	@Override

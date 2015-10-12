@@ -21,7 +21,7 @@ public class SegTreeSetTest {
 	 */
 	@Test
 	public void updateTopKTest() {
-		SegTreeSet queue = new SegTreeSet(new SortWorstscore(), true);
+		SegTreeSet queue = new SegTreeSet(SortWorstscore.INSTANCE, true);
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
@@ -39,8 +39,7 @@ public class SegTreeSetTest {
 		Assert.assertEquals(b, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
-		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 10,
-				8, 12)), 1f);
+		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 10, 8, 12)), 1f);
 		queue.update(b, newB);
 		Assert.assertEquals(queue.getMinWorstScore(), a.getWorstscore());
 		// 这里是b，应为ctx里面假设所有倒排表的当前最小值为10
@@ -54,7 +53,7 @@ public class SegTreeSetTest {
 	 */
 	@Test
 	public void updateCandTest() {
-		SegTreeSet queue = new SegTreeSet(new SortBestscore(), false);
+		SegTreeSet queue = new SegTreeSet(SortBestscore.INSTANCE, false, 10);
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
@@ -70,8 +69,7 @@ public class SegTreeSetTest {
 		Assert.assertEquals(a, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
-		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5,
-				100, 8, 120)), 1f);
+		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 100, 8, 120)), 1f);
 		queue.update(b, newB);
 		Assert.assertEquals(queue.getMaxBestScore(), newB.getBestscore());
 		Assert.assertEquals(newB, queue.peek());

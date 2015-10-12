@@ -32,8 +32,7 @@ public class FlushService extends Thread {
 	public void run() {
 		while (!index.stop) {
 			LockManager.INSTANCE.versionReadLock();
-			List<IMemTable> flushingTables = new ArrayList<IMemTable>(
-					index.getVersion().flushingTables);
+			List<IMemTable> flushingTables = new ArrayList<IMemTable>(index.getVersion().flushingTables);
 			LockManager.INSTANCE.versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
 				StringBuffer buf = new StringBuffer("flushing versions ");
@@ -44,9 +43,8 @@ public class FlushService extends Thread {
 				}
 				logger.info(buf.toString());
 
-				ISSTableWriter writer = index.getFactory()
-						.newSSTableWriterForFlushing(
-								flushingTables.subList(0, 1), index.getConf());
+				ISSTableWriter writer = index.getFactory().newSSTableWriterForFlushing(flushingTables.subList(0, 1),
+						index.getConf());
 				try {
 					writer.open(conf.getTmpDir());
 					writer.write();
@@ -62,6 +60,7 @@ public class FlushService extends Thread {
 					index.flushTables(versions, writer.getMeta());
 				} catch (IOException e) {
 					logger.error("flushing error:" + e.getMessage());
+					index.stop = true;
 					throw new RuntimeException(e);
 				}
 			} else {

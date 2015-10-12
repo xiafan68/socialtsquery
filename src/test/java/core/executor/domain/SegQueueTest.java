@@ -1,17 +1,11 @@
 package core.executor.domain;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import common.MidSegment;
-
-import segmentation.Segment;
 import core.executor.ExecContext;
-import core.executor.domain.MergedMidSeg;
-import core.executor.domain.SegQueue;
-import core.executor.domain.SortBestscore;
-import core.executor.domain.SortWorstscore;
+import segmentation.Segment;
 
 /**
  * 
@@ -26,7 +20,7 @@ public class SegQueueTest {
 	 */
 	@Test
 	public void updateTopKTest() {
-		SegQueue queue = new SegQueue(new SortWorstscore(), true);
+		SegQueue queue = new SegQueue(SortWorstscore.INSTANCE, true);
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
@@ -44,11 +38,10 @@ public class SegQueueTest {
 		Assert.assertEquals(b, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
-		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 10,
-				8, 12)), 1f);
+		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 10, 8, 12)), 1f);
 		queue.update(b, newB);
 		Assert.assertEquals(queue.getMinWorstScore(), a.getWorstscore());
-		//这里是b，应为ctx里面假设所有倒排表的当前最小值为10
+		// 这里是b，应为ctx里面假设所有倒排表的当前最小值为10
 		Assert.assertEquals(queue.getMinBestScore(), b.getBestscore());
 		Assert.assertEquals(a, queue.peek());
 		Assert.assertEquals(2, queue.size());
@@ -59,7 +52,7 @@ public class SegQueueTest {
 	 */
 	@Test
 	public void updateCandTest() {
-		SegQueue queue = new SegQueue(new SortBestscore(), false);
+		SegQueue queue = new SegQueue(SortBestscore.INSTANCE, false);
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
@@ -75,13 +68,12 @@ public class SegQueueTest {
 		Assert.assertEquals(a, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
-		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 100,
-				8, 120)), 1f);
+		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 100, 8, 120)), 1f);
 		queue.update(b, newB);
-		Assert.assertEquals(queue.getMaxBestScore(),newB.getBestscore());
+		Assert.assertEquals(queue.getMaxBestScore(), newB.getBestscore());
 		Assert.assertEquals(newB, queue.peek());
 		Assert.assertEquals(2, queue.size());
-		
+
 		queue.remove(a);
 		Assert.assertEquals(newB, queue.peek());
 		Assert.assertEquals(1, queue.size());

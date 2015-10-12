@@ -48,8 +48,7 @@ public class Configuration {
 	}
 
 	public int getFlushLimit() {
-		return Integer.parseInt(props.getProperty("memtable_size_limit",
-				"2000000"));
+		return Integer.parseInt(props.getProperty("memtable_size_limit", "2000000"));
 	}
 
 	public boolean debugMode() {
@@ -73,13 +72,22 @@ public class Configuration {
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
 
+	WritableComparableKeyFactory factory = null;
+
 	public WritableComparableKeyFactory getIndexValueFactory() {
 		// TODO : implement two factories:one for [seglistkey], one for
 		// [encoding]
 		// 不需要bucketID
-		String valueClass = props.getProperty("value_factory",
-				"core.lsmt.WritableComparableKey.StringKeyFactory");
-		return WritableComparableKey.StringKeyFactory.INSTANCE;
+		String valueClass = props.getProperty("value_factory", "core.lsmt.WritableComparableKey$EncodingFactory");
+		try {
+			if (factory == null)
+				factory = (WritableComparableKeyFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
+						"INSTANCE");
+
+			return factory;
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -97,8 +105,7 @@ public class Configuration {
 	}
 
 	public String getIndexHelper() {
-		return props.getProperty("indexhelper",
-				"core.lsmt.FileBasedIndexHelper");
+		return props.getProperty("indexhelper", "core.lsmt.BDBBasedIndexHelper");
 	}
 
 }
