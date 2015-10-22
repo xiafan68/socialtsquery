@@ -4,13 +4,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+
 import Util.Configuration;
 import core.commom.BDBBtree;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 
 public class BDBBasedIndexHelper extends IndexHelper {
-
+	private static final Logger logger = Logger.getLogger(BDBBasedIndexHelper.class);
 	protected BDBBtree dirMap = null;
 	protected BDBBtree skipList = null;
 	WritableComparableKey curKey = null;
@@ -44,10 +47,13 @@ public class BDBBasedIndexHelper extends IndexHelper {
 
 	@Override
 	public void moveToDir(File preDir, File dir, SSTableMeta meta) {
-		File tmpFile = idxFile(preDir, meta);
-		tmpFile.renameTo(idxFile(dir, meta));
-		tmpFile = dirMetaFile(preDir, meta);
-		tmpFile.renameTo(dirMetaFile(dir, meta));
+		try {
+			FileUtils.moveDirectory(idxFile(preDir, meta), idxFile(dir, meta));
+			FileUtils.moveDirectory(dirMetaFile(preDir, meta), dirMetaFile(dir, meta));
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
+
 	}
 
 	public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
@@ -74,9 +80,13 @@ public class BDBBasedIndexHelper extends IndexHelper {
 
 	@Override
 	public boolean delete(File indexDir, SSTableMeta meta) {
-		boolean ret = dirMetaFile(indexDir, meta).delete();
-		ret = ret && idxFile(indexDir, meta).delete();
-		return ret;
+		try {
+			FileUtils.deleteDirectory(dirMetaFile(indexDir, meta));
+			FileUtils.deleteDirectory(idxFile(indexDir, meta));
+			return true;
+		} catch (IOException e) {
+		}
+		return false;
 	}
 
 	@Override

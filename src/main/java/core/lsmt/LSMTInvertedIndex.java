@@ -103,7 +103,7 @@ public class LSMTInvertedIndex<PType> {
 
 	}
 
-	private static final Pattern regex = Pattern.compile("[0-9]+_[0-9]+.meta");
+	private static final Pattern regex = Pattern.compile("[0-9]+_[0-9]+.data");
 
 	private void setupVersionSet() {
 		File[] indexFiles = conf.getIndexDir().listFiles(new FilenameFilter() {
@@ -509,7 +509,7 @@ public class LSMTInvertedIndex<PType> {
 		if (readers.containsKey(ref)) {
 			ret = readers.get(ref);
 		} else {
-			ret = new DiskSSTableReader(this, meta.clone());
+			ret = implFactory.newSSTableReader(this, meta.clone());
 			ISSTableReader tmp = readers.putIfAbsent(ref, ret);
 			if (tmp != null)
 				ret = tmp;

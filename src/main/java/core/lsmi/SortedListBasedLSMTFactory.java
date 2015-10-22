@@ -3,11 +3,11 @@ package core.lsmi;
 import java.util.List;
 
 import Util.Configuration;
+import core.lsmt.ILSMTFactory;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
-import core.lsmt.ILSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 
 public enum SortedListBasedLSMTFactory implements ILSMTFactory {
@@ -30,7 +30,7 @@ public enum SortedListBasedLSMTFactory implements ILSMTFactory {
 
 	@Override
 	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		return new ListDiskSSTableReader(index, meta);
+		return new ListDiskBDBSSTableReader(index, meta);
 	}
 
 }

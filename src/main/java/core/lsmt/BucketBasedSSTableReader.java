@@ -31,7 +31,7 @@ import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
  * @author xiafan
  *
  */
-public abstract class BucketBasedSSTableReader implements ISSTableReader {
+public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableReader {
 	protected RandomAccessFile dataInput;
 	protected RandomAccessFile dirInput;
 	// protected RandomAccessFile idxInput;

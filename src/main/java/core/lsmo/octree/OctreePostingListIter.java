@@ -14,10 +14,10 @@ import core.commom.Encoding;
 import core.commom.Point;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.DiskSSTableReader;
+import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
+import core.lsmt.WritableComparableKey;
 import fanxia.file.ByteUtil;
 
 /**
@@ -27,10 +27,9 @@ import fanxia.file.ByteUtil;
  *
  */
 public class OctreePostingListIter implements IOctreeIterator {
-	private static final Logger logger = Logger
-			.getLogger(OctreePostingListIter.class);
+	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
 	private DirEntry entry;
-	private DiskSSTableReader reader;
+	private IBucketBasedSSTableReader reader;
 	private int ts;
 	private int te;
 
@@ -50,7 +49,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param ts
 	 * @param te
 	 */
-	public OctreePostingListIter(DirEntry entry, DiskSSTableReader reader, int ts, int te) {
+	public OctreePostingListIter(DirEntry entry, IBucketBasedSSTableReader reader, int ts, int te) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
@@ -191,8 +190,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private boolean readBucketNextOctant() throws IOException {
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
-				data));
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
 		curCode.read(input);
 		// logger.info(curCode);
 
@@ -208,8 +206,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private boolean diskHasMore() {
-		return curMin.compareTo(max) <= 0
-				&& nextID.compareTo(entry.endBucketID) <= 0;
+		return curMin.compareTo(max) <= 0 && nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
 	private void advance() throws IOException {
@@ -250,9 +247,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	@Override
 	public Pair<Integer, List<MidSegment>> next() throws IOException {
 		OctreeNode node = nextNode();
-		return new Pair<Integer, List<MidSegment>>(
-				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
-						node.getSegs()));
+		return new Pair<Integer, List<MidSegment>>(node.getEncoding().getTopZ(),
+				new ArrayList<MidSegment>(node.getSegs()));
 	}
 
 	@Override

@@ -178,8 +178,11 @@ public class BDBBtree {
 		data.setData(outputStream.toByteArray());
 
 		Cursor cursor = nodeDb.openCursor(null, null);
-		cursor.put(key, data);
-		cursor.close();
+		try {
+			cursor.put(key, data);
+		} finally {
+			cursor.close();
+		}
 	}
 
 	public DirEntry get(WritableComparableKey curkey) throws IOException {
@@ -187,10 +190,15 @@ public class BDBBtree {
 		DatabaseEntry data = new DatabaseEntry();
 
 		Cursor cursor = nodeDb.openCursor(null, null);
-		cursor.getSearchKey(key, data, LockMode.DEFAULT);
-		DirEntry ret = new DirEntry(conf.getIndexKeyFactory());
-		ret.read(new DataInputStream(new ByteArrayInputStream(data.getData())));
-		cursor.close();
+		DirEntry ret = null;
+		try {
+			cursor.getSearchKey(key, data, LockMode.DEFAULT);
+			ret = new DirEntry(conf.getIndexKeyFactory());
+			ret.read(new DataInputStream(new ByteArrayInputStream(data.getData())));
+			cursor.close();
+		} finally {
+			cursor.close();
+		}
 		return ret;
 	}
 
@@ -210,8 +218,12 @@ public class BDBBtree {
 		DatabaseEntry data = writeEntry(value, id);
 
 		Cursor cursor = nodeDb.openCursor(null, null);
-		cursor.put(key, data);
-		cursor.close();
+		try {
+			cursor.put(key, data);
+			cursor.close();
+		} finally {
+			cursor.close();
+		}
 	}
 
 	private Pair<WritableComparableKey, BucketID> getKeyLast(WritableComparableKey curKey,
@@ -361,28 +373,70 @@ public class BDBBtree {
 		return ret;
 	}
 
+	class BDBKeyIterator implements Iterator<WritableComparableKey> {
+		DatabaseEntry key = new DatabaseEntry();
+		DatabaseEntry value = new DatabaseEntry();
+		Cursor cursor = null;
+
+		public BDBKeyIterator() {
+			OperationStatus status = null;
+			cursor = nodeDb.openCursor(null, null);
+			status = cursor.getFirst(key, value, LockMode.DEFAULT);
+			if (status != OperationStatus.SUCCESS) {
+				key = null;
+				value = null;
+			}
+		}
+
+		@Override
+		public boolean hasNext() {
+			if (key == null) {
+				advance();
+			}
+			return key != null;
+		}
+
+		@Override
+		public WritableComparableKey next() {
+			if (key == null) {
+				advance();
+			}
+			WritableComparableKey ret = conf.getIndexKeyFactory().createIndexKey();
+			try {
+				ret.read(new DataInputStream(new ByteArrayInputStream(key.getData())));
+				key = null;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return ret;
+		}
+
+		private void advance() {
+			if (cursor != null) {
+				OperationStatus status = null;
+				key = new DatabaseEntry();
+				value = new DatabaseEntry();
+				status = cursor.getNext(key, value, LockMode.DEFAULT);
+				if (status != OperationStatus.SUCCESS) {
+					key = null;
+					cursor.close();
+					cursor = null;
+				}
+			}
+		}
+
+		@Override
+		public void remove() {
+		}
+
+		@Override
+		public void finalize() {
+			if (cursor != null)
+				cursor.close();
+		}
+	}
+
 	public Iterator<WritableComparableKey> keyIterator() {
-		return new Iterator<WritableComparableKey>() {
-			DatabaseEntry key;
-			DatabaseEntry value;
-
-			@Override
-			public boolean hasNext() {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public WritableComparableKey next() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public void remove() {
-				// TODO Auto-generated method stub
-
-			}
-		};
+		return new BDBKeyIterator();
 	}
 }

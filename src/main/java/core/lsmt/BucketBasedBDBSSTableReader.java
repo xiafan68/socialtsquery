@@ -22,7 +22,7 @@ import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
  * @author xiafan
  *
  */
-public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
+public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTableReader {
 	protected RandomAccessFile dataInput;
 	// protected RandomAccessFile dirInput;
 	// protected RandomAccessFile idxInput;
@@ -77,12 +77,12 @@ public abstract class BucketBasedBDBSSTableReader implements ISSTableReader {
 
 	private void loadDirMeta() throws IOException {
 		dirMap = new BDBBtree(BDBBasedIndexHelper.dirMetaFile(index.getConf().getIndexDir(), meta), index.getConf());
-		dirMap.open(true, false);
+		dirMap.open(false, false);
 	}
 
 	private void loadIndex() throws IOException {
 		skipList = new BDBBtree(BDBBasedIndexHelper.idxFile(index.getConf().getIndexDir(), meta), index.getConf());
-		skipList.open(true, true);
+		skipList.open(false, true);
 	}
 
 	/**
