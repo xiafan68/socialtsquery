@@ -24,8 +24,7 @@ import Util.MyFile;
  * Created by teisei on 15-3-24.
  */
 public class SegTreeSet extends ISegQueue {
-	private static final Logger logger = LoggerFactory
-			.getLogger(SegTreeSet.class);
+	private static final Logger logger = LoggerFactory.getLogger(SegTreeSet.class);
 	/**
 	 * 使用红黑树
 	 */
@@ -56,17 +55,19 @@ public class SegTreeSet extends ISegQueue {
 			queueA = bestQueue;
 			queueB = worstQueue;
 		}
-		MergedMidSeg seg = queueA.pollFirst();
-		queueB.remove(seg);
-		while (seg != null && !seg.computeScore()) {
-			queueA.add(seg);
-			queueB.add(seg);
-			seg = queueA.pollFirst();
+		if (!queueA.isEmpty()) {
+			MergedMidSeg seg = queueA.pollFirst();
 			queueB.remove(seg);
-		}
-		if (!queueA.contains(seg)) {
-			queueA.add(seg);
-			queueB.add(seg);
+			while (seg != null && seg.computeScore()) {
+				queueA.add(seg);
+				queueB.add(seg);
+				seg = queueA.pollFirst();
+				queueB.remove(seg);
+			}
+			if (!queueA.contains(seg)) {
+				queueA.add(seg);
+				queueB.add(seg);
+			}
 		}
 	}
 
@@ -80,7 +81,9 @@ public class SegTreeSet extends ISegQueue {
 			bestQueue.remove(seg);
 		} else {
 			MergedMidSeg seg = bestQueue.pollFirst();
-			worstQueue.remove(seg);
+			if (worstQueue.remove(seg)) {
+				logger.error("worstQueue can not find seg " + seg.toString());
+			}
 		}
 	}
 
@@ -139,9 +142,12 @@ public class SegTreeSet extends ISegQueue {
 	}
 
 	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
-		if (preSeg != null)
+		if (preSeg != null) {
 			worstQueue.remove(preSeg);
+			bestQueue.remove(preSeg);
+		}
 		worstQueue.add(newSeg);
+		bestQueue.add(newSeg);
 	}
 
 	public boolean isEmpty() {
@@ -202,8 +208,7 @@ public class SegTreeSet extends ISegQueue {
 			int endTime = Integer.parseInt(record[3]);
 			int endCount = Integer.parseInt(record[4]);
 
-			MidSegment seg = new MidSegment(mid, new Segment(startTime,
-					startCount, endTime, endCount));
+			MidSegment seg = new MidSegment(mid, new Segment(startTime, startCount, endTime, endCount));
 
 			/*
 			 * 将MidSegment加入堆中

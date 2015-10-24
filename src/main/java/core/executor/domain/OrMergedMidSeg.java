@@ -98,7 +98,6 @@ public class OrMergedMidSeg extends MergedMidSeg {
 
 		int startTime = segList.get(0).getStart();
 		int endTime = segList.get(segList.size() - 1).getEndTime();
-		int idx = 0;
 		worstscore = segScore;
 
 		// 计算对于已经遇到的keywords，当前元素分值还未知的区间段
@@ -111,13 +110,26 @@ public class OrMergedMidSeg extends MergedMidSeg {
 
 		bestscore = worstscore;
 
-		double postTopValue = Double.MIN_VALUE;
+		// 这里使用所有一出现的posting list的最小值当做当前对象的最大值，因为它在这些列表中度出现
+		double postTopValue = Double.MAX_VALUE;
 		for (int i = 0; i < weights.length; i++) {
-			postTopValue = Math.max(postTopValue, ctx.getBestScore(i));
+			if (weights[i] != -1f)
+				postTopValue = Math.min(postTopValue, ctx.getBestScore(i));
 		}
 		bestscore += unHitInv * postTopValue;
 
 		return Float.compare(preBScore, bestscore) != 0 || Float.compare(preWScore, worstscore) != 0;
+	}
+
+	public boolean validAnswer() {
+		boolean ret = false;
+		for (float weight : weights) {
+			if (weight > 0) {
+				ret = true;
+				break;
+			}
+		}
+		return ret;
 	}
 
 	@Override

@@ -94,12 +94,7 @@ public class AndMergedMidSeg extends MergedMidSeg {
 
 		int startTime = segList.get(0).getStart();
 		int endTime = segList.get(segList.size() - 1).getEndTime();
-		int idx = 0;
-		for (float weight : weights) {
-			if (weight > 0.0)
-				worstscore += segScore * weight * ctx.getWeight(idx);
-			idx++;
-		}
+		worstscore = segScore;
 
 		// 计算对于已经遇到的keywords，当前元素分值还未知的区间段
 		int margin = Math.max(0, ctx.getQuery().getEndTime() - endTime);
@@ -109,18 +104,28 @@ public class AndMergedMidSeg extends MergedMidSeg {
 		margin = Math.min(margin, remains);
 		int unHitInv = intern - hitInv + margin;
 
-		// 对于还未遇到的keyword，目前简单地认为所有的查询区间位置
-		int window = Math.min(ctx.getLifeTimeBound()[1], ctx.getQuery().getQueryWidth());
 		bestscore = worstscore;
 
+		// 这里使用所有一出现的posting list的最小值当做当前对象的最大值，因为它在这些列表中度出现
+		double postTopValue = Double.MAX_VALUE;
 		for (int i = 0; i < weights.length; i++) {
-			if (weights[i] > 0)
-				bestscore += unHitInv * ctx.getBestScore(i) * ctx.getWeight(i);
-			else
-				bestscore += window * ctx.getBestScore(i) * ctx.getWeight(i);
+			if (weights[i] != -1f)
+				postTopValue = Math.min(postTopValue, ctx.getBestScore(i));
 		}
+		bestscore += unHitInv * postTopValue;
 
 		return Float.compare(preBScore, bestscore) != 0 || Float.compare(preWScore, worstscore) != 0;
+	}
+
+	public boolean validAnswer() {
+		boolean ret = true;
+		for (float weight : weights) {
+			if (weight < 0) {
+				ret = false;
+				break;
+			}
+		}
+		return ret;
 	}
 
 	@Override
