@@ -2,6 +2,7 @@ package core.lsmt;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
+import org.hsqldb.lib.StringUtil;
 
 import Util.Configuration;
 import core.lsmo.OctreeSSTableWriter;
@@ -96,6 +98,10 @@ public class CompactService extends Thread {
 			} catch (Exception ex) {
 				logger.error("compact service:" + ex.getMessage());
 				index.stop = true;
+				StringWriter swriter = new StringWriter();
+				PrintWriter pwriter = new PrintWriter(swriter);
+				ex.printStackTrace(pwriter);
+				logger.error(ex.toString());
 				throw new RuntimeException(ex.getMessage());
 			}
 		}
