@@ -1,5 +1,6 @@
+.gitignore~
 *.class
-conf/log4j-server.properties
+conf/log4j-server2.properties
 bin/
 conf/index.conf
 conf/index_twitter.conf
