@@ -80,7 +80,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 
 	private void loadCursors() throws IOException {
 		String[] keywords = query.keywords;
-		cursors = new IOctreeIterator[keywords.length];
+		cursors = new IPostingListIterator[keywords.length];
 		List<String> keywordList = Arrays.asList(keywords);
 		Map<String, IPostingListIterator> iters = reader
 				.getPostingListIter(keywordList, query.queryInv.getStart(),
