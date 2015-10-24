@@ -8,17 +8,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import segmentation.Interval;
 import Util.MyMath;
 import Util.Pair;
 import Util.Profile;
-
 import common.MidSegment;
-
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.lsmo.octree.IOctreeIterator;
+import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
 
@@ -34,7 +32,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 
 	TempKeywordQuery query;
 
-	IOctreeIterator[] cursors;
+	IPostingListIterator[] cursors;
 	float[] bestScores;
 	int curListIdx = 0;
 	ISegQueue topk;
@@ -84,7 +82,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		String[] keywords = query.keywords;
 		cursors = new IOctreeIterator[keywords.length];
 		List<String> keywordList = Arrays.asList(keywords);
-		Map<String, IOctreeIterator> iters = reader
+		Map<String, IPostingListIterator> iters = reader
 				.getPostingListIter(keywordList, query.queryInv.getStart(),
 						query.queryInv.getEnd());
 		/* 为每个词创建索引读取对象 */
@@ -121,7 +119,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
-				for (IOctreeIterator cursor : cursors) {
+				for (IPostingListIterator cursor : cursors) {
 					if (cursor != null && cursor.hasNext()) {
 						ret = false;
 						break;
@@ -139,8 +137,8 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		}
 	}
 
-	private IOctreeIterator nextCursor() throws IOException {
-		IOctreeIterator ret = null;
+	private IPostingListIterator nextCursor() throws IOException {
+		IPostingListIterator ret = null;
 		for (int i = 0; i < cursors.length; i++) {
 			curListIdx = (++curListIdx) % cursors.length;
 			ret = cursors[curListIdx];
@@ -212,7 +210,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			return false;
 		}
 
-		IOctreeIterator plc = nextCursor();
+		IPostingListIterator plc = nextCursor();
 		Pair<Integer, List<MidSegment>> node = plc.next();// 读取一个记录。
 
 		bestScores[curListIdx] = node.getKey();
