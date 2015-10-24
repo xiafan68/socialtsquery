@@ -28,6 +28,8 @@ import common.MidSegment;
 
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
+import core.executor.QueryExecutorFactory;
+import core.executor.QueryExecutorFactory.ExecType;
 import core.executor.WeightedQueryExecutor;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
@@ -280,8 +282,9 @@ public class LSMTInvertedIndex<PType> {
 		return versionSet;
 	}
 
-	public Iterator<Interval> query(List<String> keywords, int start, int end, int k) throws IOException {
-		IQueryExecutor exec = new WeightedQueryExecutor(this);
+	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)
+			throws IOException {
+		IQueryExecutor exec = QueryExecutorFactory.createExecutor(this, execType);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
 		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);

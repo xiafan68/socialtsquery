@@ -15,7 +15,6 @@ import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
-import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;

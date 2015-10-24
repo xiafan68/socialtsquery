@@ -6,26 +6,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import segmentation.Interval;
 
 public class IndexConsoleClient {
 
 	public static void main(String[] args) throws IOException {
 		OptionParser parser = new OptionParser();
-		parser.accepts("c", "index configuration file").withRequiredArg()
-				.ofType(String.class);
-		parser.accepts("l", "log4j configuration file").withRequiredArg()
-				.ofType(String.class);
-		parser.accepts("d", "data file location").withRequiredArg()
-				.ofType(String.class);
+		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
+		parser.accepts("l", "log4j configuration file").withRequiredArg().ofType(String.class);
+		parser.accepts("d", "data file location").withRequiredArg().ofType(String.class);
 		OptionSet opts = null;
 		try {
 			opts = parser.parse(args);
@@ -37,8 +33,7 @@ public class IndexConsoleClient {
 		PropertyConfigurator.configure(opts.valueOf("l").toString());
 		Configuration conf = new Configuration();
 		conf.load(opts.valueOf("c").toString());
-		LSMTInvertedIndex client = new LSMTInvertedIndex(conf,
-				OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
 			client.init();
 		} catch (IOException e) {
@@ -46,12 +41,11 @@ public class IndexConsoleClient {
 			client = null;
 		}
 
-		/*	try {
-				System.setErr(new PrintStream(new FileOutputStream("/tmp/err.txt", false)));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-		*/
+		/*
+		 * try { System.setErr(new PrintStream(new
+		 * FileOutputStream("/tmp/err.txt", false))); } catch
+		 * (FileNotFoundException e) { e.printStackTrace(); }
+		 */
 		Scanner scanner = new Scanner(System.in);
 		System.out.print("interval query>");
 		String line = scanner.nextLine();
@@ -64,14 +58,16 @@ public class IndexConsoleClient {
 				long startTime = System.currentTimeMillis();
 				try {
 					if (args[0].equals("query")) {
-						int k = Integer.parseInt(args[1]);
-						int start = Integer.parseInt(args[2]);
-						int end = Integer.parseInt(args[3]);
+						int i = 1;
+						String type = args[i++];
+						int k = Integer.parseInt(args[i++]);
+						int start = Integer.parseInt(args[i++]);
+						int end = Integer.parseInt(args[i++]);
 						List<String> keywords = new ArrayList<String>();
-						for (int i = 4; i < args.length; i++) {
-							keywords.add(args[i]);
+						for (int idx = i; idx < args.length; idx++) {
+							keywords.add(args[idx]);
 						}
-						answer = client.query(keywords, start, end, k);
+						answer = client.query(keywords, start, end, k, type.toUpperCase());
 					} else if (args[0].equals("queryall")) {
 						String keywords = "";
 						for (int i = 1; i < args.length; i++) {

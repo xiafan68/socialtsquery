@@ -15,11 +15,20 @@ import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
+import core.executor.domain.OrMergedMidSeg;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
+/**
+ * or keyword query其实是weighted keyword query的一个特例
+ * 
+ * @author kc
+ *
+ */
 public class OrQueryExecutor extends IQueryExecutor {
+
 	LSMTInvertedIndex reader;
 
 	TempKeywordQuery query;
@@ -29,7 +38,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 	int curListIdx = 0;
 	ISegQueue topk;
 	ISegQueue cand;
-	Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
+	Map<Long, OrMergedMidSeg> map = new HashMap<Long, OrMergedMidSeg>();
 	ExecContext ctx;
 
 	boolean stop = false;
@@ -48,8 +57,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map)
-			throws IOException {
+	public void setupQueryContext(ISegQueue topk, Map<Long, OrMergedMidSeg> map) throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
@@ -74,9 +82,8 @@ public class OrQueryExecutor extends IQueryExecutor {
 		String[] keywords = query.keywords;
 		cursors = new IPostingListIterator[keywords.length];
 		List<String> keywordList = Arrays.asList(keywords);
-		Map<String, IPostingListIterator> iters = reader
-				.getPostingListIter(keywordList, query.queryInv.getStart(),
-						query.queryInv.getEnd());
+		Map<String, IPostingListIterator> iters = reader.getPostingListIter(keywordList, query.queryInv.getStart(),
+				query.queryInv.getEnd());
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
@@ -101,12 +108,10 @@ public class OrQueryExecutor extends IQueryExecutor {
 			for (float bestScore : bestScores) {
 				sum += bestScore;
 			}
-			sum *= Math.min(maxLifeTime,
-					query.getEndTime() - query.getStartTime());
+			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
 			boolean ret = true;
 			// 当前partition不可能有cand能够进入topk
-			if (cand.getMaxBestScore() < topk.getMinWorstScore()
-					&& sum < topk.getMinWorstScore()
+			if (cand.getMaxBestScore() < topk.getMinWorstScore() && sum < topk.getMinWorstScore()
 					&& topk.size() >= ctx.getQuery().k) {
 				ret = true;
 			} else {
@@ -155,15 +160,15 @@ public class OrQueryExecutor extends IQueryExecutor {
 	 * @return true if the current item is a possible topk
 	 */
 	private boolean updateCandState(int idx, MidSegment midseg, float iWeight) {
-		MergedMidSeg preSeg = null;
-		MergedMidSeg newSeg = null;
+		OrMergedMidSeg preSeg = null;
+		OrMergedMidSeg newSeg = null;
 		Long mid = midseg.mid;
 		/* update the boundary, put it in the QueCand */
 		if (map.containsKey(mid)) {
 			preSeg = map.get(mid);
 			newSeg = preSeg.addMidSeg(idx, midseg, iWeight);// update the merged
 		} else {
-			newSeg = new MergedMidSeg(ctx);
+			newSeg = new OrMergedMidSeg(ctx);
 			newSeg = newSeg.addMidSeg(idx, midseg, iWeight);
 		}
 		// update the map with the new mergedseg
@@ -173,8 +178,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k
-				|| newSeg.getWorstscore() > topk.getMinBestScore()) {
+		} else if (topk.size() < query.k || newSeg.getWorstscore() > topk.getMinBestScore()) {
 			topk.update(preSeg, newSeg);
 			if (topk.size() > query.k)
 				topk.poll();// 把bestScore最小的一个移除
@@ -222,7 +226,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 
 	@Override
 	public Iterator<Interval> getAnswer() throws IOException {
-		setupQueryContext(null, new HashMap<Long, MergedMidSeg>());
+		setupQueryContext(null, new HashMap<Long, OrMergedMidSeg>());
 
 		while (!isTerminated())
 			advance();
@@ -230,9 +234,8 @@ public class OrQueryExecutor extends IQueryExecutor {
 		List<Interval> ret = new ArrayList<Interval>();
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
-			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur
-					.getEndTime(), cur.getWorstscore()));
+			OrMergedMidSeg cur = (OrMergedMidSeg) iter.next();
+			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}
