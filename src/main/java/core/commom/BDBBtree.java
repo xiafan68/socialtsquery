@@ -192,10 +192,11 @@ public class BDBBtree {
 		Cursor cursor = nodeDb.openCursor(null, null);
 		DirEntry ret = null;
 		try {
-			cursor.getSearchKey(key, data, LockMode.DEFAULT);
-			ret = new DirEntry(conf.getIndexKeyFactory());
-			ret.read(new DataInputStream(new ByteArrayInputStream(data.getData())));
-			cursor.close();
+			OperationStatus status = cursor.getSearchKey(key, data, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				ret = new DirEntry(conf.getIndexKeyFactory());
+				ret.read(new DataInputStream(new ByteArrayInputStream(data.getData())));
+			}
 		} finally {
 			cursor.close();
 		}
