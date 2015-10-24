@@ -19,6 +19,7 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询 TODO:某个posting
