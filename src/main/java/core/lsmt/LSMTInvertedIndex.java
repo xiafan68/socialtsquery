@@ -520,4 +520,13 @@ public class LSMTInvertedIndex<PType> {
 		ret.init();
 		return ret;
 	}
+
+	/**
+	 * TODO:当前索引对应的分区信息，这个分区是按照生命周期进行的分区
+	 * 
+	 * @return
+	 */
+	public List<PartitionMeta> getPartitions() {
+		return Arrays.asList(new PartitionMeta((int) (Math.log(Integer.MAX_VALUE / 4) / Math.log(2))));
+	}
 }

@@ -13,8 +13,10 @@ import Util.Pair;
 import Util.Profile;
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
-import core.executor.domain.ISegQueue;
+import core.executor.domain.AndMergedMidSeg;
+import core.executor.domain.CandQueue;
 import core.executor.domain.MergedMidSeg;
+import core.executor.domain.TopkQueue;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
@@ -23,27 +25,12 @@ import segmentation.Interval;
 /**
  * and query的一个难点是topk中的对象可能并不能保证所有单词都命中
  * 
- * @author kc
+ * @author xiafan
  *
  */
 public class AndQueryExecutor extends IQueryExecutor {
-	LSMTInvertedIndex reader;
-
-	TempKeywordQuery query;
-
-	IPostingListIterator[] cursors;
-	float[] bestScores;
-	int curListIdx = 0;
-	ISegQueue topk;
-	ISegQueue cand;
-	Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
-	ExecContext ctx;
-
-	boolean stop = false;
-
 	public AndQueryExecutor(LSMTInvertedIndex reader) {
-		this.reader = reader;
-		maxLifeTime = Integer.MAX_VALUE;
+		super(reader);
 	}
 
 	PartitionMeta meta;
@@ -55,13 +42,13 @@ public class AndQueryExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
+	public void setupQueryContext(TopkQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
 		else
-			this.topk = ISegQueue.create(true);
-		cand = ISegQueue.create(false);
+			this.topk = new TopkQueue();
+		cand = new CandQueue();
 
 		ctx = new ExecContext(query);
 		int part = MyMath.getCeil(maxLifeTime);
@@ -97,6 +84,21 @@ public class AndQueryExecutor extends IQueryExecutor {
 		// 通过keyword和window去索引里查询
 	}
 
+	private void refreshTopk() {
+		while (!cand.isEmpty()) {
+			AndMergedMidSeg seg = (AndMergedMidSeg) cand.peek();
+			cand.poll();
+			if (seg.validAnswer() && seg.getWorstscore() > topk.getMinWorstScore()
+					&& seg.getWorstscore() > cand.getMaxBestScore()) {
+				cand.update(null, topk.peek());
+				topk.poll();
+				topk.update(null, seg);
+			} else if (seg.getBestscore() <= topk.getMinWorstScore()) {
+				break;
+			}
+		}
+	}
+
 	@Override
 	public boolean isTerminated() throws IOException {
 		if (stop) {
@@ -119,6 +121,9 @@ public class AndQueryExecutor extends IQueryExecutor {
 						ret = false;
 						break;
 					}
+				}
+				if (ret) {
+					refreshTopk();
 				}
 			}
 			stop = ret;
@@ -166,7 +171,7 @@ public class AndQueryExecutor extends IQueryExecutor {
 			preSeg = map.get(mid);
 			newSeg = preSeg.addMidSeg(idx, midseg, iWeight);// update the merged
 		} else {
-			newSeg = new MergedMidSeg(ctx);
+			newSeg = new AndMergedMidSeg(ctx);
 			newSeg = newSeg.addMidSeg(idx, midseg, iWeight);
 		}
 		// update the map with the new mergedseg
@@ -176,10 +181,11 @@ public class AndQueryExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k || newSeg.getWorstscore() > topk.getMinBestScore()) {
+		} else if (((AndMergedMidSeg) newSeg).validAnswer()
+				&& (topk.size() < query.k || newSeg.getWorstscore() > cand.getMaxBestScore())) {
 			topk.update(preSeg, newSeg);
 			if (topk.size() > query.k)
-				topk.poll();// 把bestScore最小的一个移除
+				cand.update(null, topk.peek());// 把bestScore最小的一个移除
 
 			if (preSeg != null)
 				cand.remove(preSeg);

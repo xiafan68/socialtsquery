@@ -7,9 +7,15 @@ import common.MidSegment;
 import core.executor.ExecContext;
 
 public class AndMergedMidSeg extends MergedMidSeg {
+	private int hittedKeys = 0;
 
 	public AndMergedMidSeg(ExecContext ctx) {
 		super(ctx);
+	}
+
+	public AndMergedMidSeg(AndMergedMidSeg other) {
+		super(other);
+		hittedKeys = other.hittedKeys;
 	}
 
 	public float getBestscore() {
@@ -30,8 +36,11 @@ public class AndMergedMidSeg extends MergedMidSeg {
 	 * @return 返回修改后的MergedMidSeg
 	 */
 	public MergedMidSeg addMidSeg(int keyIdx, MidSegment seg, float weight) {
+		if (weights[keyIdx] < 0) {
+			hittedKeys++;
+		}
 		weights[keyIdx] = weight;
-		MergedMidSeg ret = new MergedMidSeg(this);
+		AndMergedMidSeg ret = new AndMergedMidSeg(this);
 		int idx = Collections.binarySearch(segList, seg, new Comparator<MidSegment>() {
 			public int compare(MidSegment arg0, MidSegment arg1) {
 				return Integer.compare(arg0.getStart(), arg1.getStart());
@@ -40,8 +49,8 @@ public class AndMergedMidSeg extends MergedMidSeg {
 		if (idx < 0) {
 			idx = Math.abs(idx) - 1;
 			segList.add(idx, seg);
+			ret.computeScore();
 		}
-		ret.computeScore();
 		return ret;
 	}
 
@@ -118,14 +127,7 @@ public class AndMergedMidSeg extends MergedMidSeg {
 	}
 
 	public boolean validAnswer() {
-		boolean ret = true;
-		for (float weight : weights) {
-			if (weight < 0) {
-				ret = false;
-				break;
-			}
-		}
-		return ret;
+		return hittedKeys == weights.length;
 	}
 
 	@Override
