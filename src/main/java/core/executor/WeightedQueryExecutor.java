@@ -27,6 +27,9 @@ import segmentation.Interval;
  * 
  * @author dingcheng
  * 
+ * @modify
+ * @author xiafan
+ * 
  */
 public class WeightedQueryExecutor extends IQueryExecutor {
 

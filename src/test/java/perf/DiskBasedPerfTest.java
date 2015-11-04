@@ -12,8 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import net.sf.json.JSONObject;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -24,24 +22,25 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
+import Util.Profile;
+import core.commom.TempKeywordQuery;
+import core.executor.IQueryExecutor;
+import core.executor.WeightedQueryExecutor;
+import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.PartitionMeta;
+import expr.QueryGen;
+import net.sf.json.JSONObject;
 import segmentation.Interval;
 import xiafan.util.Pair;
 import xiafan.util.StreamLogUtils;
 import xiafan.util.StreamUtils;
 import xiafan.util.collection.DefaultedPutMap;
-import Util.Profile;
-import core.commom.TempKeywordQuery;
-import core.executor.IQueryExecutor;
-import core.executor.MultiPartitionExecutor;
-import core.executor.WeightedQueryExecutor;
-import core.lsmt.IndexReader;
-import core.lsmt.PartitionMeta;
-import expr.QueryGen;
 
 public class DiskBasedPerfTest {
-	private static final Logger logger = Logger
-			.getLogger(DiskBasedPerfTest.class);
+	private static final Logger logger = Logger.getLogger(DiskBasedPerfTest.class);
 
 	QueryGen gen = new QueryGen(10);
 
@@ -53,7 +52,7 @@ public class DiskBasedPerfTest {
 		gen.loadQueryWithTime(querySeed);
 	}
 
-	IndexReader indexReader;
+	LSMTInvertedIndex indexReader;
 	IQueryExecutor indexExec;
 	public boolean multiPart = false;
 
@@ -61,6 +60,10 @@ public class DiskBasedPerfTest {
 		if (indexReader != null) {
 			indexReader.close();
 		}
+		PropertyConfigurator.configure("conf/log4j-server2.properties");
+		Configuration conf = new Configuration();
+		conf.load("conf/index_twitter.conf");
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		indexReader = new IndexReader();
 		/*
 		 * indexReader.addPartition(new PartitionMeta(31), dir, new
@@ -68,12 +71,6 @@ public class DiskBasedPerfTest {
 		 * indexExec.setMaxLifeTime((int) Math.pow(2, 31));
 		 */
 
-		if (multiPart) {
-			indexReader.addPartitions(dir, new Configuration());
-		} else {
-			indexReader.addPartition(new PartitionMeta(17), dir,
-					new Configuration());
-		}
 		newExec();
 	}
 
@@ -93,12 +90,9 @@ public class DiskBasedPerfTest {
 	 */
 	// complete test
 
-	public static final int[] widths = new int[] { 2, 8, 12, 24, 48, 48 * 7,
-			48 * 30 };
-	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250,
-			300, 350, 400 };
-	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7,
-			48 * 30 };
+	public static final int[] widths = new int[] { 2, 8, 12, 24, 48, 48 * 7, 48 * 30 };
+	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250, 300, 350, 400 };
+	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7, 48 * 30 };
 
 	/**
 	 * 在inverted index上面执行一边所有选取的查询
@@ -109,15 +103,13 @@ public class DiskBasedPerfTest {
 	 * @return
 	 * @throws IOException
 	 */
-	private HashMap<String, Double> testOneRound(int offset, int width, int k)
-			throws IOException {
+	private HashMap<String, Double> testOneRound(int offset, int width, int k) throws IOException {
 		HashMap<String, Double> counter = new HashMap<String, Double>();
-		DefaultedPutMap<String, Double> map = DefaultedPutMap.decorate(counter,
-				new Factory() {
-					public Object create() {
-						return new Double(0);
-					}
-				});
+		DefaultedPutMap<String, Double> map = DefaultedPutMap.decorate(counter, new Factory() {
+			public Object create() {
+				return new Double(0);
+			}
+		});
 		gen.resetCur();
 		while (gen.hasNext()) {
 			Pair<List<String>, Integer> query = gen.nextQuery();
@@ -128,8 +120,7 @@ public class DiskBasedPerfTest {
 				// + keywords);
 
 				Interval window = new Interval(1, start, start + width, 1);
-				TempKeywordQuery tQuery = new TempKeywordQuery(
-						query.arg0.toArray(new String[query.arg0.size()]),
+				TempKeywordQuery tQuery = new TempKeywordQuery(query.arg0.toArray(new String[query.arg0.size()]),
 						window, k);
 				// Profile.instance.start("query");
 				newExec();
@@ -142,8 +133,7 @@ public class DiskBasedPerfTest {
 				 * logger.info(tQuery + ":" + count);
 				 */
 			} catch (Exception ex) {
-				logger.error(k + " " + start + " " + (start + width) + " "
-						+ keywords.size());
+				logger.error(k + " " + start + " " + (start + width) + " " + keywords.size());
 			}
 			JSONObject perf = Profile.instance.toJSON();
 
@@ -161,17 +151,14 @@ public class DiskBasedPerfTest {
 		return counter;
 	}
 
-	public void selectResult(String conf, String oFile) throws ParseException,
-			IOException {
+	public void selectResult(String conf, String oFile) throws ParseException, IOException {
 		loadIndex(new Path(conf));
-		System.setOut(new PrintStream(new FileOutputStream("/home/xiafan/temp/"
-				+ oFile)));
+		System.setOut(new PrintStream(new FileOutputStream("/home/xiafan/temp/" + oFile)));
 
 		for (int offset : offsets) {
 			for (int width : widths) {
 				for (int k : ks) {
-					logger.info(String.format("offset %d, width %d; k is %d",
-							offset, width, k));
+					logger.info(String.format("offset %d, width %d; k is %d", offset, width, k));
 
 					gen.resetCur();
 					while (gen.hasNext()) {
@@ -179,18 +166,14 @@ public class DiskBasedPerfTest {
 						List<String> keywords = query.arg0;
 						int start = query.arg1 + offset;
 
-						Interval window = new Interval(1, start, start + width,
-								1);
+						Interval window = new Interval(1, start, start + width, 1);
 						TempKeywordQuery tQuery = new TempKeywordQuery(
-								query.arg0
-										.toArray(new String[query.arg0.size()]),
-								window, k);
+								query.arg0.toArray(new String[query.arg0.size()]), window, k);
 						Profile.instance.start("query");
 						newExec();
 						indexExec.query(tQuery);
 						Iterator<Interval> res = indexExec.getAnswer();
-						logger.info("query " + k + " " + start + " "
-								+ (start + width) + " "
+						logger.info("query " + k + " " + start + " " + (start + width) + " "
 								+ StringUtils.join(keywords, " "));
 
 						while (res.hasNext())
@@ -204,13 +187,12 @@ public class DiskBasedPerfTest {
 						 */
 					}
 				}
-			}// end of widths
+			} // end of widths
 		}
 		System.setOut(System.out);
 	}
 
-	public void test(String conf, String oDir, String format)
-			throws ParseException, IOException {
+	public void test(String conf, String oDir, String format) throws ParseException, IOException {
 		File dirFile = new File(oDir);
 		if (!dirFile.exists())
 			dirFile.mkdirs();
@@ -225,10 +207,8 @@ public class DiskBasedPerfTest {
 			List<String> logs = new ArrayList<String>();
 			for (int width : widths) {
 				for (int k : ks) {
-					HashMap<String, Double> counter = testOneRound(offset,
-							width, k);
-					HashMap<String, Object> profile = new HashMap<String, Object>(
-							normalize(counter, gen.size()));
+					HashMap<String, Double> counter = testOneRound(offset, width, k);
+					HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
 					profile.put("width", width);
 					profile.put("words", 2);
 					profile.put("k", k);
@@ -241,7 +221,7 @@ public class DiskBasedPerfTest {
 					} catch (InterruptedException e) {
 					}
 				}
-			}// end of widths
+			} // end of widths
 			for (String log : logs)
 				StreamLogUtils.log(os, log);
 			os.close();
@@ -252,11 +232,9 @@ public class DiskBasedPerfTest {
 		return obj.getDouble("totalTime") / obj.getDouble("count");
 	}
 
-	static final String[] COUNTER_FIELDS = new String[] { Profile.DATA_BLOCK,
-			Profile.META_BLOCK, Profile.SKIPPED_BLOCK, Profile.TOPK,
-			Profile.CAND, Profile.WASTED_REC, Profile.TWASTED_REC };
-	static final String[] IOTimeFields = new String[] {
-			Profile.toTimeTag(Profile.DATA_BLOCK), Profile.TOTAL_TIME,
+	static final String[] COUNTER_FIELDS = new String[] { Profile.DATA_BLOCK, Profile.META_BLOCK, Profile.SKIPPED_BLOCK,
+			Profile.TOPK, Profile.CAND, Profile.WASTED_REC, Profile.TWASTED_REC };
+	static final String[] IOTimeFields = new String[] { Profile.toTimeTag(Profile.DATA_BLOCK), Profile.TOTAL_TIME,
 			Profile.UPDATE_STATE };
 
 	/**
@@ -265,8 +243,7 @@ public class DiskBasedPerfTest {
 	 * @param map
 	 * @param perf
 	 */
-	public static void updateProfile(DefaultedPutMap<String, Double> map,
-			JSONObject perf) {
+	public static void updateProfile(DefaultedPutMap<String, Double> map, JSONObject perf) {
 		JSONObject cur = perf.getJSONObject("perf");
 		JSONObject obj = null;
 
@@ -295,8 +272,7 @@ public class DiskBasedPerfTest {
 	 * @param num
 	 * @return
 	 */
-	public static HashMap<String, Double> normalize(
-			HashMap<String, Double> counter, int num) {
+	public static HashMap<String, Double> normalize(HashMap<String, Double> counter, int num) {
 		HashMap<String, Double> ret = new HashMap<String, Double>();
 		for (Entry<String, Double> entry : counter.entrySet()) {
 			ret.put(entry.getKey(), entry.getValue() / (float) num);
@@ -352,11 +328,9 @@ public class DiskBasedPerfTest {
 		DiskBasedPerfTest test = new DiskBasedPerfTest();
 		test.loadQuery(querySeed);
 
-		String[] formats = new String[] { "invindex_o%dw.txt",
-				"minvindex_o%dw.txt" };
+		String[] formats = new String[] { "invindex_o%dw.txt", "minvindex_o%dw.txt" };
 		// test.testAllKeywords(conf, oDir + formats[i++], 0, 12, 50);
-		String[] iDirs = new String[] { "/home/xiafan/文档/dataset/output",
-				"/home/xiafan/temp/invindex_parts" };
+		String[] iDirs = new String[] { "/home/xiafan/文档/dataset/output", "/home/xiafan/temp/invindex_parts" };
 		// test.multiPart = true;
 		for (int i = 0; i < formats.length; i++) {
 			test.test(iDirs[i], oDir, formats[i]);

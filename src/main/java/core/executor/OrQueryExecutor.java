@@ -25,7 +25,7 @@ import segmentation.Interval;
 /**
  * or keyword query其实是weighted keyword query的一个特例
  * 
- * @author kc
+ * @author xiafan
  *
  */
 public class OrQueryExecutor extends IQueryExecutor {
