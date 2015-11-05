@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
@@ -20,25 +21,21 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import segmentation.Interval;
-import shingle.TextShingle;
 import Util.Configuration;
-
 import common.MidSegment;
-
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.QueryExecutorFactory;
-import core.executor.QueryExecutorFactory.ExecType;
-import core.executor.WeightedQueryExecutor;
-import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeMemTable;
-import core.lsmo.OctreeSSTableWriter;
 import core.lsmo.octree.MemoryOctree;
+import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
+import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.StringKey;
+import segmentation.Interval;
+import shingle.TextShingle;
 
 /**
  * 
@@ -528,5 +525,56 @@ public class LSMTInvertedIndex<PType> {
 	 */
 	public List<PartitionMeta> getPartitions() {
 		return Arrays.asList(new PartitionMeta((int) (Math.log(Integer.MAX_VALUE / 4) / Math.log(2))));
+	}
+
+	/**
+	 * 统计每个posting list中leafnode的比例的分布
+	 * 
+	 * @return
+	 */
+	public HashMap<String, List> collectStatistics() {
+		return null;
+	}
+
+	/**
+	 * 统计每个posting list中leafnode的比例的分布
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	public Map<Integer, Integer> collectStatistics(String term) throws IOException {
+		List<IPostingListIterator> iters = new ArrayList<IPostingListIterator>();
+
+		iters.add(versionSet.curTable.getReader().getPostingListIter(new StringKey(term), 0, Integer.MAX_VALUE));
+		Map<Integer, Integer> dist = new TreeMap<Integer, Integer>();
+
+		for (SSTableMeta meta : versionSet.diskTreeMetas) {
+			ISSTableReader reader = getSSTableReader(versionSet, meta);
+			iters.add(reader.getPostingListIter(new StringKey(term), 0, Integer.MAX_VALUE));
+		}
+
+		for (IPostingListIterator iter : iters) {
+			while (iter.hasNext()) {
+				OctreeNode node = null;
+				if (iter instanceof MemoryOctreeIterator) {
+					node = ((MemoryOctreeIterator) iter).nextNode();
+				} else {
+					node = ((OctreePostingListIter) iter).nextNode();
+				}
+
+				if (node.getEncoding().getEdgeLen() != 1) {
+					int[] hist = node.histogram();
+					if (hist[0] + hist[1] != 0) {
+						int ratio = (hist[0] + 1) / (hist[1] + 1);
+						if (!dist.containsKey(ratio))
+							dist.put(ratio, 1);
+						else
+							dist.put(ratio, dist.get(ratio) + 1);
+					}
+				}
+			}
+			iter.close();
+		}
+		return dist;
 	}
 }

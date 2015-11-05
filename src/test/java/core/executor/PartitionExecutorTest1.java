@@ -1,28 +1,27 @@
 package core.executor;
 
-import Util.MyFile;
-import core.commom.TempKeywordQuery;
-import core.lsmt.IndexReader;
-import core.lsmt.PartitionMeta;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.junit.Test;
-
-import segmentation.Interval;
-
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.log4j.PropertyConfigurator;
+import org.junit.Test;
+
+import Util.Configuration;
+import Util.MyFile;
+import core.commom.TempKeywordQuery;
+import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
 public class PartitionExecutorTest1 {
 	public static final int[] widths =
 	// new int[] { 2, 8, 12, 24, 48, 48 * 7, 48 * 30 };
 	new int[] { 48 * 30 };
-	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250,
-			300, 350, 400 };
-	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7,
-			48 * 30 };
+	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250, 300, 350, 400 };
+	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7, 48 * 30 };
 
 	public static void main(String args[]) {
 		String path = "./data/nqueryseed.txt";
@@ -32,11 +31,12 @@ public class PartitionExecutorTest1 {
 			dir = new Path("/home/xiafan/文档/dataset/output");
 			dir = new Path("file:///D:\\RWork\\微博查询\\part");
 			dir = new Path("hdfs://10.11.1.42:9000/home/xiafan");
-			dir = new Path(
-					"hdfs://10.11.1.42:9000/home/xiafan/expr/sina/invindex");
+			dir = new Path("hdfs://10.11.1.42:9000/home/xiafan/expr/sina/invindex");
+			PropertyConfigurator.configure("conf/log4j-server2.properties");
 			Configuration conf = new Configuration();
-			IndexReader indexReader = new IndexReader();
-			indexReader.addPartition(new PartitionMeta(31), dir, conf);
+			conf.load("conf/index_twitter.conf");
+			LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+			// indexReader.addPartition(new PartitionMeta(31), dir, conf);
 			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 
@@ -53,13 +53,10 @@ public class PartitionExecutorTest1 {
 					for (int t = 0; t < widths.length; t++) {
 						for (int v = 0; v < ks.length; v++) {
 
-							String keyword[] = new String[] { keyword1,
-									keyword2 };
-							Interval window = new Interval(1, offset, offset
-									+ widths[t], 1);
+							String keyword[] = new String[] { keyword1, keyword2 };
+							Interval window = new Interval(1, offset, offset + widths[t], 1);
 							Date start = new Date();
-							TempKeywordQuery query = new TempKeywordQuery(
-									keyword, window, ks[v]);
+							TempKeywordQuery query = new TempKeywordQuery(keyword, window, ks[v]);
 							executor.query(query);
 							Iterator<Interval> res = executor.getAnswer();
 							Date end = new Date();
@@ -80,23 +77,24 @@ public class PartitionExecutorTest1 {
 		}
 	}
 
-	public long query(String keyword1, String keyword2, int window_start,
-			int window_width, int topk) {
+	public long query(String keyword1, String keyword2, int window_start, int window_width, int topk) {
 		return 111;
 	}
 
 	@Test
-	public void test() {
+	public void test() throws IOException {
 		Path dir = new Path("/Users/xiafan/temp/output/");
 		dir = new Path("/home/xiafan/文档/dataset/output");
 		dir = new Path("file:///D:\\RWork\\微博查询\\part");
 		dir = new Path("hdfs://10.11.1.42:9000/home/xiafan");
 		dir = new Path("hdfs://10.11.1.42:9000/home/xiafan/expr/sina/invindex");
-		Configuration conf = new Configuration();
 
-		IndexReader indexReader = new IndexReader();
+		PropertyConfigurator.configure("conf/log4j-server2.properties");
+		Configuration conf = new Configuration();
+		conf.load("conf/index_twitter.conf");
+		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		try {
-			indexReader.addPartition(new PartitionMeta(31), dir, conf);
+			// indexReader.addPartition(new PartitionMeta(31), dir, conf);
 			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);
 			executor.setMaxLifeTime((int) Math.pow(2, 31));
 

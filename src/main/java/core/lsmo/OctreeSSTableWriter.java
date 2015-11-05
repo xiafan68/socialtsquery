@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -25,6 +24,7 @@ import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
+import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
@@ -33,8 +33,7 @@ import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
 
 public class OctreeSSTableWriter extends ISSTableWriter {
-	private static final Logger logger = Logger
-			.getLogger(OctreeSSTableWriter.class);
+	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
 	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
 
 	FileOutputStream dataFileOs;
@@ -49,29 +48,29 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
+	 * 
 	 * @param meta新生成文件的元数据
-	 * @param tables 需要压缩的表
-	 * @param conf 配置信息
+	 * @param tables
+	 *            需要压缩的表
+	 * @param conf
+	 *            配置信息
 	 */
-	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables,
-			Configuration conf) {
+	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		this.meta = meta;
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(
-				new Comparator<WritableComparableKey>() {
-					@Override
-					public int compare(WritableComparableKey o1,
-							WritableComparableKey o2) {
-						return o1.compareTo(o2);
-					}
-				});
+		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+			@Override
+			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+				return o1.compareTo(o2);
+			}
+		});
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
 		this.conf = conf;
 		this.step = conf.getIndexStep();
 		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper())
-					.getConstructor(Configuration.class).newInstance(conf);
+			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
+					.newInstance(conf);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -79,49 +78,45 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 
 	public OctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		this.conf = conf;
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(
-				new Comparator<WritableComparableKey>() {
-					@Override
-					public int compare(WritableComparableKey o1,
-							WritableComparableKey o2) {
-						return o1.compareTo(o2);
-					}
-				});
+		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+			@Override
+			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+				return o1.compareTo(o2);
+			}
+		});
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate
-					.decorate(new Iterator<Entry<WritableComparableKey, IOctreeIterator>>() {
-						Iterator<Entry<WritableComparableKey, MemoryOctree>> iter = table
-								.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IOctreeIterator>>() {
+				Iterator<Entry<WritableComparableKey, MemoryOctree>> iter = table.iterator();
 
-						@Override
-						public boolean hasNext() {
-							return iter.hasNext();
-						}
+				@Override
+				public boolean hasNext() {
+					return iter.hasNext();
+				}
 
-						@Override
-						public Entry<WritableComparableKey, IOctreeIterator> next() {
-							Entry<WritableComparableKey, MemoryOctree> entry = iter
-									.next();
-							Entry<WritableComparableKey, IOctreeIterator> ret = new Pair<WritableComparableKey, IOctreeIterator>(
-									entry.getKey(), new MemoryOctreeIterator(
-											entry.getValue()));
-							return ret;
-						}
+				@Override
+				public Entry<WritableComparableKey, IOctreeIterator> next() {
+					Entry<WritableComparableKey, MemoryOctree> entry = iter.next();
+					// an optimization
+					entry.getValue().visit(OctreePrepareForWriteVisitor.INSTANCE);
+					Entry<WritableComparableKey, IOctreeIterator> ret = new Pair<WritableComparableKey, IOctreeIterator>(
+							entry.getKey(), new MemoryOctreeIterator(entry.getValue()));
+					return ret;
+				}
 
-						@Override
-						public void remove() {
+				@Override
+				public void remove() {
 
-						}
+				}
 
-					}));
+			}));
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
 		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper())
-					.getConstructor(Configuration.class).newInstance(conf);
+			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
+					.newInstance(conf);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -132,8 +127,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version,
-				meta.level));
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
 	/**
@@ -145,8 +139,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	 */
 	public void write() throws IOException {
 		while (iter.hasNext()) {
-			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter
-					.next();
+			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
 			indexHelper.startPostingList(entry.getKey(), buck.blockIdx());
 			// setup meta values
 			for (IOctreeIterator iter : entry.getValue()) {
@@ -194,11 +187,9 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		int count = 0;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
-			if (octreeNode.size() > 0
-					|| OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				int[] counters = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() != 1
-						&& counters[0] > (MemoryOctree.size_threshold >> 1)) {
+				if (octreeNode.getEdgeLen() != 1 && counters[0] > (MemoryOctree.size_threshold >> 1)) {
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));
@@ -221,8 +212,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 						indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 					}
 					if (count++ % step == 0) {
-						indexHelper.buildIndex(octreeNode.getEncoding(),
-								buck.blockIdx());
+						indexHelper.buildIndex(octreeNode.getEncoding(), buck.blockIdx());
 					}
 				}
 			}

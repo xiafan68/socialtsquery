@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,21 +15,21 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.collections.Factory;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import Util.Configuration;
 import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.WeightedQueryExecutor;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PartitionMeta;
 import expr.QueryGen;
 import net.sf.json.JSONObject;
 import segmentation.Interval;
@@ -63,8 +62,7 @@ public class DiskBasedPerfTest {
 		PropertyConfigurator.configure("conf/log4j-server2.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
-		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
-		indexReader = new IndexReader();
+		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		/*
 		 * indexReader.addPartition(new PartitionMeta(31), dir, new
 		 * Configuration()); indexExec = new PartitionExecutor(indexReader);
@@ -76,7 +74,7 @@ public class DiskBasedPerfTest {
 
 	private void newExec() {
 		if (multiPart) {
-			indexExec = new MultiPartitionExecutor(indexReader);
+			//indexExec = new MultiPartitionExecutor(indexReader);
 		} else {
 			indexExec = new WeightedQueryExecutor(indexReader);
 			indexExec.setMaxLifeTime((int) Math.pow(2, 17));

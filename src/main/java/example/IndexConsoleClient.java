@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -76,6 +77,9 @@ public class IndexConsoleClient {
 						// answer = index.queryWithScore(keywords.trim());
 					} else if (args[0].equals("debug")) {
 
+					} else if (args[0].equals("stats")) {
+						Map<Float, Integer> stats = client.collectStatistics(args[1]);
+						System.out.println(stats);
 					}
 				} catch (Exception ex) {
 					ex.printStackTrace();

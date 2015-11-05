@@ -15,13 +15,11 @@ import core.lsmt.PostingListMeta;
  *
  */
 public class MemoryOctree {
-	public static int size_threshold = 100;
+	public static int size_threshold = 350; // MidSegment的大小为24byte，如果压缩的话更小，因此这个100略小
 	PostingListMeta meta;
 	OctreeNode root = null;
 	// once true, no data can be inserted any further
 	private AtomicBoolean immutable = new AtomicBoolean(false);
-
-	
 
 	public MemoryOctree(PostingListMeta meta) {
 		this.meta = meta;
@@ -55,10 +53,8 @@ public class MemoryOctree {
 		if (root == null || !root.contains(point)) {
 			OctreeNode preRoot = root;
 
-			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()),
-					IntegerUtil.firstNoneZero(point.getY()));
-			int len = 1 << (Math.max(power,
-					IntegerUtil.firstNoneZero(point.getZ())) + 1);
+			int power = Math.max(IntegerUtil.firstNoneZero(point.getX()), IntegerUtil.firstNoneZero(point.getY()));
+			int len = 1 << (Math.max(power, IntegerUtil.firstNoneZero(point.getZ())) + 1);
 			root = new OctreeNode(new Point(0, 0, 0), len);
 
 			if (preRoot != null) {
@@ -68,8 +64,7 @@ public class MemoryOctree {
 					OctreeNode cur = root;
 					do {
 						cur.split();
-						if (cur.getChild(0).getEncoding()
-								.compareTo(preRoot.getEncoding()) == 0) {
+						if (cur.getChild(0).getEncoding().compareTo(preRoot.getEncoding()) == 0) {
 							cur.setChild(0, preRoot);
 							break;
 						} else {
