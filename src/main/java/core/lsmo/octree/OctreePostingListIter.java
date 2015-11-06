@@ -23,6 +23,9 @@ import fanxia.file.ByteUtil;
 /**
  * 用于访问disk上的octree
  * 
+ * 1. 最有当前node的code大于当前的curMax当前层的访问才结束，而不是当code.x大于te时，当code.x大于te时，
+ * 之后访问的节点还是可能绕会te.
+ * 
  * @author xiafan
  *
  */
@@ -37,11 +40,12 @@ public class OctreePostingListIter implements IOctreeIterator {
 	private Encoding curMax = null;
 	private Encoding max = null;
 
-	BucketID nextID = new BucketID(0, (short) 0);
-	private Bucket curBuck = new Bucket(0);
-	private int nextBlockID = 0;
+	BucketID nextID = new BucketID(0, (short) 0); // 下一个需要读取的octant
+	private Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
+	private int nextBlockID = 0; // 下一个bucket的blockid
 
 	private OctreeNode curNode = null;
+	DataInputStream input = null;
 
 	/**
 	 * 
@@ -99,33 +103,31 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	private boolean isCorrectCode(Encoding newCode) {
-		// go to the next layer
-		// logger.info("find new code + " + newCode);
-		if (newCode.getTopZ() != curMin.getTopZ()) {
-			if (curMin.getTopZ() > newCode.getTopZ())
+		boolean ret = false;
+		if (newCode.getX() <= te && newCode.getY() + newCode.getEdgeLen() > ts) {
+			ret = true;
+			nextID.offset++;
+		} else if (newCode.getTopZ() != curMin.getTopZ() || newCode.compareTo(curMax) > 0) {
+			if (newCode.getTopZ() != curMin.getTopZ()) {
 				gotoNewLayer(newCode.getTopZ());
-			else
-				nextID.offset++;//why?
+			} else {
+				nextID.offset++;
+				gotoNewLayer(newCode.getTopZ() - 1);
+			}
 		} else if (newCode.getX() > te) {
 			// 这个走向下一层的标准不对，应该计算当前的面的最大值，只有大于这个最大值时才走向下一个面
-			if (newCode.compareTo(curMax) > 0) {
-				gotoNewLayer(newCode.getTopZ() - 1);
-			} else {
-				// 我们需要往回，往上跳,只有公共祖先上侧的点才有可能被访问
-				// 先找到公共祖先
-				int commBit = ByteUtil.commonBitNum(newCode.getX(), te);
-				int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
-				int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
-				newY |= 1 << (31 - commBit);
-				curMin.setPaddingBitNum(0);
-				curMin.setX(newX);
-				curMin.setY(newY);
-				curMin.setTop(newCode.getTopZ());
-			}
+			// 我们需要往回，往上跳,只有公共祖先上侧的点才有可能被访问
+			// 先找到公共祖先
+			int commBit = ByteUtil.commonBitNum(newCode.getX(), te);
+			int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
+			int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
+			newY |= 1 << (31 - commBit);
+			curMin.setPaddingBitNum(0);
+			curMin.setX(newX);
+			curMin.setY(newY);
+			curMin.setTop(newCode.getTopZ());
 			nextID.offset++;
 		} else if (newCode.getY() + newCode.getEdgeLen() <= ts) {
-			nextID.offset++;
-			// 先找到公共祖先
 			int commBit = ByteUtil.commonBitNum(newCode.getY(), ts);
 			int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
 			int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
@@ -137,11 +139,10 @@ public class OctreePostingListIter implements IOctreeIterator {
 			curMin.setY(newY);
 			curMin.setX(newX);
 			curMin.setTop(newCode.getTopZ());
-		} else {
 			nextID.offset++;
-			return true;
 		}
-		return false;
+
+		return ret;
 	}
 
 	/**
@@ -156,7 +157,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * 
 	 * @throws IOException
 	 */
-	private boolean skipToOctant() throws IOException {
+	private void skipToOctant() throws IOException {
 		Pair<WritableComparableKey, BucketID> pair = null;
 		pair = reader.cellOffset(entry.curKey, curMin);
 		if (pair == null) {
@@ -170,64 +171,60 @@ public class OctreePostingListIter implements IOctreeIterator {
 		}
 
 		while (diskHasMore()) {
-			if (curBuck.octNum() == 0) {
-				nextBlockID = reader.getBucket(nextID, curBuck);
-			}
-			if (nextID.offset < curBuck.octNum()) {
-				if (readBucketNextOctant())
-					return true;
-				else
-					return false;
+			Encoding code = readNextOctantCode();
+			if (code.contains(curMin) || code.compareTo(curMin) >= 0) {
+				break;
 			} else {
-				curBuck.reset();
-				nextID.blockID = nextBlockID;
-				nextID.offset = 0;
+				nextID.offset++;
 			}
 		}
-		return false;
 	}
 
-	private boolean readBucketNextOctant() throws IOException {
+	/**
+	 * 只负责顺序的读取下一个octant
+	 * 
+	 * @throws IOException
+	 */
+	private Encoding readNextOctantCode() throws IOException {
+		if (curBuck.blockIdx().blockID < 0) {
+			nextBlockID = reader.getBucket(nextID, curBuck);
+		} else if (nextID.offset >= curBuck.octNum()) {
+			curBuck.reset();
+			nextID.blockID = nextBlockID;
+			nextID.offset = 0;
+			nextBlockID = reader.getBucket(nextID, curBuck);
+		}
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
+		input = new DataInputStream(new ByteArrayInputStream(data));
 		curCode.read(input);
-		// logger.info(curCode);
-
-		if (isCorrectCode(curCode)) {
-			curNode = new OctreeNode(curCode, curCode.getEdgeLen());
-			curNode.read(input);
-			// logger.info("satisfied block " + nextID + " " + curCode);
-			return true;
-		} else {
-			return false;
-		}
-
+		return curCode;
 	}
 
+	private void readNextOctant(Encoding curCode) throws IOException {
+		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
+		curNode.read(input);
+		input.close();
+		input = null;
+	}
+
+	/**
+	 * 判断是否还有必要读取
+	 * 
+	 * @return
+	 */
 	private boolean diskHasMore() {
 		return curMin.compareTo(max) <= 0 && nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
 	private void advance() throws IOException {
-		boolean skipping = false;
 		while (curNode == null && diskHasMore()) {
-			if (!skipping) {
-				if (curBuck.octNum() == 0 || nextID.offset < curBuck.octNum()) {
-					if (readBucketNextOctant())
-						break;
-				} else if (curBuck.octNum() != 0) {
-					nextID.blockID = nextBlockID;
-					nextID.offset = 0;
-					nextBlockID = reader.getBucket(nextID, curBuck);
-					continue;
-				}
-			}
-			if (skipToOctant()) {
-				skipping = false;
-				break;
+			Encoding curCode = readNextOctantCode();
+			// 开始判断code是否在查询区间内
+			if (isCorrectCode(curCode)) {
+				readNextOctant(curCode);
 			} else {
-				skipping = true;
+				skipToOctant();
 			}
 		}
 	}

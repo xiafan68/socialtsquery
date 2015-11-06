@@ -16,6 +16,7 @@ import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
 
 public class OctreePostingListIterTest {
@@ -36,7 +37,7 @@ public class OctreePostingListIterTest {
 			if (code.getX() <= window.getEnd() && code.getY() + code.getEdgeLen() >= window.getStart()) {
 				ret[0]++;
 				// System.out.print("hit ");
-				// System.out.println(code);
+				System.out.println(code);
 				// System.out.println(((DiskOctreeIterator)
 				// scanner).nextBucketID);
 			} else {
@@ -75,8 +76,8 @@ public class OctreePostingListIterTest {
 	}
 
 	@Test
-	public void test() throws IOException {
-		PropertyConfigurator.configure("conf/log4j-server.properties");
+	public void testKeyword() throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server2.properties");
 
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
@@ -85,7 +86,41 @@ public class OctreePostingListIterTest {
 		index.init();
 
 		DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(),
-				new SSTableMeta(127, 7));
+				new SSTableMeta(0, 0));
+
+		reader.init();
+		int ts = 676602;
+		int te = 696622;
+		Interval window = new Interval(0, ts, te, 0);
+		System.out.println("begin to verify");
+		System.out.flush();
+		// 遍历所有的posting list
+		try {
+			WritableComparableKey key = new StringKey("#beatcancer");
+			int[] expect = ExpectedResult(key, reader, window);
+			int[] answer = queryResult(key, reader, window);
+			// fos.close();
+			System.out.println("expected size:" + expect[0] + "," + expect[1]);
+			Assert.assertEquals(expect[0], answer[0]);
+			Assert.assertEquals(expect[1], answer[1]);
+
+		} finally {
+			index.close();
+		}
+	}
+
+	@Test
+	public void test() throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server2.properties");
+
+		Configuration conf = new Configuration();
+		conf.load("conf/index_twitter.conf");
+
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		index.init();
+
+		DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(),
+				new SSTableMeta(0, 0));
 
 		reader.init();
 		Iterator<WritableComparableKey> iter = reader.keySetIter();

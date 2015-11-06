@@ -241,6 +241,7 @@ public class BDBBtree {
 				if (readKey.compareTo(curKey) == 0) {
 					status = cursor.getNextNoDup(key, data, LockMode.DEFAULT);
 					if (status == OperationStatus.SUCCESS) {
+						cursor.getPrev(key, data, LockMode.DEFAULT);
 						return parsePair(data);
 					} else {
 						cursor.getLast(key, data, LockMode.DEFAULT);

@@ -95,6 +95,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 */
 	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
 		bucket.reset();
+		bucket.setBlockIdx(id.blockID);
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
 		return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);

@@ -182,7 +182,7 @@ public class Bucket {
 	}
 
 	public void reset() {
-		blockIdx = 0;
+		blockIdx = -1;
 		singleBlock = true;
 		totalSize = 5;
 		octants.clear();
