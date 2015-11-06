@@ -72,15 +72,13 @@ public class CompactService extends Thread {
 			return ret;
 		}
 
-		Collections.sort(sortedLevelNum,
-				new Comparator<Entry<Integer, Integer>>() {
+		Collections.sort(sortedLevelNum, new Comparator<Entry<Integer, Integer>>() {
 
-					@Override
-					public int compare(Entry<Integer, Integer> o1,
-							Entry<Integer, Integer> o2) {
-						return o2.getValue().compareTo(o1.getValue());
-					}
-				});
+			@Override
+			public int compare(Entry<Integer, Integer> o1, Entry<Integer, Integer> o2) {
+				return o2.getValue().compareTo(o1.getValue());
+			}
+		});
 		ret = levelList.get(sortedLevelNum.get(0).getKey());
 		return ret;
 	}
@@ -126,21 +124,22 @@ public class CompactService extends Thread {
 
 			List<ISSTableReader> readers = new ArrayList<ISSTableReader>();
 			for (SSTableMeta meta : toCompact) {
-				try {
-					readers.add(index.getSSTableReader(snapshot, meta));
-				} catch (Exception ex) {
-					StringWriter sw = new StringWriter();
-					PrintWriter printStream = new PrintWriter(sw);
-					ex.printStackTrace(printStream);
-					logger.error(sw.toString());
+				if (!meta.markAsDel.get()) {
+					try {
+						readers.add(index.getSSTableReader(snapshot, meta));
+					} catch (Exception ex) {
+						StringWriter sw = new StringWriter();
+						PrintWriter printStream = new PrintWriter(sw);
+						ex.printStackTrace(printStream);
+						logger.error(sw.toString());
+					}
 				}
 			}
 
-			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact
-					.size() - 1).version, toCompact.get(0).level + 1);
-			ISSTableWriter writer = index.getLSMTFactory()
-					.newSSTableWriterForCompaction(newMeta, readers,
-							index.getConf());
+			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact.size() - 1).version,
+					toCompact.get(0).level + 1);
+			ISSTableWriter writer = index.getLSMTFactory().newSSTableWriterForCompaction(newMeta, readers,
+					index.getConf());
 			try {
 				Configuration conf = index.getConf();
 				writer.open(conf.getTmpDir());
@@ -148,8 +147,7 @@ public class CompactService extends Thread {
 				writer.close();
 
 				writer.moveToDir(conf.getTmpDir(), conf.getIndexDir());
-				index.compactTables(new HashSet<SSTableMeta>(toCompact),
-						writer.getMeta());
+				index.compactTables(new HashSet<SSTableMeta>(toCompact), writer.getMeta());
 			} catch (IOException e) {
 				logger.error(e.getStackTrace());
 				throw new RuntimeException(e);
@@ -161,8 +159,7 @@ public class CompactService extends Thread {
 
 	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
 		for (SSTableMeta meta : toCompact) {
-			File file = OctreeSSTableWriter.dataFile(index.getConf()
-					.getIndexDir(), meta);
+			File file = OctreeSSTableWriter.dataFile(index.getConf().getIndexDir(), meta);
 			FileUtil.markDel(file);
 		}
 	}

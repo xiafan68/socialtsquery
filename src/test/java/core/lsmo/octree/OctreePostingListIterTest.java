@@ -119,11 +119,6 @@ public class OctreePostingListIterTest {
 		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
 		index.init();
 
-		DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(),
-				new SSTableMeta(0, 0));
-
-		reader.init();
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
 		int ts = 676602;
 		int te = 696622;
 		Interval window = new Interval(0, ts, te, 0);
@@ -131,17 +126,21 @@ public class OctreePostingListIterTest {
 		System.out.flush();
 		// 遍历所有的posting list
 		try {
-			while (iter.hasNext()) {
-				WritableComparableKey key = iter.next();
-				int[] expect = ExpectedResult(key, reader, window);
-				int[] answer = queryResult(key, reader, window);
-				// fos.close();
-				System.out.println("expected size:" + expect[0] + "," + expect[1]);
-				Assert.assertEquals(expect[0], answer[0]);
-				Assert.assertEquals(expect[1], answer[1]);
+			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
+				DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(), meta);
+				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				while (iter.hasNext()) {
+					WritableComparableKey key = iter.next();
+					int[] expect = ExpectedResult(key, reader, window);
+					int[] answer = queryResult(key, reader, window);
+					// fos.close();
+					System.out.println("expected size:" + expect[0] + "," + expect[1]);
+					Assert.assertEquals(expect[0], answer[0]);
+					Assert.assertEquals(expect[1], answer[1]);
+				}
+				((BDBBtree.BDBKeyIterator) iter).close();
 			}
 		} finally {
-			((BDBBtree.BDBKeyIterator) iter).close();
 			index.close();
 		}
 	}
