@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import Util.Configuration;
 import common.MidSegment;
+import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.lsmo.DiskSSTableBDBReader;
 import core.lsmo.OctreeBasedLSMTFactory;
@@ -48,6 +49,7 @@ public class OctreePostingListIterTest {
 				}
 			}
 		}
+		scanner.close();
 		return ret;
 	}
 
@@ -87,16 +89,11 @@ public class OctreePostingListIterTest {
 
 		reader.init();
 		Iterator<WritableComparableKey> iter = reader.keySetIter();
-		while (iter.hasNext()) {
-			System.out.println(iter.next());
-		}
 		int ts = 676602;
 		int te = 696622;
 		Interval window = new Interval(0, ts, te, 0);
-
 		System.out.println("begin to verify");
 		System.out.flush();
-		iter = reader.keySetIter();
 		// 遍历所有的posting list
 		try {
 			while (iter.hasNext()) {
@@ -109,7 +106,8 @@ public class OctreePostingListIterTest {
 				Assert.assertEquals(expect[1], answer[1]);
 			}
 		} finally {
-			reader.close();
+			((BDBBtree.BDBKeyIterator) iter).close();
+			index.close();
 		}
 	}
 }

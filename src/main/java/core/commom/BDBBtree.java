@@ -374,7 +374,7 @@ public class BDBBtree {
 		return ret;
 	}
 
-	class BDBKeyIterator implements Iterator<WritableComparableKey> {
+	public class BDBKeyIterator implements Iterator<WritableComparableKey> {
 		DatabaseEntry key = new DatabaseEntry();
 		DatabaseEntry value = new DatabaseEntry();
 		Cursor cursor = null;
@@ -423,6 +423,12 @@ public class BDBBtree {
 					cursor.close();
 					cursor = null;
 				}
+			}
+		}
+
+		public void close() {
+			if (cursor != null) {
+				cursor.close();
 			}
 		}
 

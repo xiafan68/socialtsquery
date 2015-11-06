@@ -105,7 +105,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 			if (curMin.getTopZ() > newCode.getTopZ())
 				gotoNewLayer(newCode.getTopZ());
 			else
-				nextID.offset++;
+				nextID.offset++;//why?
 		} else if (newCode.getX() > te) {
 			// 这个走向下一层的标准不对，应该计算当前的面的最大值，只有大于这个最大值时才走向下一个面
 			if (newCode.compareTo(curMax) > 0) {
@@ -213,7 +213,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 		boolean skipping = false;
 		while (curNode == null && diskHasMore()) {
 			if (!skipping) {
-				if (curBuck.octNum() != 0 && nextID.offset < curBuck.octNum()) {
+				if (curBuck.octNum() == 0 || nextID.offset < curBuck.octNum()) {
 					if (readBucketNextOctant())
 						break;
 				} else if (curBuck.octNum() != 0) {

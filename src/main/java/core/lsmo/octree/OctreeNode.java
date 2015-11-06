@@ -12,6 +12,12 @@ import core.commom.Encoding;
 import core.commom.Point;
 import fanxia.file.ByteUtil;
 
+/**
+ * 对于这个cube，它不包含最右侧，最内侧和最上侧的面上的点
+ * 
+ * @author xiafan
+ *
+ */
 public class OctreeNode {
 	public static SerializeStrategy HANDLER;
 
@@ -66,15 +72,15 @@ public class OctreeNode {
 	}
 
 	/**
-	 * 判断一个cube是否包含另一个cube
+	 * 判断一个cube是否包含另一个point
 	 * 
 	 * @param point
 	 * @return
 	 */
 	public boolean contains(Point point) {
-		if (cornerPoint.getZ() <= point.getZ() && point.getZ() <= cornerPoint.getZ() + edgeLen
-				&& cornerPoint.getX() <= point.getX() && point.getX() <= cornerPoint.getX() + edgeLen
-				&& cornerPoint.getY() <= point.getY() && point.getY() <= cornerPoint.getY() + edgeLen) {
+		if (cornerPoint.getZ() <= point.getZ() && point.getZ() < cornerPoint.getZ() + edgeLen
+				&& cornerPoint.getX() <= point.getX() && point.getX() < cornerPoint.getX() + edgeLen
+				&& cornerPoint.getY() <= point.getY() && point.getY() < cornerPoint.getY() + edgeLen) {
 			return true;
 		}
 		return false;

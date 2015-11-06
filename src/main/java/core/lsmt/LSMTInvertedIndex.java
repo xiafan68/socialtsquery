@@ -453,6 +453,9 @@ public class LSMTInvertedIndex<PType> {
 			} catch (InterruptedException e) {
 			}
 		}
+		for (ISSTableReader reader : readers.values()) {
+			reader.close();
+		}
 		LockManager.INSTANCE.versionWriteLock();
 		try {
 			CommitLog.INSTANCE.shutdown();
