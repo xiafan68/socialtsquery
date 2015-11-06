@@ -17,11 +17,6 @@
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
-					<excludes>
-						<exclude>**/src/test/java/perf/*</exclude>
-						<exclude>**/src/test/java/core/executor/*</exclude>
-						<exclude>**/src/test/java/core/executor/*/*</exclude>
-					</excludes>
 				</configuration>
 				<executions>
 					<execution>
@@ -31,20 +26,12 @@
 							<excludes>
 								<exclude>extract/*</exclude>
 								<exclude>extract/common/*</exclude>
-								<exclude>core/executor/MultiPartitionExecutor.java</exclude>
 							</excludes>
 						</configuration>
 					</execution>
 					<execution>
 						<id>default-testCompile</id>
 						<phase>testCompile</phase>
-						<configuration>
-							<excludes>
-								<exclude>**/src/test/java/perf/*</exclude>
-								<exclude>**/src/test/java/core/executor/*</exclude>
-								<exclude>**/src/test/java/core/executor/*/*</exclude>
-							</excludes>
-						</configuration>
 					</execution>
 					<!-- -->
 				</executions>

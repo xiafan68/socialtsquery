@@ -41,7 +41,7 @@ import xiafan.util.collection.DefaultedPutMap;
 public class DiskBasedPerfTest {
 	private static final Logger logger = Logger.getLogger(DiskBasedPerfTest.class);
 
-	QueryGen gen = new QueryGen(10);
+	QueryGen gen = new QueryGen(20);
 
 	public DiskBasedPerfTest() {
 
