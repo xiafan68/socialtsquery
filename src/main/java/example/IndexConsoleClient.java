@@ -1,21 +1,62 @@
 package example;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Map;
 
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
+import jline.TerminalFactory;
+import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.CandidateListCompletionHandler;
+import jline.console.completer.Completer;
+import jline.console.completer.FileNameCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
+import jline.console.history.MemoryHistory;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import segmentation.Interval;
 
 public class IndexConsoleClient {
+
+	private static ConsoleReader buildReader() throws IOException {
+		// 设置jline相关设置
+		ConsoleReader reader = new ConsoleReader();
+		reader.setPrompt("tquery> ");
+		String line;
+		MemoryHistory history = new MemoryHistory();
+		history.setMaxSize(20);
+		reader.setHistory(history);
+		CandidateListCompletionHandler handler = new CandidateListCompletionHandler();
+		reader.setCompletionHandler(handler);
+
+		TerminalFactory.configure(TerminalFactory.UNIX);
+
+		List<Completer> comps = new ArrayList<Completer>();
+		comps.add(new StringsCompleter("query", "stats", "quit"));
+		comps.add(new FileNameCompleter());
+
+		List<Completer> completors = new LinkedList<Completer>();
+		completors.add(new ArgumentCompleter(new StringsCompleter("quit"), new NullCompleter()));
+		completors.add(new ArgumentCompleter(new StringsCompleter("stats"), new NullCompleter()));
+		completors.add(new ArgumentCompleter(new StringsCompleter("query"),
+				new StringsCompleter("and", "or", "weighted"), new NullCompleter()));
+		for (Completer c : completors) {
+			reader.addCompleter(c);
+		}
+
+		return reader;
+	}
 
 	public static void main(String[] args) throws IOException {
 		OptionParser parser = new OptionParser();
@@ -40,15 +81,9 @@ public class IndexConsoleClient {
 			e.printStackTrace();
 			client = null;
 		}
-
-		/*
-		 * try { System.setErr(new PrintStream(new
-		 * FileOutputStream("/tmp/err.txt", false))); } catch
-		 * (FileNotFoundException e) { e.printStackTrace(); }
-		 */
-		Scanner scanner = new Scanner(System.in);
-		System.out.print("interval query>");
-		String line = scanner.nextLine();
+		ConsoleReader reader = buildReader();
+		String line = reader.readLine();
+		PrintWriter out = new PrintWriter(reader.getOutput());
 		try {
 			while (!line.startsWith("quit")) {
 				List<String> mids = new ArrayList<String>();
@@ -68,14 +103,9 @@ public class IndexConsoleClient {
 							keywords.add(args[idx]);
 						}
 						answer = client.query(keywords, start, end, k, type.toUpperCase());
-					} else if (args[0].equals("queryall")) {
-						String keywords = "";
-						for (int i = 1; i < args.length; i++) {
-							keywords += " " + args[i];
-						}
-						// answer = index.queryWithScore(keywords.trim());
-					} else if (args[0].equals("debug")) {
-
+					} else if (args[0].equals("stats")) {
+						Map<Float, Integer> stats = client.collectStatistics(args[1]);
+						System.out.println(stats);
 					}
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -91,17 +121,14 @@ public class IndexConsoleClient {
 					}
 				}
 
-				System.out.println("size: " + mids.size());
-
-				System.out.println("time cost:" + cost / 1000.0 + "s");
-				System.out.print("interval query>");
-				line = scanner.nextLine();
+				out.println("size: " + mids.size());
+				out.println("time cost:" + cost / 1000.0 + "s");
+				line = reader.readLine();
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		} finally {
 			client.close();
 		}
-		scanner.close();
 	}
 }

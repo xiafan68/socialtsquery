@@ -1,21 +1,11 @@
 package core.executor;
 
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.junit.Test;
-
-import Util.Profile;
-import segmentation.Interval;
-import core.commom.TempKeywordQuery;
-import core.lsmt.IndexReader;
 
 public class MultiPartExecutorTest {
 	@Test
 	public void test() {
-		Path dir = new Path("/Users/xiafan/temp/output/");
+		/*Path dir = new Path("/Users/xiafan/temp/output/");
 		dir = new Path("/home/xiafan/temp/invindex_parts");
 		Configuration conf = new Configuration();
 
@@ -35,6 +25,6 @@ public class MultiPartExecutorTest {
 			System.out.println(Profile.instance.toJSON());
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

@@ -18,12 +18,10 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.log4j.Logger;
 
+import common.Tweet;
+import extract.common.MRDataFormat;
 import xiafan.util.Histogram;
 import xiafan.util.Pair;
-
-import common.Tweet;
-
-import extract.common.MRDataFormat;
 
 /**
  * 对时间序列按照lifetime进行partition
@@ -33,18 +31,16 @@ import extract.common.MRDataFormat;
  */
 public class LifeTimePartition {
 	private static Logger logger = Logger.getLogger(LifeTimePartition.class);
+	private static final int granu = 3600;
 
-	public static class TimeSeriesMapper extends
-			Mapper<LongWritable, Text, IntWritable, Text> {
+	public static class TimeSeriesMapper extends Mapper<LongWritable, Text, IntWritable, Text> {
 
-		public void map(LongWritable key, Text value, Context ctx)
-				throws IOException, InterruptedException {
+		public void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
 			ctx.write(new IntWritable(value.hashCode()), value);
 		}
 	}
 
-	public static class TimeSeriesReducer extends
-			Reducer<IntWritable, Text, Text, NullWritable> {
+	public static class TimeSeriesReducer extends Reducer<IntWritable, Text, Text, NullWritable> {
 		private MultipleOutputs<Text, NullWritable> mop;
 
 		@Override
@@ -53,8 +49,7 @@ public class LifeTimePartition {
 		}
 
 		@Override
-		public void cleanup(Context ctx) throws IOException,
-				InterruptedException {
+		public void cleanup(Context ctx) throws IOException, InterruptedException {
 			mop.close();
 		}
 
@@ -80,10 +75,8 @@ public class LifeTimePartition {
 				Text text = iter.next();
 				String row = text.toString();
 				Pair<Tweet, Histogram> data = MRDataFormat.parseTimeSeries(row);
-				long width = data.arg1.groupby(InvertedIndexBuilder.granu)
-						.width();
-				mop.write("part" + part(width), text, NullWritable.get(),
-						"part" + part(width) + "/");
+				long width = data.arg1.groupby(granu).width();
+				mop.write("part" + part(width), text, NullWritable.get(), "part" + part(width) + "/");
 			}
 		}
 	}
@@ -100,8 +93,8 @@ public class LifeTimePartition {
 		job.setReducerClass(TimeSeriesReducer.class);
 
 		for (int i = 0; i < Math.log(1000000) / Math.log(2); i++) {
-			MultipleOutputs.addNamedOutput(job, String.format("part%d", i),
-					TextOutputFormat.class, Text.class, Text.class);
+			MultipleOutputs.addNamedOutput(job, String.format("part%d", i), TextOutputFormat.class, Text.class,
+					Text.class);
 		}
 		job.setNumReduceTasks(20);
 		TextInputFormat.setInputPaths(job, new Path(args[0]));

@@ -13,8 +13,9 @@ import Util.Pair;
 import Util.Profile;
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
-import core.executor.domain.ISegQueue;
+import core.executor.domain.CandQueue;
 import core.executor.domain.MergedMidSeg;
+import core.executor.domain.TopkQueue;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
@@ -26,25 +27,14 @@ import segmentation.Interval;
  * 
  * @author dingcheng
  * 
+ * @modify
+ * @author xiafan
+ * 
  */
 public class WeightedQueryExecutor extends IQueryExecutor {
-	LSMTInvertedIndex reader;
-
-	TempKeywordQuery query;
-
-	IPostingListIterator[] cursors;
-	float[] bestScores;
-	int curListIdx = 0;
-	ISegQueue topk;
-	ISegQueue cand;
-	Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
-	ExecContext ctx;
-
-	boolean stop = false;
 
 	public WeightedQueryExecutor(LSMTInvertedIndex reader) {
-		this.reader = reader;
-		maxLifeTime = Integer.MAX_VALUE;
+		super(reader);
 	}
 
 	PartitionMeta meta;
@@ -56,14 +46,13 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(ISegQueue topk, Map<Long, MergedMidSeg> map)
-			throws IOException {
+	public void setupQueryContext(TopkQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
 		else
-			this.topk = ISegQueue.create(true);
-		cand = ISegQueue.create(false);
+			this.topk = new TopkQueue();
+		cand = new CandQueue();
 
 		ctx = new ExecContext(query);
 		int part = MyMath.getCeil(maxLifeTime);
@@ -82,9 +71,8 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		String[] keywords = query.keywords;
 		cursors = new IPostingListIterator[keywords.length];
 		List<String> keywordList = Arrays.asList(keywords);
-		Map<String, IPostingListIterator> iters = reader
-				.getPostingListIter(keywordList, query.queryInv.getStart(),
-						query.queryInv.getEnd());
+		Map<String, IPostingListIterator> iters = reader.getPostingListIter(keywordList, query.queryInv.getStart(),
+				query.queryInv.getEnd());
 		/* 为每个词创建索引读取对象 */
 		for (int i = 0; i < keywords.length; i++) {
 			if (cursors[i] != null) {
@@ -109,22 +97,26 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			for (float bestScore : bestScores) {
 				sum += bestScore;
 			}
-			sum *= Math.min(maxLifeTime,
-					query.getEndTime() - query.getStartTime());
+			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
 			boolean ret = true;
 			// 当前partition不可能有cand能够进入topk
-			if (cand.getMaxBestScore() < topk.getMinWorstScore()
-					&& sum < topk.getMinWorstScore()
+			if (cand.getMaxBestScore() < topk.getMinWorstScore() && sum < topk.getMinWorstScore()
 					&& topk.size() >= ctx.getQuery().k) {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
-				for (IPostingListIterator cursor : cursors) {
+				for (int i = 0; i < cursors.length; i++) {
+					IPostingListIterator cursor = cursors[i];
 					if (cursor != null && cursor.hasNext()) {
+						bestScores[i] = 0;
 						ret = false;
 						break;
 					}
 				}
+				if (ret) {
+					refreshTopk();
+				}
+
 			}
 			stop = ret;
 
@@ -147,6 +139,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			} else if (!ret.hasNext()) {
 				cursors[curListIdx] = null;
 				ret = null;
+				bestScores[i] = 0;
 				// break;
 			} else {
 				break;
@@ -181,11 +174,12 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(preSeg)) {
 			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k
-				|| newSeg.getWorstscore() > topk.getMinBestScore()) {
+		} else if (topk.size() < query.k || newSeg.getWorstscore() > cand.getMaxBestScore()) {
 			topk.update(preSeg, newSeg);
-			if (topk.size() > query.k)
-				topk.poll();// 把bestScore最小的一个移除
+			if (topk.size() > query.k) {
+				// 把bestScore最小的一个移除
+				cand.update(null, topk.peek());
+			}
 
 			if (preSeg != null)
 				cand.remove(preSeg);
@@ -203,10 +197,25 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		return ret;
 	}
 
+	private void refreshTopk() {
+		while (!cand.isEmpty()) {
+			MergedMidSeg seg = cand.peek();
+			cand.poll();
+			if (seg.getWorstscore() > topk.getMinWorstScore() && seg.getWorstscore() > cand.getMaxBestScore()) {
+				cand.update(null, topk.peek());
+				topk.poll();
+				topk.update(null, seg);
+			} else if (seg.getBestscore() <= topk.getMinWorstScore()) {
+				break;
+			}
+		}
+	}
+
 	@Override
 	public boolean advance() throws IOException {
 		if (isTerminated()) {
 			// 所有倒排记录都读完了。
+			// topk cand
 			return false;
 		}
 
@@ -239,8 +248,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
 			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur
-					.getEndTime(), cur.getWorstscore()));
+			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}

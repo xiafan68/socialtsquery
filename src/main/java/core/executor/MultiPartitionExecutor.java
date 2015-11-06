@@ -7,14 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import segmentation.Interval;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
-import core.executor.domain.SortWorstscore;
-import core.lsmt.IndexReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
 /**
  * <p>
@@ -33,12 +31,12 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	ISegQueue topk;
 	TempKeywordQuery query;
 
-	public MultiPartitionExecutor(IndexReader reader) {
+	public MultiPartitionExecutor(LSMTInvertedIndex reader) {
 		this.reader = reader;
 	}
 
 	@Override
-	public boolean advance() {
+	public boolean advance() throws IOException {
 		Iterator<WeightedQueryExecutor> iter = executors.iterator();
 		while (iter.hasNext()) {
 			WeightedQueryExecutor cur = iter.next();
@@ -75,8 +73,7 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
 			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), query.getStartTime(), query
-					.getEndTime(), cur.getWorstscore()));
+			ret.add(new Interval(cur.getMid(), query.getStartTime(), query.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}

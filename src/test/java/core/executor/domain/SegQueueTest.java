@@ -20,29 +20,29 @@ public class SegQueueTest {
 	 */
 	@Test
 	public void updateTopKTest() {
-		SegQueue queue = new SegQueue(SortWorstscore.INSTANCE, true);
+		TopkQueue queue = new TopkQueue();
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
 		a = a.addMidSeg(0, new MidSegment(0, new Segment(1, 10, 3, 12)), 1f);
 		queue.update(null, a);
-		Assert.assertEquals(queue.getMinWorstScore(), a.getWorstscore());
-		Assert.assertEquals(queue.getMinBestScore(), a.getBestscore());
+		Assert.assertTrue(Double.compare(queue.getMinWorstScore(), a.getWorstscore()) == 0);
 
 		MergedMidSeg b = new MergedMidSeg(ctx);
 		b = b.addMidSeg(0, new MidSegment(1, new Segment(1, 1, 3, 3)), 1f);
 		queue.update(null, b);
-		Assert.assertEquals(queue.getMinWorstScore(), b.getWorstscore());
-		Assert.assertEquals(queue.getMinBestScore(), b.getBestscore());
+		System.out.println(a.getWorstscore() + "," + b.getWorstscore() + "," + queue.getMinWorstScore());
+		Assert.assertTrue(Double.compare(queue.getMinWorstScore(), b.getWorstscore()) == 0);
 
 		Assert.assertEquals(b, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
 		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 10, 8, 12)), 1f);
 		queue.update(b, newB);
-		Assert.assertEquals(queue.getMinWorstScore(), a.getWorstscore());
+		System.out.println(a.getWorstscore() + "," + newB.getWorstscore() + "," + queue.getMinWorstScore());
+		Assert.assertTrue(Double.compare(queue.getMinWorstScore(), a.getWorstscore()) == 0);
+
 		// 这里是b，应为ctx里面假设所有倒排表的当前最小值为10
-		Assert.assertEquals(queue.getMinBestScore(), b.getBestscore());
 		Assert.assertEquals(a, queue.peek());
 		Assert.assertEquals(2, queue.size());
 	}
@@ -52,25 +52,27 @@ public class SegQueueTest {
 	 */
 	@Test
 	public void updateCandTest() {
-		SegQueue queue = new SegQueue(SortBestscore.INSTANCE, false);
+		CandQueue queue = new CandQueue();
 
 		ExecContext ctx = MergedMidSegTest.fakeContext();
 		MergedMidSeg a = new MergedMidSeg(ctx);
 		a = a.addMidSeg(0, new MidSegment(0, new Segment(1, 10, 3, 12)), 1f);
 		queue.update(null, a);
-		Assert.assertEquals(queue.getMaxBestScore(), a.getBestscore());
+		Assert.assertTrue(Double.compare(queue.getMaxBestScore(), a.getBestscore()) == 0);
 
 		MergedMidSeg b = new MergedMidSeg(ctx);
 		b = b.addMidSeg(0, new MidSegment(1, new Segment(1, 1, 3, 3)), 1f);
 		queue.update(null, b);
-		Assert.assertEquals(queue.getMaxBestScore(), a.getBestscore());
+		System.out.println(a.getBestscore() + "," + b.getBestscore() + "," + queue.getMaxBestScore());
+		Assert.assertTrue(Double.compare(queue.getMaxBestScore(), a.getBestscore()) == 0);
 
 		Assert.assertEquals(a, queue.peek());
 		Assert.assertEquals(2, queue.size());
 
 		MergedMidSeg newB = b.addMidSeg(0, new MidSegment(1, new Segment(5, 100, 8, 120)), 1f);
 		queue.update(b, newB);
-		Assert.assertEquals(queue.getMaxBestScore(), newB.getBestscore());
+		System.out.println(a.getBestscore() + "," + newB.getBestscore() + "," + queue.getMaxBestScore());
+		Assert.assertTrue(Double.compare(queue.getMaxBestScore(), newB.getBestscore()) == 0);
 		Assert.assertEquals(newB, queue.peek());
 		Assert.assertEquals(2, queue.size());
 

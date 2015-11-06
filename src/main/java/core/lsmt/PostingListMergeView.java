@@ -23,7 +23,7 @@ public class PostingListMergeView implements IPostingListIterator {
 				public int compare(
 						Pair<Pair<Integer, List<MidSegment>>, IPostingListIterator> o1,
 						Pair<Pair<Integer, List<MidSegment>>, IPostingListIterator> o2) {
-					return o1.getKey().getKey().compareTo(o1.getKey().getKey());
+					return o2.getKey().getKey().compareTo(o1.getKey().getKey());
 				}
 			});
 
