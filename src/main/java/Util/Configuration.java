@@ -108,4 +108,8 @@ public class Configuration {
 		return props.getProperty("indexhelper", "core.lsmt.BDBBasedIndexHelper");
 	}
 
+	public String getIndexFactory() {
+		return props.getProperty("index_factory", "core.lsmi.SortedListBasedLSMTFactory");
+	}
+
 }

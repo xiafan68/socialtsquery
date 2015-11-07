@@ -14,7 +14,6 @@ import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 
 public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> {
-	SSTableMeta meta;
 	// for the reason of multiple thread
 	private volatile boolean frezen = false;
 	private volatile int valueCount = 0;

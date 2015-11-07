@@ -12,26 +12,23 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import common.MidSegment;
+import common.Tweet;
+import core.lsmi.SortedListBasedLSMTFactory;
+import core.lsmt.LSMTInvertedIndex;
+import fanxia.file.DirLineReader;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
 import segmentation.SWSegmentation;
 import segmentation.Segment;
 import shingle.TextShingle;
 import xiafan.util.Histogram;
-
-import common.MidSegment;
-import common.Tweet;
-
-import core.lsmo.OctreeBasedLSMTFactory;
-import core.lsmt.LSMTInvertedIndex;
-import fanxia.file.DirLineReader;
 
 public class IndexLoader {
 	private static Logger logger = Logger.getLogger(IndexLoader.class);
@@ -63,7 +60,7 @@ public class IndexLoader {
 		} catch (Exception exception) {
 
 		}
-		index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		index = new LSMTInvertedIndex(conf, SortedListBasedLSMTFactory.INSTANCE);
 		try {
 			index.init();
 		} catch (IOException e) {

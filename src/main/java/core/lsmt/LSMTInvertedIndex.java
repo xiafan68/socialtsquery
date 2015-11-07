@@ -26,7 +26,6 @@ import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.QueryExecutorFactory;
-import core.lsmo.OctreeMemTable;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeNode;
@@ -65,7 +64,13 @@ public class LSMTInvertedIndex<PType> {
 
 	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
 		this.conf = conf;
-		this.implFactory = factory;
+
+		try {
+			this.implFactory = (ILSMTFactory) Enum.valueOf(Class.forName(conf.getIndexFactory()).asSubclass(Enum.class),
+					"INSTANCE");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 		valWriter = implFactory.newSSTableWriterForCompaction(null, new ArrayList<ISSTableReader>(), conf);
 	}
 
@@ -151,7 +156,7 @@ public class LSMTInvertedIndex<PType> {
 			}
 		}
 		SSTableMeta meta = new SSTableMeta(nextVersion++, 0);
-		curTable = new OctreeMemTable(this, meta);
+		curTable = implFactory.newMemTable(this, meta);
 		versionSet.newMemTable(curTable);
 	}
 

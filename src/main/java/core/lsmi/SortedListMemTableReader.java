@@ -101,7 +101,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 
 	@Override
 	public SSTableMeta getMeta() {
-		return table.meta;
+		return table.getMeta();
 	}
 
 	@Override

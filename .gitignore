@@ -2,6 +2,7 @@
 *.class
 conf/log4j*.properties
 conf/log4j-server2.properties
+conf/index*.conf
 bin/
 conf/index.conf
 conf/index_twitter.conf

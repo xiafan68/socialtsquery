@@ -11,11 +11,10 @@ import java.util.Map;
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
-import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmi.SortedListBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
 import jline.console.completer.ArgumentCompleter;
 import jline.console.completer.CandidateListCompletionHandler;
 import jline.console.completer.Completer;
@@ -74,7 +73,7 @@ public class IndexConsoleClient {
 		PropertyConfigurator.configure(opts.valueOf("l").toString());
 		Configuration conf = new Configuration();
 		conf.load(opts.valueOf("c").toString());
-		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, SortedListBasedLSMTFactory.INSTANCE);
 		try {
 			client.init();
 		} catch (IOException e) {

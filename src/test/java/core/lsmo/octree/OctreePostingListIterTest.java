@@ -37,7 +37,7 @@ public class OctreePostingListIterTest {
 			if (code.getX() <= window.getEnd() && code.getY() + code.getEdgeLen() >= window.getStart()) {
 				ret[0]++;
 				// System.out.print("hit ");
-				System.out.println(code);
+				//System.out.println(code);
 				// System.out.println(((DiskOctreeIterator)
 				// scanner).nextBucketID);
 			} else {
