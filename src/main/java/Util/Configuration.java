@@ -105,7 +105,7 @@ public class Configuration {
 	}
 
 	public String getIndexHelper() {
-		return props.getProperty("indexhelper", "core.lsmt.BDBBasedIndexHelper");
+		return props.getProperty("indexhelper", "core.lsmt.bdbindex.BDBBasedIndexHelper");
 	}
 
 	public String getIndexFactory() {

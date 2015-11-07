@@ -62,7 +62,7 @@ public class LSMTInvertedIndex<PType> {
 
 	// DataOutputStream keyWriter;
 
-	public LSMTInvertedIndex(Configuration conf, ILSMTFactory factory) {
+	public LSMTInvertedIndex(Configuration conf) {
 		this.conf = conf;
 
 		try {

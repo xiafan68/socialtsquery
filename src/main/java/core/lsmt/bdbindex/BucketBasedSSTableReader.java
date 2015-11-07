@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.bdbindex;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -20,6 +20,12 @@ import Util.Pair;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
+import core.lsmt.FileBasedIndexHelper;
+import core.lsmt.IBucketBasedSSTableReader;
+import core.lsmt.IMemTable;
+import core.lsmt.ISSTableWriter;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;

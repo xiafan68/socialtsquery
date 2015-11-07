@@ -18,7 +18,7 @@ public class MemTableTest {
 	public void insertTest() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeMemTable table = new OctreeMemTable(index, new SSTableMeta(0, 0));
 		// "/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs");
 		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");

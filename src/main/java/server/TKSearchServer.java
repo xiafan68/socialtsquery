@@ -46,7 +46,7 @@ public class TKSearchServer implements TweetService.Iface {
 		// dir = new Path("/home/xiafan/temp/invindex_parts");
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
-		indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		indexReader = new LSMTInvertedIndex(conf);
 		try {
 			indexReader.init();
 		} catch (IOException e) {

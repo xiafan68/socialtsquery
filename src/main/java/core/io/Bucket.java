@@ -19,19 +19,13 @@ import fanxia.file.ByteUtil;
  * @author xiafan
  *
  */
-public class Bucket {
-	public static final int BLOCK_SIZE = 1024 * 4;
-	public static final int META_BLOCK = 1;
-	public static final int DATA_BLOCK = 2;
-	public static final int HEADER_BLOCK = 4;
-
-	int blockIdx = 0;
+public class Bucket extends Block {
 	boolean singleBlock = true;
 	int totalSize = 5;
 	List<byte[]> octants = new ArrayList<byte[]>();
 
 	public Bucket(long offset) {
-		this.blockIdx = (int) (offset / BLOCK_SIZE);
+		super(Block.BLOCKTYPE.DATA_BLOCK, offset);
 	}
 
 	public void storeOctant(byte[] octant) {
@@ -43,6 +37,7 @@ public class Bucket {
 		totalSize += octant.length;
 	}
 
+	@Override
 	public void write(DataOutput output) throws IOException {
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bOutput);

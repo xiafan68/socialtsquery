@@ -100,7 +100,7 @@ public class OctreeMergerTest {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		int level = 0;
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(0, level));
@@ -138,7 +138,7 @@ public class OctreeMergerTest {
 	public void merge3SStables() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader lhs = new DiskSSTableReader(index, new SSTableMeta(32, 0));
 		lhs.init();
 		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(33, 0));

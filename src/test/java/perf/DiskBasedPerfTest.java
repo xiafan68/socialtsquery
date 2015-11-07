@@ -62,7 +62,7 @@ public class DiskBasedPerfTest {
 		PropertyConfigurator.configure("conf/log4j-server2.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
-		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf);
 		/*
 		 * indexReader.addPartition(new PartitionMeta(31), dir, new
 		 * Configuration()); indexExec = new PartitionExecutor(indexReader);

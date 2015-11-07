@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.bdbindex;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,10 +8,15 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
+import Util.Profile;
 import core.commom.BDBBtree;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
+import core.lsmt.IBucketBasedSSTableReader;
+import core.lsmt.IMemTable;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
@@ -94,11 +99,16 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 * @throws IOException
 	 */
 	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
-		bucket.reset();
-		bucket.setBlockIdx(id.blockID);
-		dataInput.seek(id.getFileOffset());
-		bucket.read(dataInput);
-		return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);
+		Profile.instance.start("getBucket");
+		try {
+			bucket.reset();
+			bucket.setBlockIdx(id.blockID);
+			dataInput.seek(id.getFileOffset());
+			bucket.read(dataInput);
+			return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end("getBucket");
+		}
 	}
 
 	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {
@@ -119,12 +129,22 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 */
 	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
-		return skipList.floorOffset(curKey, curCode);
+		Profile.instance.start("celloffset");
+		try {
+			return skipList.floorOffset(curKey, curCode);
+		} finally {
+			Profile.instance.end("celloffset");
+		}
 	}
 
 	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException {
-		return skipList.cellOffset(curKey, curCode);
+		Profile.instance.start("celloffset");
+		try {
+			return skipList.cellOffset(curKey, curCode);
+		} finally {
+			Profile.instance.end("celloffset");
+		}
 	}
 
 	@Override

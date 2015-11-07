@@ -11,7 +11,7 @@ import java.util.Map;
 import org.apache.log4j.PropertyConfigurator;
 
 import Util.Configuration;
-import core.lsmi.SortedListBasedLSMTFactory;
+import Util.Profile;
 import core.lsmt.LSMTInvertedIndex;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -73,7 +73,7 @@ public class IndexConsoleClient {
 		PropertyConfigurator.configure(opts.valueOf("l").toString());
 		Configuration conf = new Configuration();
 		conf.load(opts.valueOf("c").toString());
-		LSMTInvertedIndex client = new LSMTInvertedIndex(conf, SortedListBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex client = new LSMTInvertedIndex(conf);
 		try {
 			client.init();
 		} catch (IOException e) {
@@ -120,6 +120,8 @@ public class IndexConsoleClient {
 					}
 				}
 
+				out.println(Profile.instance.toString());
+				Profile.instance.reset();
 				out.println("size: " + mids.size());
 				out.println("time cost:" + cost / 1000.0 + "s");
 				line = reader.readLine();

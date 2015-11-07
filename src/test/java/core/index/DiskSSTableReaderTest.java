@@ -39,7 +39,7 @@ public class DiskSSTableReaderTest {
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		File dataDir = conf.getIndexDir();
 		List<File> files = new ArrayList<File>(
 				FileUtils.listFiles(dataDir, new RegexFileFilter("[0-9]+_[0-9]+.data"), null));
@@ -77,7 +77,7 @@ public class DiskSSTableReaderTest {
 		System.setOut(new PrintStream(new FileOutputStream("/tmp/7_0.txt")));
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		DiskSSTableReader reader = new DiskSSTableReader(index, new SSTableMeta(131, 1));
 		reader.init();
 		readerTest(reader, conf, 1);
@@ -115,7 +115,7 @@ public class DiskSSTableReaderTest {
 	public void detectMissingSegs() throws IOException {
 		Configuration conf = new Configuration();
 		conf.load("conf/index.conf");
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		int level = 7;
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		DiskSSTableReader reader = null;

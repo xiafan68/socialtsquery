@@ -84,7 +84,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 			if (cur == null)
 				advance();
 			Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(
-					Math.max(cur.getStart(), cur.getEndCount()), Arrays.asList(cur));
+					Math.max(cur.getStartCount(), cur.getEndCount()), Arrays.asList(cur));
 			cur = null;
 			return ret;
 		}

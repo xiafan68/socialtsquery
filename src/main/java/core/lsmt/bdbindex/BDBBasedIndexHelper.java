@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.bdbindex;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,6 +10,9 @@ import org.apache.log4j.Logger;
 import Util.Configuration;
 import core.commom.BDBBtree;
 import core.io.Bucket.BucketID;
+import core.lsmt.IMemTable;
+import core.lsmt.IndexHelper;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.IMemTable.SSTableMeta;
 
 public class BDBBasedIndexHelper extends IndexHelper {

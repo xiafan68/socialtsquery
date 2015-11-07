@@ -12,7 +12,6 @@ import Util.Pair;
 import common.MidSegment;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmt.BucketBasedBDBSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableWriter.DirEntry;
@@ -20,6 +19,7 @@ import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.bdbindex.BucketBasedBDBSSTableReader;
 
 public class ListDiskBDBSSTableReader extends BucketBasedBDBSSTableReader {
 

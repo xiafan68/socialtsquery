@@ -12,7 +12,6 @@ import common.MidSegment;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.lsmo.DiskSSTableBDBReader;
-import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
@@ -82,7 +81,7 @@ public class OctreePostingListIterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		index.init();
 
 		DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(),
@@ -116,7 +115,7 @@ public class OctreePostingListIterTest {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
 
-		LSMTInvertedIndex index = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		index.init();
 
 		int ts = 676602;

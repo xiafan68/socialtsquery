@@ -6,11 +6,11 @@ import core.commom.Encoding;
 import core.lsmo.octree.DiskOctreeIterator;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
-import core.lsmt.BucketBasedBDBSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.bdbindex.BucketBasedBDBSSTableReader;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,

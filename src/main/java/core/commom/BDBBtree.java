@@ -12,6 +12,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import Util.Configuration;
 import Util.Pair;
+import Util.Profile;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -141,7 +142,7 @@ public class BDBBtree {
 		env.setMutableConfig(mutableConfig);
 		// Now open, or create and open, our databases
 		nodeDb = env.openDatabase(null, dir.getName(), myDbConfig);
-
+		// nodeDb.
 		if (readOnly) {
 			PreloadConfig preloadConfig = new PreloadConfig();
 			// preloadConfig.setMaxBytes(1024*1024*128).setMaxMillisecs(1000*60);
@@ -186,6 +187,7 @@ public class BDBBtree {
 	}
 
 	public DirEntry get(WritableComparableKey curkey) throws IOException {
+		Profile.instance.start("readdir");
 		DatabaseEntry key = getDBEntry(curkey);
 		DatabaseEntry data = new DatabaseEntry();
 
@@ -200,6 +202,7 @@ public class BDBBtree {
 		} finally {
 			cursor.close();
 		}
+		Profile.instance.end("readdir");
 		return ret;
 	}
 

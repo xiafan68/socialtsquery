@@ -188,8 +188,10 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
-				int[] counters = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() != 1 && counters[0] > (MemoryOctree.size_threshold >> 1)) {
+				int[] hist = octreeNode.histogram();
+				if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > MemoryOctree.size_threshold * 0.5
+						&& ((float) hist[0] + 1) / (hist[1] + 1) > 2f) {
+					// 下半部分是上半部分的两倍
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));

@@ -22,7 +22,7 @@ public class PartitionExecutorTest {
 		PropertyConfigurator.configure("conf/log4j-server2.properties");
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter.conf");
-		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf, OctreeBasedLSMTFactory.INSTANCE);
+		LSMTInvertedIndex indexReader = new LSMTInvertedIndex(conf);
 		try {
 			// indexReader.addPartition(new PartitionMeta(16), dir, conf);
 			WeightedQueryExecutor executor = new WeightedQueryExecutor(indexReader);

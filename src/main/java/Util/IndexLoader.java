@@ -60,7 +60,7 @@ public class IndexLoader {
 		} catch (Exception exception) {
 
 		}
-		index = new LSMTInvertedIndex(conf, SortedListBasedLSMTFactory.INSTANCE);
+		index = new LSMTInvertedIndex(conf);
 		try {
 			index.init();
 		} catch (IOException e) {
