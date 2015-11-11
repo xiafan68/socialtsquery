@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import core.io.Block;
 import core.io.Bucket;
 
 public class OctreeTextWriter implements OctreeVisitor {
@@ -43,8 +44,9 @@ public class OctreeTextWriter implements OctreeVisitor {
 
 	/**
 	 * the visiting of the parent controls the setup of bucket
+	 * 
 	 * @param octreeNode
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void visitLeaf(OctreeNode octreeNode) {
 		if (octreeNode.size() > 0) {
@@ -57,11 +59,11 @@ public class OctreeTextWriter implements OctreeVisitor {
 			}
 			byte[] data = baos.toByteArray();
 			if (cur == null || !cur.canStore(data.length)) {
-				cur = new Bucket(blockIdx * Bucket.BLOCK_SIZE);
+				cur = new Bucket(blockIdx * Block.BLOCK_SIZE);
 			}
 
-			System.out.println(String.format("leaf node: %s, id:%s;",
-					octreeNode.getEncoding(), cur.blockIdx().toString()));
+			System.out.println(
+					String.format("leaf node: %s, id:%s;", octreeNode.getEncoding(), cur.blockIdx().toString()));
 			cur.storeOctant(data);
 		}
 	}

@@ -29,6 +29,7 @@ public abstract class ISSTableWriter {
 
 	/**
 	 * 验证磁盘上面的数据文件是否全部存在
+	 * 
 	 * @param meta
 	 * @return
 	 */
@@ -73,14 +74,31 @@ public abstract class ISSTableWriter {
 		public BucketID startBucketID = new BucketID();
 		public BucketID endBucketID = new BucketID();
 		public long indexStartOffset;
-		public int sampleNum;
+		public long sampleNum;
 
 		public DirEntry(WritableComparableKeyFactory factory) {
 			this.factory = factory;
 		}
 
+		public DirEntry(DirEntry curDir) {
+			factory = curDir.factory;
+			curKey = curDir.curKey;
+			startBucketID.copy(curDir.startBucketID);
+			endBucketID.copy(curDir.endBucketID);
+			indexStartOffset = curDir.indexStartOffset;
+			sampleNum = curDir.sampleNum;
+		}
+
 		public long getIndexOffset() {
 			return indexStartOffset;
+		}
+
+		public static int indexBlockIdx(long indexOffset) {
+			return (int) ((indexOffset >> 32) & 0xffffffff);
+		}
+
+		public static int indexOffsetInBlock(long indexOffset) {
+			return (int) (indexOffset & 0xffffffff);
 		}
 
 		public void init() {
@@ -104,7 +122,7 @@ public abstract class ISSTableWriter {
 			startBucketID.write(output);
 			endBucketID.write(output);
 			output.writeLong(indexStartOffset);
-			output.writeInt(sampleNum);
+			output.writeLong(sampleNum);
 		}
 
 		/**
@@ -120,7 +138,7 @@ public abstract class ISSTableWriter {
 			startBucketID.read(input);
 			endBucketID.read(input);
 			indexStartOffset = input.readLong();
-			sampleNum = input.readInt();
+			sampleNum = input.readLong();
 		}
 
 		/*
@@ -130,10 +148,8 @@ public abstract class ISSTableWriter {
 		 */
 		@Override
 		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", startBucketID="
-					+ startBucketID + ", endBucketID=" + endBucketID
-					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum="
-					+ sampleNum + "]";
+			return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
+					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
 		}
 	}
 

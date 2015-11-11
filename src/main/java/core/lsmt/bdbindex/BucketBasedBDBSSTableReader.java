@@ -10,14 +10,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import Util.Pair;
 import Util.Profile;
 import core.commom.BDBBtree;
+import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IBucketBasedSSTableReader;
-import core.lsmt.IMemTable;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
-import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
 /**
@@ -105,7 +105,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 			bucket.setBlockIdx(id.blockID);
 			dataInput.seek(id.getFileOffset());
 			bucket.read(dataInput);
-			return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);
+			return (int) (dataInput.getChannel().position() / Block.BLOCK_SIZE);
 		} finally {
 			Profile.instance.end("getBucket");
 		}

@@ -15,31 +15,52 @@ public class Block {
 	BLOCKTYPE btype;
 	byte[] data;
 
-	public Block(BLOCKTYPE btype, long offset) {
+	public Block(BLOCKTYPE btype, int blockIdx) {
 		this.btype = btype;
-		this.blockIdx = (int) (offset / BLOCK_SIZE);
+		this.blockIdx = blockIdx;
+	}
+
+	public int getBlockIdx() {
+		return blockIdx;
+	}
+
+	public long getFileOffset() {
+		return ((long) blockIdx) * Block.BLOCK_SIZE;
+	}
+
+	public void setBlockIdx(int blockIdx) {
+		this.blockIdx = blockIdx;
+	}
+
+	public byte[] getData() {
+		return data;
 	}
 
 	public void setData(byte[] data) {
-		if (data.length > availableSpace()) {
-			throw new IllegalArgumentException("the size of data is larger than the data space");
-		}
 		this.data = data;
 	}
 
 	public void write(DataOutput output) throws IOException {
 		output.writeInt(btype.ordinal());
-		output.writeInt(data.length);
-		output.write(data);
+		int len = Math.min(data.length, availableSpace());
+		output.writeInt(len);
+		output.write(data, 0, len);
 
 		// padding bytes
-		for (int i = 0; i < BLOCK_SIZE - 8 - data.length; i++) {
+		for (int i = 0; i < availableSpace() - data.length; i++) {
 			output.writeByte(0);
 		}
 	}
 
 	public void read(DataInput input) throws IOException {
+		btype = BLOCKTYPE.values()[input.readInt()];
+		input.readInt();
+		data = new byte[availableSpace()];
+		input.readFully(data);
+	}
 
+	public boolean isDataBlock() {
+		return btype == BLOCKTYPE.DATA_BLOCK;
 	}
 
 	public static int availableSpace() {

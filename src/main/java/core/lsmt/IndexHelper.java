@@ -11,6 +11,7 @@ import core.lsmt.ISSTableWriter.DirEntry;
 
 /**
  * 用于构建数据文件对应的索引文件
+ * 
  * @author xiafan
  *
  */
@@ -27,8 +28,7 @@ public abstract class IndexHelper {
 		curDir.startBucketID.copy(newListStart);
 	}
 
-	public void startPostingList(WritableComparableKey key,
-			BucketID newListStart) throws IOException {
+	public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
 		if (newListStart != null)
 			curDir.startBucketID.copy(newListStart);
 		curDir.curKey = key;
@@ -48,11 +48,9 @@ public abstract class IndexHelper {
 		curDir.maxTime = Math.max(curDir.maxTime, endTime);
 	}
 
-	public abstract void openIndexFile(File dir, SSTableMeta meta)
-			throws FileNotFoundException;
+	public abstract void openIndexFile(File dir, SSTableMeta meta) throws FileNotFoundException;
 
-	public abstract void buildIndex(WritableComparableKey code, BucketID id)
-			throws IOException;
+	public abstract void buildIndex(WritableComparableKey code, BucketID id) throws IOException;
 
 	public DirEntry getDirEntry() {
 		return curDir;

@@ -10,10 +10,9 @@ import org.apache.log4j.Logger;
 import Util.Configuration;
 import core.commom.BDBBtree;
 import core.io.Bucket.BucketID;
-import core.lsmt.IMemTable;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
-import core.lsmt.IMemTable.SSTableMeta;
 
 public class BDBBasedIndexHelper extends IndexHelper {
 	private static final Logger logger = Logger.getLogger(BDBBasedIndexHelper.class);

@@ -1,14 +1,18 @@
 package core.io;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
+import core.io.Block.BLOCKTYPE;
 import fanxia.file.ByteUtil;
 
 /**
@@ -19,68 +23,100 @@ import fanxia.file.ByteUtil;
  * @author xiafan
  *
  */
-public class Bucket extends Block {
+public class Bucket {
 	boolean singleBlock = true;
 	int totalSize = 5;
 	List<byte[]> octants = new ArrayList<byte[]>();
 
+	int blockIdx = 0;
+
 	public Bucket(long offset) {
-		super(Block.BLOCKTYPE.DATA_BLOCK, offset);
+		blockIdx = (int) (offset / Block.BLOCK_SIZE);
 	}
 
 	public void storeOctant(byte[] octant) {
 		octants.add(octant);
-		if (octant.length + totalSize > BLOCK_SIZE) {
+		if (octant.length + totalSize > Block.availableSpace()) {
 			singleBlock = false;
 			totalSize += 4;
 		}
 		totalSize += octant.length;
 	}
 
-	@Override
-	public void write(DataOutput output) throws IOException {
+	public List<Block> toBlocks() throws IOException {
+		List<Block> ret = new ArrayList<Block>();
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bOutput);
 		dos.writeBoolean(singleBlock);
-		// if (!singleBlock) {
 		dos.writeInt(octants.size());
-		// }
+		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
 		for (byte[] data : octants) {
 			dos.writeInt(data.length);
 			dos.write(data);
+			if (bOutput.size() > Block.availableSpace()) {
+				byte[] nData = bOutput.toByteArray();
+				nData[0] = 0; // 表示当前block还不是最后一个block
+
+				block.setData(nData);
+				ret.add(block);
+				block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
+
+				bOutput.reset();
+				dos.writeBoolean(false);
+				dos.write(Arrays.copyOfRange(nData, Block.availableSpace(), nData.length));
+			}
 		}
 		dos.close();
-		byte[] data = bOutput.toByteArray();
-		output.write(data);
-		// write the padding bytes
 
-		int occupy = data.length % BLOCK_SIZE;
-		if (occupy > 0) {
-			byte[] padding = new byte[BLOCK_SIZE - occupy];
-			output.write(padding);
+		byte[] nData = bOutput.toByteArray();
+		nData[0] = 1; // 表示当前block还不是最后一个block
+		block.setData(nData);
+		ret.add(block);
+		return ret;
+	}
+
+	public void read(List<Block> blocks) throws IOException {
+		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
+		for (Block block : blocks) {
+			bOutput.write(Arrays.copyOfRange(block.getData(), 1, block.data.length));
+		}
+
+		DataInputStream bInput = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
+		bOutput.close();
+		int num = bInput.readInt();
+		int size = 0;
+		octants.clear();
+		for (int i = 0; i < num; i++) {
+			size = bInput.readInt();
+			totalSize += size + 4;
+			byte[] data = new byte[size];
+			bInput.readFully(data);
+			octants.add(data);
+		}
+	}
+
+	public void write(DataOutput output) throws IOException {
+		List<Block> blocks = toBlocks();
+		for (Block block : blocks) {
+			block.write(output);
 		}
 	}
 
 	public void read(DataInput input) throws IOException {
-		singleBlock = input.readBoolean();
-		int num = 1;
-		// if (!singleBlock) {
-		num = input.readInt();
-		// }
-		int size = 0;
-		octants.clear();
-		for (int i = 0; i < num; i++) {
-			size = input.readInt();
-			totalSize += size + 4;
-			byte[] data = new byte[size];
-			input.readFully(data);
-			octants.add(data);
-		}
-		int occupy = totalSize % BLOCK_SIZE;
-		if (occupy > 0) {
-			byte[] padding = new byte[BLOCK_SIZE - occupy];
-			input.readFully(padding);
-		}
+		List<Block> blocks = new ArrayList<Block>();
+		boolean lastBlock = false;
+		do {
+			Block block = new Block(Block.BLOCKTYPE.DATA_BLOCK, 0);
+			block.setBlockIdx(0);
+			block.read(input);
+			if (block.isDataBlock()) {
+				blocks.add(block);
+			} else {
+				continue;
+			}
+			lastBlock = block.getData()[0] == 1;
+		} while (!lastBlock);
+		read(blocks);
 	}
 
 	public static class BucketID implements Comparable<BucketID> {
@@ -119,7 +155,7 @@ public class Bucket extends Block {
 		}
 
 		public long getFileOffset() {
-			return ((long) blockID) * BLOCK_SIZE;
+			return ((long) blockID) * Block.BLOCK_SIZE;
 		}
 
 		/*
@@ -142,26 +178,18 @@ public class Bucket extends Block {
 		}
 	}
 
-	public int blockNum() {
-		return (totalSize + BLOCK_SIZE - 1) / BLOCK_SIZE;
-	}
-
 	public BucketID blockIdx() {
 		return new BucketID(blockIdx, (short) (octants.size() - 1));
 	}
 
-	public int available() {
-		if (totalSize == BLOCK_SIZE)
-			return 0;
-		return BLOCK_SIZE - totalSize % BLOCK_SIZE;
-	}
-
+	/**
+	 * 当前bucket为空或者空间还足够
+	 * 
+	 * @param length
+	 * @return
+	 */
 	public boolean canStore(int length) {
-		if (singleBlock && octants.isEmpty()) {
-			return true;
-		} else if (!singleBlock) {
-			return false;
-		} else if (totalSize + length + 4 <= BLOCK_SIZE) {
+		if (octants.isEmpty() || totalSize + length + 4 <= Block.availableSpace()) {
 			return true;
 		}
 		return false;
@@ -196,6 +224,12 @@ public class Bucket extends Block {
 
 	public void setBlockIdx(int blockIdx) {
 		this.blockIdx = blockIdx;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		Bucket oBuck = (Bucket) other;
+		return blockIdx == oBuck.blockIdx && octants.equals(oBuck.octants);
 	}
 
 }

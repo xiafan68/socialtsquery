@@ -97,7 +97,7 @@ public class CompactService extends Thread {
 				StringWriter swriter = new StringWriter();
 				PrintWriter pwriter = new PrintWriter(swriter);
 				ex.printStackTrace(pwriter);
-				logger.error(ex.toString());
+				logger.error(swriter.toString());
 				throw new RuntimeException(ex.getMessage());
 			}
 		}
@@ -147,7 +147,10 @@ public class CompactService extends Thread {
 				writer.moveToDir(conf.getTmpDir(), conf.getIndexDir());
 				index.compactTables(new HashSet<SSTableMeta>(toCompact), writer.getMeta());
 			} catch (IOException e) {
-				logger.error(e.getStackTrace());
+				StringWriter sw = new StringWriter();
+				PrintWriter printStream = new PrintWriter(sw);
+				e.printStackTrace(printStream);
+				logger.error(sw.toString());
 				throw new RuntimeException(e);
 			}
 		}

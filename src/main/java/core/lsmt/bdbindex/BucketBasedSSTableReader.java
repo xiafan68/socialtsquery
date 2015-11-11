@@ -17,17 +17,16 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import Util.Pair;
+import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.FileBasedIndexHelper;
 import core.lsmt.IBucketBasedSSTableReader;
-import core.lsmt.IMemTable;
-import core.lsmt.ISSTableWriter;
-import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
 /**
@@ -134,7 +133,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		bucket.reset();
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
-		return (int) (dataInput.getChannel().position() / Bucket.BLOCK_SIZE);
+		return (int) (dataInput.getChannel().position() / Block.BLOCK_SIZE);
 	}
 
 	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {

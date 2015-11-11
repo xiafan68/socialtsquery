@@ -19,7 +19,7 @@ import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 
 /**
- * an iterator visiting leaf nodes of disk octree
+ * 用于扫描一个sstable文件中的一个posting list
  * 
  * @author xiafan
  *
@@ -88,12 +88,6 @@ public class DiskOctreeIterator implements IOctreeIterator {
 			if (ret != null)
 				traverseQueue.offer(ret);
 			ret = traverseQueue.poll();
-		}
-
-		if (ret.getEncoding().getX() == 655360 && ret.getEncoding().getY() == 655360 && ret.getEncoding().getZ() == 4096
-				&& ret.getEdgeLen() == (1 << 12)) {
-			System.out.println("debuging at next of DiskOctreeIterator " + entry + "  " + nextBucketID + " "
-					+ nextBucketID.offset);
 		}
 
 		return ret;

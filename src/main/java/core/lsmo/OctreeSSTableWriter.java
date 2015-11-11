@@ -18,6 +18,7 @@ import Util.Configuration;
 import Util.GroupByKeyIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
+import core.io.Block;
 import core.io.Bucket;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
@@ -279,7 +280,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		try {
 			if (dataBuffer != null)
 				dataBuffer.flush();
-			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE));
+			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Block.BLOCK_SIZE));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

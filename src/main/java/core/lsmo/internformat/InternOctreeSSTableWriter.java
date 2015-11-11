@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
@@ -19,6 +20,8 @@ import Util.Configuration;
 import Util.GroupByKeyIterator;
 import Util.Pair;
 import Util.PeekIterDecorate;
+import core.commom.BDBBtree;
+import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
@@ -63,8 +66,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	private int step;
 	Configuration conf;
-	Bucket buck = new Bucket(0);
-	IndexHelper indexHelper;
+	InternIndexHelper indexHelper;
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -88,12 +90,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 		this.conf = conf;
 		this.step = conf.getIndexStep();
-		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
-					.newInstance(conf);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		indexHelper = new InternIndexHelper(conf);
 	}
 
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
@@ -134,12 +131,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
-		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
-					.newInstance(conf);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		indexHelper = new InternIndexHelper(conf);
 	}
 
 	/**
@@ -152,8 +144,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	public void write() throws IOException {
 		while (iter.hasNext()) {
 			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
-			indexHelper.startPostingList(entry.getKey(), buck.blockIdx());
+			// indexHelper.startPostingList(entry.getKey(), null);
 			// setup meta values
+			indexHelper.startPostingList(entry.getKey(), null);
 			for (IOctreeIterator iter : entry.getValue()) {
 				indexHelper.getDirEntry().merge(iter.getMeta());
 			}
@@ -178,9 +171,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 * @throws IOException
 	 */
 	public void writeOctree(IOctreeIterator iter) throws IOException {
-		boolean first = true;
 		OctreeNode octreeNode = null;
-		int count = 0;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
@@ -192,47 +183,20 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));
 				} else {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					DataOutputStream dos = new DataOutputStream(baos);
-					// first write the octant code, then write the octant
-					octreeNode.getEncoding().write(dos);
-					octreeNode.write(dos);
-					byte[] data = baos.toByteArray();
-					if (!buck.canStore(data.length)) {
-						buck.write(getDataDos());
-						logger.debug(buck);
-						newDataBucket();
-					}
-					logger.debug(octreeNode);
-					buck.storeOctant(data);
-					if (first) {
-						first = false;
-						indexHelper.setupDataStartBlockIdx(buck.blockIdx());
-					}
-					if (count++ % step == 0) {
-						indexHelper.buildIndex(octreeNode.getEncoding(), buck.blockIdx());
-					}
+					indexHelper.addOctant(octreeNode);
 				}
 			}
-		}
-		if (first) {
-			indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 		}
 	}
 
 	public void close() throws IOException {
 		if (dataBuffer != null) {
-			if (buck != null) {
-				buck.write(getDataDos());
-				logger.debug("last bucket:" + buck.toString());
-			}
+			indexHelper.close();
 
 			dataDos.close();
 			dataBuffer.close();
 			dataBuffer = null;
 			dataFileOs.close();
-
-			indexHelper.close();
 		}
 	}
 
@@ -246,7 +210,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	private void endPostingList() throws IOException {
-		indexHelper.endPostingList(buck.blockIdx());
+		indexHelper.endPostingList(null);
 	}
 
 	/**
@@ -266,20 +230,12 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public Bucket getDataBucket() {
-		return buck;
+		return null;
 	}
 
 	@Override
 	public Bucket newDataBucket() {
-		buck.reset();
-		try {
-			if (dataBuffer != null)
-				dataBuffer.flush();
-			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Bucket.BLOCK_SIZE));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return buck;
+		return null;
 	}
 
 	@Override
@@ -299,58 +255,223 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public void delete(File indexDir, SSTableMeta meta) {
-		// dataFile(conf.getIndexDir(), meta).delete();
+		dataFile(conf.getIndexDir(), meta).delete();
 		indexHelper.delete(conf.getIndexDir(), meta);
+	}
+
+	public static File dirMetaFile(File dir, SSTableMeta meta) {
+		return new File(dir, String.format("%d_%d_dir", meta.version, meta.level));
+	}
+
+	public int currentBlockIdx() {
+		return dataDos.size() / Block.BLOCK_SIZE;
 	}
 
 	/**
 	 * 流程： 1. 写dataBuck 2. 抽样，如果命中，写入buck 3. 如果buck写满？
 	 * 
+	 * metablock dblock dblock dblock dblock; metablock
+	 * 
 	 * @author xiafan
 	 *
 	 */
 	private class InternIndexHelper extends IndexHelper {
-		Bucket buck;
+
+		BDBBtree dirMap = null;
+
+		SkipCell cell;
+		// 用于记录cell之后的data blocks
+		ByteArrayOutputStream tempDataBout = new ByteArrayOutputStream();
+		DataOutputStream tempDataDos = new DataOutputStream(tempDataBout);
+
 		Bucket dataBuck;
-		int bOffset = 0;
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
+		List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
+		int curStep = 0;
+		boolean writeFirstBlock = true;
+		boolean sampleFirstIndex = true;
+
+		public InternIndexHelper(Configuration conf) {
+			super(conf);
+		}
 
 		@Override
 		public void openIndexFile(File dir, SSTableMeta meta) throws FileNotFoundException {
+			dirMap = new BDBBtree(dirMetaFile(dir, meta), conf);
+			dirMap.open(false, false);
 
+			cell = new SkipCell(currentBlockIdx());
+			dataBuck = new Bucket((cell.getBlockIdx() + 1) * Block.BLOCK_SIZE);
+		}
+
+		@Override
+		public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
+			curDir = new DirEntry(conf.getIndexKeyFactory());
+			super.startPostingList(key, newListStart);
+			writeFirstBlock = true;
+			sampleFirstIndex = true;
+		}
+
+		public void startPostingList() throws IOException {
+			curDir.startBucketID.blockID = cell.getBlockIdx() + 1 + tempDataDos.size() / Block.BLOCK_SIZE;
+			curDir.startBucketID.offset = (short) (dataBuck.octNum() - 1);
+			// 这个值尚未确定，应为第一个index不一定能写入到cell中
+			curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | cell.size();
+			curStep = 0;
+		}
+
+		@Override
+		public void endPostingList(BucketID postingListEnd) throws IOException {
+			curDir.endBucketID.blockID = cell.getBlockIdx() + 1 + tempDataDos.size() / Block.BLOCK_SIZE;
+			curDir.endBucketID.offset = (short) (dataBuck.octNum() - 1);
+			dirsEndInCurBuck.add(curDir);
+			curDir.sampleNum = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
 		}
 
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
+			int bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
+			// curDir.sampleNum++;
 
+			if (!cell.addIndex(code, bOffset, (short) (dataBuck.octNum() - 1))) {
+				// 创建新的skip cell
+				// first write the meta data
+				cell.write(cell.getBlockIdx() + bOffset).write(dataDos);
+
+				// then write data blocks
+				tempDataBout.writeTo(dataDos);
+				tempDataBout.reset();
+				tempDataDos = new DataOutputStream(tempDataBout);
+
+				cell.reset();
+				cell.setBlockIdx(currentBlockIdx());
+				// setup new context
+				bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
+				dataBuck.setBlockIdx(cell.getBlockIdx() + bOffset + 1);
+
+				bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
+				for (DirEntry entry : dirsStartInCurBuck) {
+					entry.startBucketID.blockID = cell.getBlockIdx() + bOffset + 1;
+				}
+
+				for (DirEntry entry : dirsEndInCurBuck) {
+					entry.endBucketID.blockID = cell.getBlockIdx() + bOffset + 1;
+				}
+				cell.addIndex(code, bOffset, (short) (dataBuck.octNum()-1));
+			}
+			if (sampleFirstIndex) {
+				if (curDir.curKey.toString().equals("time")) {
+					System.out.println();
+				}
+				curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
+				sampleFirstIndex = false;
+			}
 		}
 
-		public void addOctant(OctreeNode node) {
-			buck.storeOctant();
+		public void flushSkipCell() throws IOException {
+			// 创建新的skip cell
+			// first write the meta data
+			cell.write(-1).write(dataDos);
+
+			// then write data blocks
+			tempDataBout.writeTo(dataDos);
+			tempDataBout.close();
+			tempDataBout = null;
+		}
+
+		public void addOctant(OctreeNode node) throws IOException {
+			// store the current node
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(baos);
+			// first write the octant code, then write the octant
+			node.getEncoding().write(dos);
+			node.write(dos);
+			byte[] data = baos.toByteArray();
+
+			if (!dataBuck.canStore(data.length)) {
+				flushLastBuck();
+			}
+			dataBuck.storeOctant(data);
+
+			if (writeFirstBlock) {
+				this.startPostingList();
+				dirsStartInCurBuck.add(curDir);
+				writeFirstBlock = false;
+			}
+
+			// sample index
+			if (curStep++ % step == 0) {
+				buildIndex(node.getEncoding(), null);
+			}
+		}
+
+		public void flushLastBuck() throws IOException {
+			dataBuck.write(tempDataDos);
+			dataBuck.reset();
+			dataBuck.setBlockIdx(tempDataDos.size() / Block.BLOCK_SIZE);
+
+			for (DirEntry entry : dirsEndInCurBuck) {
+				if (entry.curKey.toString().equals("time")) {
+					System.out.println();
+				}
+				dirMap.insert(entry.curKey, entry);
+			}
+			// 以下两个字段均已确定
+			dirsStartInCurBuck.clear();
+			dirsEndInCurBuck.clear();
 		}
 
 		@Override
 		public void moveToDir(File preDir, File dir, SSTableMeta meta) {
-			// TODO Auto-generated method stub
-
+			try {
+				FileUtils.moveDirectory(dirMetaFile(preDir, meta), dirMetaFile(dir, meta));
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+			}
 		}
 
 		@Override
 		public void close() throws IOException {
-			// TODO Auto-generated method stub
-
+			if (tempDataBout != null) {
+				flushLastBuck();
+				flushSkipCell();
+				dirMap.close();
+			}
 		}
 
 		@Override
 		public boolean validate(SSTableMeta meta) {
-			// TODO Auto-generated method stub
-			return false;
+			return true;
 		}
 
 		@Override
 		public boolean delete(File indexDir, SSTableMeta meta) {
-			// TODO Auto-generated method stub
+			try {
+				FileUtils.deleteDirectory(dirMetaFile(indexDir, meta));
+				return true;
+			} catch (IOException e) {
+			}
 			return false;
 		}
+	}
+
+	public static File dataFile(File dir, SSTableMeta meta) {
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
+	}
+
+	@Override
+	public SSTableMeta getMeta() {
+		return meta;
+	}
+
+	@Override
+	public void open(File dir) throws FileNotFoundException {
+		if (!dir.exists())
+			dir.mkdirs();
+
+		dataFileOs = new FileOutputStream(dataFile(dir, meta));
+		dataBuffer = new BufferedOutputStream(dataFileOs);
+		dataDos = new DataOutputStream(dataBuffer);
+		indexHelper.openIndexFile(dir, meta);
 	}
 }

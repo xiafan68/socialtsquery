@@ -35,16 +35,16 @@ public class FlushService extends Thread {
 			List<IMemTable> flushingTables = new ArrayList<IMemTable>(index.getVersion().flushingTables);
 			LockManager.INSTANCE.versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
+				flushingTables = flushingTables.subList(0, 1);
 				StringBuffer buf = new StringBuffer("flushing versions ");
-				for (IMemTable memTable : flushingTables.subList(0, 1)) {
+				for (IMemTable memTable : flushingTables) {
 					buf.append(memTable.getMeta().version);
 					buf.append(" n:");
 					buf.append(memTable.size() + " ");
 				}
 				logger.info(buf.toString());
 
-				ISSTableWriter writer = index.getFactory().newSSTableWriterForFlushing(flushingTables.subList(0, 1),
-						index.getConf());
+				ISSTableWriter writer = index.getFactory().newSSTableWriterForFlushing(flushingTables, index.getConf());
 				try {
 					writer.open(conf.getTmpDir());
 					writer.write();
