@@ -13,34 +13,33 @@ import core.lsmt.LSMTInvertedIndex;
 import segmentation.Interval;
 
 public class IndexValidation {
-	@Test
-	public void crossValidate() throws IOException {
-		PropertyConfigurator.configure("conf/log4j-server2.properties");
+
+	public static LSMTInvertedIndex openIndex(String logPath, String confPath) throws IOException {
+		PropertyConfigurator.configure(logPath);
 		Configuration conf = new Configuration();
-		conf.load("conf/index_twitter.conf");
-		LSMTInvertedIndex bdbIndex = new LSMTInvertedIndex(conf);
+		conf.load(confPath);
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
 		try {
-			bdbIndex.init();
+			index.init();
 		} catch (IOException e) {
 		}
+		return index;
+	}
 
-		conf = new Configuration();
-		conf.load("conf/index_twitter_intern.conf");
-		LSMTInvertedIndex internIndex = new LSMTInvertedIndex(conf);
-		try {
-			internIndex.init();
-		} catch (IOException e) {
-		}
-
+	private static void validate(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {
+		int ts = 0;
+		int te = 700000;
+		int topk = 300;
 		HashMap<Long, Interval> bdb = new HashMap<Long, Interval>();
-		Iterator<Interval> iter = bdbIndex.query(Arrays.asList("time"), 0, 701184, 30, "weighted".toUpperCase());
+		Iterator<Interval> iter = indexA.query(Arrays.asList("time"), ts, te, topk, "weighted".toUpperCase());
 		while (iter.hasNext()) {
 			Interval inv = iter.next();
 			bdb.put(inv.getMid(), inv);
 		}
+		System.out.println("size of bdb:" + bdb.size());
 
 		HashMap<Long, Interval> intern = new HashMap<Long, Interval>();
-		iter = internIndex.query(Arrays.asList("time"), 0, 701184, 30, "weighted".toUpperCase());
+		iter = indexB.query(Arrays.asList("time"), ts, te, topk, "weighted".toUpperCase());
 		while (iter.hasNext()) {
 			Interval inv = iter.next();
 			if (bdb.containsKey(inv.getMid())) {
@@ -58,6 +57,24 @@ public class IndexValidation {
 		for (Interval inv : intern.values()) {
 			System.out.println(inv);
 		}
+
+		System.out.println(bdb.size() + "," + intern.size());
+	}
+
+	@Test
+	public void crossValidateIntern() throws IOException {
+		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter.conf");
+		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter_intern.conf");
+		validate(bdbIndex, internIndex);
+		bdbIndex.close();
+		internIndex.close();
+	}
+
+	@Test
+	public void crossValidateLSMI() throws IOException {
+		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter.conf");
+		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter_lsmi.conf");
+		validate(bdbIndex, internIndex);
 		bdbIndex.close();
 		internIndex.close();
 	}

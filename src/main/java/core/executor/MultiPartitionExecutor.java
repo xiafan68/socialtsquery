@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import core.commom.TempKeywordQuery;
-import core.executor.domain.ISegQueue;
 import core.executor.domain.MergedMidSeg;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;

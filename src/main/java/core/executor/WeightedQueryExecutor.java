@@ -159,6 +159,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		MergedMidSeg preSeg = null;
 		MergedMidSeg newSeg = null;
 		Long mid = midseg.mid;
+
 		/* update the boundary, put it in the QueCand */
 		if (map.containsKey(mid)) {
 			preSeg = map.get(mid);
@@ -201,6 +202,9 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		while (!cand.isEmpty()) {
 			MergedMidSeg seg = cand.peek();
 			cand.poll();
+			if (seg.getMid() == -6294654211l) {
+				System.out.println(seg.getWorstscore());
+			}
 			if (seg.getWorstscore() > topk.getMinWorstScore() && seg.getWorstscore() > cand.getMaxBestScore()) {
 				cand.update(null, topk.peek());
 				topk.poll();
@@ -227,8 +231,10 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		boolean ret = true;
 		Profile.instance.start(Profile.UPDATE_STATE);
 
-		for (MidSegment midseg : node.getValue())
-			ret |= updateCandState(curListIdx, midseg, 1.0f);
+		for (MidSegment midseg : node.getValue()) {
+			if (midseg.getStart() <= query.getEndTime() && midseg.getEndTime() >= query.getStartTime())
+				ret |= updateCandState(curListIdx, midseg, 1.0f);
+		}
 		Profile.instance.end(Profile.UPDATE_STATE);
 
 		if (!plc.hasNext()) {

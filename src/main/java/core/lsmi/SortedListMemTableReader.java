@@ -45,10 +45,14 @@ public class SortedListMemTableReader implements ISSTableReader {
 		MidSegment cur = null;
 
 		public MemorySortedListIterator(SortedListPostinglist postingList, int start, int end) {
-			this.postingList = postingList;
-			this.iter = postingList.iterator();
-			this.start = start;
-			this.end = end;
+			if (postingList != null) {
+				this.postingList = postingList;
+				this.iter = postingList.iterator();
+				this.start = start;
+				this.end = end;
+			} else {
+				postingList = null;
+			}
 		}
 
 		@Override
@@ -71,7 +75,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 
 		@Override
 		public boolean hasNext() throws IOException {
-			if (cur == null && !iter.hasNext()) {
+			if (postingList == null || (cur == null && !iter.hasNext())) {
 				return false;
 			} else if (cur == null) {
 				advance();
