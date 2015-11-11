@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
@@ -183,6 +183,61 @@ public class InternPostingListIter implements IOctreeIterator {
 	}
 
 	private Pair<WritableComparableKey, BucketID> cellOffset() throws IOException {
+		Pair<WritableComparableKey, BucketID> ret = new Pair<WritableComparableKey, BucketID>(null, null);
+		SkipCell curCell = null;
+
+		boolean hitFirst = false;
+		int preSkipBlockIdx = -1;
+		do {
+			readMetaBlockAndClearCache(curSkipBlockIdx);
+			curCell = skipMeta.get(curSkipBlockIdx);
+
+			int skipIdx = 0;
+			int start = curSkipBlockIdx == DirEntry.indexBlockIdx(entry.indexStartOffset)
+					? DirEntry.indexOffsetInBlock(entry.indexStartOffset) : 0;
+			int end = curSkipBlockIdx == DirEntry.indexBlockIdx(entry.sampleNum)
+					? DirEntry.indexOffsetInBlock(entry.sampleNum) + 1 : curCell.size();
+			skipIdx = curCell.cellOffset(curMin, start, end);
+
+			if (skipIdx == curCell.size() - 1) {
+				Pair<WritableComparableKey, BucketID> temp = curCell.getIndexEntry(skipIdx);
+				ret.setKey(temp.getKey());
+				ret.setValue(new BucketID(curCell.getBlockIdx() + temp.getValue().blockID + 1, temp.getValue().offset));
+				if (hitFirst) {
+					break;
+				}
+				preSkipBlockIdx = curSkipBlockIdx;
+				curSkipBlockIdx = curCell.nextMetaBlockIdx;
+			} else if (skipIdx != 0) {
+				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
+				assert tmp.getKey().compareTo(curMin) <= 0;
+				ret.setKey(tmp.getKey());
+				ret.setValue(new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
+				break;
+			} else {
+				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
+				if (tmp.getKey().compareTo(curMin) <= 0) {
+					ret.setKey(tmp.getKey());
+					ret.setValue(
+							new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
+				} else {
+					// 对于这种情况下，一定是在前一个block中已经找到了
+					// assert ret.getKey() != null;
+					hitFirst = true;
+					if (preSkipBlockIdx >= 0)
+						curSkipBlockIdx = preSkipBlockIdx;
+					else {
+						assert skipMeta.ceilingKey(curSkipBlockIdx) != null;
+						curSkipBlockIdx = skipMeta.ceilingKey(curSkipBlockIdx);
+					}
+				}
+				break;
+			}
+		} while (true);
+		return ret;
+	}
+
+	private Pair<WritableComparableKey, BucketID> cellOffset_pre() throws IOException {
 		Pair<WritableComparableKey, BucketID> ret = new Pair<WritableComparableKey, BucketID>(null, null);
 		SkipCell curCell = null;
 

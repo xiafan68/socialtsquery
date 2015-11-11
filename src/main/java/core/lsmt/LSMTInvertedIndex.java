@@ -240,6 +240,15 @@ public class LSMTInvertedIndex<PType> {
 				LockManager.INSTANCE.versionWriteUnLock();
 			}
 		}
+
+		// block until data have been flushed
+		while (versionSet.flushingTables.size() >= 5) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
