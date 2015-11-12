@@ -35,18 +35,34 @@ import fanxia.file.ByteUtil;
 public class SkipCell {
 	Block metaBlock;
 	int blockIdx;
-	ByteArrayOutputStream bout = new ByteArrayOutputStream(Block.availableSpace());
-	DataOutputStream metaDos = new DataOutputStream(bout);
-	List<Pair<WritableComparableKey, BucketID>> skipList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
-	int size = 0;
 	int nextMetaBlockIdx = 0;// 下一个meta block的地址
+	WritableComparableKeyFactory factory;
 
-	public SkipCell(int blockIdx) {
+	// 以下字段用于写索引
+	ByteArrayOutputStream bout;
+	DataOutputStream metaDos = null;
+	ByteArrayOutputStream lastBuckBout;
+	DataOutputStream lastBuckMetaDos;
+
+	int size = 0;
+
+	// 当从文件中都出时反序列化出以下字段
+	List<Pair<WritableComparableKey, BucketID>> skipList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
+
+	public SkipCell(int blockIdx, WritableComparableKeyFactory factory) {
 		this.blockIdx = blockIdx;
+		this.factory = factory;
 	}
 
 	public int getBlockIdx() {
 		return blockIdx;
+	}
+
+	private void setupWriteStream() {
+		bout = new ByteArrayOutputStream(Block.availableSpace());
+		metaDos = new DataOutputStream(bout);
+		lastBuckBout = new ByteArrayOutputStream();
+		lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 	}
 
 	public void setBlockIdx(int blockIdx) {
@@ -59,6 +75,17 @@ public class SkipCell {
 
 	public int size() {
 		return skipList.size() > 0 ? skipList.size() : size;
+	}
+
+	/**
+	 * 如果最后一个bucket写出到缓冲区了，那么它的blockidx就确定了，这时当前skipcell中对应的索引项就可以写出去
+	 * 
+	 * @throws IOException
+	 */
+	public void newBucket() throws IOException {
+		metaDos.write(lastBuckBout.toByteArray());
+		lastBuckBout.reset();
+		lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 	}
 
 	public int cellOffset(WritableComparableKey key, int start, int end) {
@@ -79,7 +106,7 @@ public class SkipCell {
 		return idx;
 	}
 
-	public void read(Block metaBlock, WritableComparableKeyFactory factory) throws IOException {
+	public void read(Block metaBlock) throws IOException {
 		ByteArrayInputStream binput = new ByteArrayInputStream(metaBlock.getData());
 		DataInputStream input = new DataInputStream(binput);
 		nextMetaBlockIdx = input.readInt();
@@ -114,17 +141,42 @@ public class SkipCell {
 	 * @throws IOException
 	 */
 	public boolean addIndex(WritableComparableKey code, int bOffset, short octOffset) throws IOException {
-		code.write(metaDos);
-		ByteUtil.writeVInt(metaDos, bOffset);
-		ByteUtil.writeVInt(metaDos, octOffset);
-		boolean ret = bout.size() <= Block.availableSpace();
+		if (metaDos == null) {
+			setupWriteStream();
+		}
+		code.write(lastBuckMetaDos);
+		ByteUtil.writeVInt(lastBuckMetaDos, bOffset);
+		ByteUtil.writeVInt(lastBuckMetaDos, octOffset);
+		boolean ret = (bout.size() + lastBuckMetaDos.size()) <= Block.availableSpace();
 		if (ret) {
 			size++;
+		} else {
+			ByteArrayOutputStream tempBout = new ByteArrayOutputStream();
+			DataOutputStream tempMetaDos = new DataOutputStream(tempBout);
+			DataInputStream input = new DataInputStream(new ByteArrayInputStream(lastBuckBout.toByteArray()));
+			WritableComparableKey tempCode = factory.createIndexKey();
+			int curBOffset = 0;
+			int curOctOffset = 0;
+			while (input.available() > 0) {
+				tempCode.read(input);
+				curBOffset = ByteUtil.readVInt(input);
+				curOctOffset = ByteUtil.readVInt(input);
+				tempCode.write(tempMetaDos);
+				ByteUtil.writeVInt(tempMetaDos, curBOffset);
+				ByteUtil.writeVInt(tempMetaDos, curOctOffset);
+			}
+			lastBuckBout.close();
+			lastBuckMetaDos.close();
+			lastBuckBout = tempBout;
+			lastBuckMetaDos = tempMetaDos;
 		}
 		return ret;
 	}
 
 	public Block write(int nextMetaBlockIdx) throws IOException {
+		if (lastBuckMetaDos.size() > 0) {
+			metaDos.write(lastBuckBout.toByteArray());
+		}
 		byte[] metaArray = bout.toByteArray();
 		ByteUtil.writeInt(size, metaArray, 4);
 		metaBlock = new Block(BLOCKTYPE.META_BLOCK, 0);

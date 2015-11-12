@@ -36,10 +36,10 @@ public class Bucket {
 
 	public void storeOctant(byte[] octant) {
 		octants.add(octant);
-		if (octant.length + totalSize > Block.availableSpace()) {
+		if (octant.length + totalSize + 4 > Block.availableSpace()) {
 			singleBlock = false;
-			totalSize += 4;
 		}
+		totalSize += 4;
 		totalSize += octant.length;
 	}
 
@@ -47,31 +47,35 @@ public class Bucket {
 		List<Block> ret = new ArrayList<Block>();
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bOutput);
-		dos.writeBoolean(singleBlock);
 		dos.writeInt(octants.size());
-		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
+
 		for (byte[] data : octants) {
 			dos.writeInt(data.length);
 			dos.write(data);
-			if (bOutput.size() > Block.availableSpace()) {
-				byte[] nData = bOutput.toByteArray();
-				nData[0] = 0; // 表示当前block还不是最后一个block
-
-				block.setData(nData);
-				ret.add(block);
-				block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
-
-				bOutput.reset();
-				dos.writeBoolean(false);
-				dos.write(Arrays.copyOfRange(nData, Block.availableSpace(), nData.length));
-			}
 		}
 		dos.close();
 
 		byte[] nData = bOutput.toByteArray();
-		nData[0] = 1; // 表示当前block还不是最后一个block
-		block.setData(nData);
-		ret.add(block);
+		int start = 0;
+		int end = 0;
+		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
+		ByteArrayOutputStream tempBount = new ByteArrayOutputStream(Block.availableSpace());
+		while (start < nData.length) {
+			end = start + Block.availableSpace();
+			end = Math.min(end, nData.length);
+			if (end >= nData.length) {
+				tempBount.write(1);
+			} else {
+				tempBount.write(0);
+			}
+			tempBount.write(Arrays.copyOfRange(nData, start, end));
+			block.setData(tempBount.toByteArray());
+			tempBount.reset();
+			ret.add(block);
+			block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
+			start = end;
+		}
+		tempBount.close();
 		return ret;
 	}
 
@@ -229,7 +233,16 @@ public class Bucket {
 	@Override
 	public boolean equals(Object other) {
 		Bucket oBuck = (Bucket) other;
-		return blockIdx == oBuck.blockIdx && octants.equals(oBuck.octants);
+		boolean ret = octNum() == oBuck.octNum();
+		if (ret) {
+			for (int i = 0; i < octNum(); i++) {
+				byte[] curData = octants.get(i);
+				ret |= curData.equals(oBuck.getOctree(i));
+				if (!ret)
+					break;
+			}
+		}
+		return ret;
 	}
 
 }

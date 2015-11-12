@@ -152,16 +152,16 @@ public class InternPostingListIter implements IOctreeIterator {
 	}
 
 	private void loadMetaBlock(Block block) throws IOException {
-		SkipCell cell = new SkipCell(block.getBlockIdx());
-		cell.read(block, reader.getFactory());
+		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getFactory());
+		cell.read(block);
 		skipMeta.put(block.getBlockIdx(), cell);
 	}
 
 	private void loadMetaBlock(int blockIdx) throws IOException {
 		Block block = new Block(BLOCKTYPE.META_BLOCK, blockIdx);
 		reader.getBlockFromDataFile(block);
-		SkipCell cell = new SkipCell(block.getBlockIdx());
-		cell.read(block, reader.getFactory());
+		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getFactory());
+		cell.read(block);
 		skipMeta.put(block.getBlockIdx(), cell);
 	}
 
@@ -293,6 +293,11 @@ public class InternPostingListIter implements IOctreeIterator {
 				blocks.add(block);
 			} else {
 				loadMetaBlock(block);
+				if (blocks.isEmpty()) {// 必须在这里把nextID和curBuck的值设置正确，否这在判断是否遍历到posting
+										// list结尾时会出错
+					curBuck.setBlockIdx(nextBlockID);
+					nextID.blockID = nextBlockID;
+				}
 				continue;
 			}
 			lastBlock = block.getData()[0] == 1;

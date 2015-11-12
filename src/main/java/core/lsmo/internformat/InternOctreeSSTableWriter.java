@@ -300,7 +300,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			dirMap = new BDBBtree(dirMetaFile(dir, meta), conf);
 			dirMap.open(false, false);
 
-			cell = new SkipCell(currentBlockIdx());
+			cell = new SkipCell(currentBlockIdx(), conf.getIndexValueFactory());
 			dataBuck = new Bucket((cell.getBlockIdx() + 1) * Block.BLOCK_SIZE);
 		}
 
@@ -313,17 +313,17 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 
 		public void startPostingList() throws IOException {
-			curDir.startBucketID.blockID = cell.getBlockIdx() + 1 + tempDataDos.size() / Block.BLOCK_SIZE;
-			curDir.startBucketID.offset = (short) (dataBuck.octNum() - 1);
+			curDir.startBucketID.copy(dataBuck.blockIdx());
 			// 这个值尚未确定，应为第一个index不一定能写入到cell中
-			curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | cell.size();
+			//curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | cell.size();
 			curStep = 0;
+			dirsStartInCurBuck.add(curDir);
+			writeFirstBlock = false;
 		}
 
 		@Override
 		public void endPostingList(BucketID postingListEnd) throws IOException {
-			curDir.endBucketID.blockID = cell.getBlockIdx() + 1 + tempDataDos.size() / Block.BLOCK_SIZE;
-			curDir.endBucketID.offset = (short) (dataBuck.octNum() - 1);
+			curDir.endBucketID.copy(dataBuck.blockIdx());
 			dirsEndInCurBuck.add(curDir);
 			curDir.sampleNum = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
 		}
@@ -357,12 +357,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				for (DirEntry entry : dirsEndInCurBuck) {
 					entry.endBucketID.blockID = cell.getBlockIdx() + bOffset + 1;
 				}
-				cell.addIndex(code, bOffset, (short) (dataBuck.octNum()-1));
+				cell.addIndex(code, bOffset, (short) (dataBuck.octNum() - 1));
 			}
 			if (sampleFirstIndex) {
-				if (curDir.curKey.toString().equals("time")) {
-					System.out.println();
-				}
 				curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
 				sampleFirstIndex = false;
 			}
@@ -395,8 +392,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 			if (writeFirstBlock) {
 				this.startPostingList();
-				dirsStartInCurBuck.add(curDir);
-				writeFirstBlock = false;
 			}
 
 			// sample index
@@ -416,6 +411,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				}
 				dirMap.insert(entry.curKey, entry);
 			}
+			cell.newBucket();
 			// 以下两个字段均已确定
 			dirsStartInCurBuck.clear();
 			dirsEndInCurBuck.clear();

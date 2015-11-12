@@ -59,7 +59,7 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 		dirMap.open(false, false);
 	}
 
-	public int getBlockFromDataFile(Block block) throws IOException {
+	public synchronized int getBlockFromDataFile(Block block) throws IOException {
 		Profile.instance.start("block");
 		try {
 			dataInput.seek(block.getFileOffset());
