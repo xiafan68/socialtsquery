@@ -47,8 +47,8 @@ public class Bucket {
 		List<Block> ret = new ArrayList<Block>();
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bOutput);
-		dos.writeInt(octants.size());
 
+		dos.writeInt(octants.size());
 		for (byte[] data : octants) {
 			dos.writeInt(data.length);
 			dos.write(data);

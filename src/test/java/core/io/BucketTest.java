@@ -63,7 +63,7 @@ public class BucketTest {
 		input = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
 		readBuck.read(input);
 		Assert.assertEquals(buck, readBuck);
-		
+
 		buck = new Bucket(0);
 		buck.storeOctant(new byte[10772]);
 		bOutput = new ByteArrayOutputStream();
@@ -75,5 +75,20 @@ public class BucketTest {
 		input = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
 		readBuck.read(input);
 		Assert.assertEquals(buck, readBuck);
+
+		buck = new Bucket(0);
+		for (int i = 0; i < 100; i++) {
+			buck.storeOctant(new byte[40]);
+		}
+		bOutput = new ByteArrayOutputStream();
+		dos = new DataOutputStream(bOutput);
+		buck.write(dos);
+		dos.close();
+
+		readBuck = new Bucket(0);
+		input = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
+		readBuck.read(input);
+		Assert.assertEquals(buck, readBuck);
+
 	}
 }
