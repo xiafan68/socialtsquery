@@ -77,16 +77,10 @@ public class Bucket {
 			start = end;
 		}
 		tempBount.close();
-		if (ret.size() > 1) {
-			System.out.println("1first " + Arrays.toString(ret.get(0).getData()));
-		}
 		return ret;
 	}
 
 	public void read(List<Block> blocks) throws IOException {
-		if (blocks.size() > 1) {
-			System.out.println("2first " + Arrays.toString(blocks.get(0).getData()));
-		}
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		for (Block block : blocks) {
 			bOutput.write(Arrays.copyOfRange(block.getData(), 1, block.data.length));
