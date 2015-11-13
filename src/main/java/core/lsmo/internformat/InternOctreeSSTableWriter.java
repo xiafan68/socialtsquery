@@ -315,7 +315,8 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		public void startPostingList() throws IOException {
 			curDir.startBucketID.copy(dataBuck.blockIdx());
 			// 这个值尚未确定，应为第一个index不一定能写入到cell中
-			//curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | cell.size();
+			// curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) |
+			// cell.size();
 			curStep = 0;
 			dirsStartInCurBuck.add(curDir);
 			writeFirstBlock = false;
@@ -403,10 +404,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		public void flushLastBuck() throws IOException {
 			dataBuck.write(tempDataDos);
 			dataBuck.reset();
-			dataBuck.setBlockIdx(tempDataDos.size() / Block.BLOCK_SIZE);
+			dataBuck.setBlockIdx(cell.getBlockIdx() + tempDataDos.size() / Block.BLOCK_SIZE + 1);
 
 			for (DirEntry entry : dirsEndInCurBuck) {
-				if (entry.curKey.toString().equals("time")) {
+				if (entry.curKey.toString().equals("0")) {
 					System.out.println();
 				}
 				dirMap.insert(entry.curKey, entry);

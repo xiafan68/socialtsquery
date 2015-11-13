@@ -47,7 +47,7 @@ public class Block {
 		output.write(data, 0, len);
 
 		// padding bytes
-		for (int i = 0; i < availableSpace() - data.length; i++) {
+		for (int i = 0; i < availableSpace() - len; i++) {
 			output.writeByte(0);
 		}
 	}

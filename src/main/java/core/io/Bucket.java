@@ -56,12 +56,13 @@ public class Bucket {
 		dos.close();
 
 		byte[] nData = bOutput.toByteArray();
+		// System.out.println("original array:\n" + Arrays.toString(nData));
 		int start = 0;
 		int end = 0;
 		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
 		ByteArrayOutputStream tempBount = new ByteArrayOutputStream(Block.availableSpace());
 		while (start < nData.length) {
-			end = start + Block.availableSpace();
+			end = start + Block.availableSpace() - 1;
 			end = Math.min(end, nData.length);
 			if (end >= nData.length) {
 				tempBount.write(1);
@@ -76,15 +77,23 @@ public class Bucket {
 			start = end;
 		}
 		tempBount.close();
+		if (ret.size() > 1) {
+			System.out.println("1first " + Arrays.toString(ret.get(0).getData()));
+		}
 		return ret;
 	}
 
 	public void read(List<Block> blocks) throws IOException {
+		if (blocks.size() > 1) {
+			System.out.println("2first " + Arrays.toString(blocks.get(0).getData()));
+		}
 		ByteArrayOutputStream bOutput = new ByteArrayOutputStream();
 		for (Block block : blocks) {
 			bOutput.write(Arrays.copyOfRange(block.getData(), 1, block.data.length));
 		}
 
+		// System.out.println("read array:\n" +
+		// Arrays.toString(bOutput.toByteArray()));
 		DataInputStream bInput = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
 		bOutput.close();
 		int num = bInput.readInt();
