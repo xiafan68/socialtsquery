@@ -58,6 +58,10 @@ public class SkipCell {
 		return blockIdx;
 	}
 
+	public long toFileOffset() {
+		return (((long) getBlockIdx()) << 32) | (size() - 1);
+	}
+
 	private void setupWriteStream() {
 		bout = new ByteArrayOutputStream(Block.availableSpace());
 		metaDos = new DataOutputStream(bout);
@@ -140,7 +144,7 @@ public class SkipCell {
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean addIndex(WritableComparableKey code, int bOffset, short octOffset) throws IOException {
+	private boolean addIndex(WritableComparableKey code, int bOffset, short octOffset) throws IOException {
 		if (metaDos == null) {
 			setupWriteStream();
 		}
@@ -171,6 +175,11 @@ public class SkipCell {
 			lastBuckMetaDos = tempMetaDos;
 		}
 		return ret;
+	}
+
+	public boolean addIndex(WritableComparableKey code, BucketID indexBlockIdx) throws IOException {
+		int bOffset = indexBlockIdx.blockID - blockIdx - 1;
+		return addIndex(code, bOffset, indexBlockIdx.offset);
 	}
 
 	public Block write(int nextMetaBlockIdx) throws IOException {

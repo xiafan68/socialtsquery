@@ -108,7 +108,7 @@ public class IndexConsoleClient {
 					}
 				} catch (Exception ex) {
 					ex.printStackTrace();
-					client.close();
+					//client.close();
 				}
 				long cost = System.currentTimeMillis() - startTime;
 

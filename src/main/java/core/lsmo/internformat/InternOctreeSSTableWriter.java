@@ -213,21 +213,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		indexHelper.endPostingList(null);
 	}
 
-	/**
-	 * @return the dataFileOs
-	 * @throws IOException
-	 */
-	public long getDataFilePosition() throws IOException {
-		return dataFileOs.getChannel().position();
-	}
-
-	/**
-	 * @return the dataDos
-	 */
-	public DataOutputStream getDataDos() {
-		return dataDos;
-	}
-
 	@Override
 	public Bucket getDataBucket() {
 		return null;
@@ -312,11 +297,13 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			sampleFirstIndex = true;
 		}
 
+		/**
+		 * 当当前posting list第一次存入了dataBuck时才调用这个函数
+		 * 
+		 * @throws IOException
+		 */
 		public void startPostingList() throws IOException {
 			curDir.startBucketID.copy(dataBuck.blockIdx());
-			// 这个值尚未确定，应为第一个index不一定能写入到cell中
-			// curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) |
-			// cell.size();
 			curStep = 0;
 			dirsStartInCurBuck.add(curDir);
 			writeFirstBlock = false;
@@ -326,15 +313,18 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		public void endPostingList(BucketID postingListEnd) throws IOException {
 			curDir.endBucketID.copy(dataBuck.blockIdx());
 			dirsEndInCurBuck.add(curDir);
-			curDir.sampleNum = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
+			curDir.sampleNum = cell.toFileOffset();
+		}
+
+		private int getCurBuckBlockID() {
+			return cell.getBlockIdx() + tempDataDos.size() / Block.BLOCK_SIZE + 1;
 		}
 
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
 			int bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
-			// curDir.sampleNum++;
 
-			if (!cell.addIndex(code, bOffset, (short) (dataBuck.octNum() - 1))) {
+			if (!cell.addIndex(code, dataBuck.blockIdx())) {
 				// 创建新的skip cell
 				// first write the meta data
 				cell.write(cell.getBlockIdx() + bOffset).write(dataDos);
@@ -347,21 +337,18 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				cell.reset();
 				cell.setBlockIdx(currentBlockIdx());
 				// setup new context
-				bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
-				dataBuck.setBlockIdx(cell.getBlockIdx() + bOffset + 1);
-
-				bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
+				dataBuck.setBlockIdx(getCurBuckBlockID());
 				for (DirEntry entry : dirsStartInCurBuck) {
-					entry.startBucketID.blockID = cell.getBlockIdx() + bOffset + 1;
+					entry.startBucketID.blockID = dataBuck.blockIdx().blockID;
 				}
 
 				for (DirEntry entry : dirsEndInCurBuck) {
-					entry.endBucketID.blockID = cell.getBlockIdx() + bOffset + 1;
+					entry.endBucketID.blockID = dataBuck.blockIdx().blockID;
 				}
-				cell.addIndex(code, bOffset, (short) (dataBuck.octNum() - 1));
+				cell.addIndex(code, dataBuck.blockIdx());
 			}
 			if (sampleFirstIndex) {
-				curDir.indexStartOffset = (((long) cell.getBlockIdx()) << 32) | (cell.size() - 1);
+				curDir.indexStartOffset = cell.toFileOffset();
 				sampleFirstIndex = false;
 			}
 		}
@@ -404,12 +391,12 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		public void flushLastBuck() throws IOException {
 			dataBuck.write(tempDataDos);
 			dataBuck.reset();
-			dataBuck.setBlockIdx(cell.getBlockIdx() + tempDataDos.size() / Block.BLOCK_SIZE + 1);
+			dataBuck.setBlockIdx(getCurBuckBlockID());
 
 			for (DirEntry entry : dirsEndInCurBuck) {
-				if (entry.curKey.toString().equals("0")) {
-					System.out.println();
-				}
+				// if (entry.curKey.toString().equals("0")) {
+				// System.out.println();
+				// }
 				dirMap.insert(entry.curKey, entry);
 			}
 			cell.newBucket();
