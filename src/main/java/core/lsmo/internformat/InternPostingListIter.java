@@ -206,8 +206,12 @@ public class InternPostingListIter implements IOctreeIterator {
 				if (hitFirst) {
 					break;
 				}
-				preSkipBlockIdx = curSkipBlockIdx;
-				curSkipBlockIdx = curCell.nextMetaBlockIdx;
+				if (curCell.nextMetaBlockIdx != -1) {
+					preSkipBlockIdx = curSkipBlockIdx;
+					curSkipBlockIdx = curCell.nextMetaBlockIdx;
+				} else {
+					break;
+				}
 			} else if (skipIdx != 0) {
 				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
 				assert tmp.getKey().compareTo(curMin) <= 0;
