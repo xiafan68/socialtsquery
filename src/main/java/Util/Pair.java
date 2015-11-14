@@ -33,6 +33,12 @@ public class Pair<K, V> implements Entry<K, V> {
 		return pre;
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		Pair<K, V> oObj = (Pair<K, V>) other;
+		return key.equals(oObj.key) && value.equals(oObj.value);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 

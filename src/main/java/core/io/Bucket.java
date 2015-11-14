@@ -165,6 +165,12 @@ public class Bucket {
 			return ((long) blockID) * Block.BLOCK_SIZE;
 		}
 
+		@Override
+		public boolean equals(Object other) {
+			BucketID oBuckID = (BucketID) other;
+			return blockID == oBuckID.blockID && offset == oBuckID.offset;
+		}
+
 		/*
 		 * (non-Javadoc)
 		 * 

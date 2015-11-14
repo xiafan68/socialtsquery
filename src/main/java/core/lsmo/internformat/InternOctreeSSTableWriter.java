@@ -327,7 +327,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
 				// 创建新的skip cell
 				// first write the meta data
-				cell.write(cell.getBlockIdx() + bOffset).write(dataDos);
+				cell.write(cell.getBlockIdx() + bOffset + 1).write(dataDos);
 
 				// then write data blocks
 				tempDataBout.writeTo(dataDos);
@@ -357,7 +357,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			// 创建新的skip cell
 			// first write the meta data
 			cell.write(-1).write(dataDos);
-
+			cell.reset();
 			// then write data blocks
 			tempDataBout.writeTo(dataDos);
 			tempDataBout.close();

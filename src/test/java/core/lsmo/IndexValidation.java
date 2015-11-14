@@ -9,7 +9,11 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import Util.Configuration;
+import core.commom.BDBBtree.BDBKeyIterator;
+import core.lsmo.internformat.BlockBasedSSTableReader;
+import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.WritableComparableKey;
 import segmentation.Interval;
 
 public class IndexValidation {
@@ -24,6 +28,30 @@ public class IndexValidation {
 		} catch (IOException e) {
 		}
 		return index;
+	}
+
+	@Test
+	public void validate() throws IOException {
+		LSMTInvertedIndex index = openIndex("conf/log4j-server2.properties", "conf/index_twitter_intern.conf");
+		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
+			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
+			Iterator<WritableComparableKey> iter = reader.keySetIter();
+			int start = 0;
+			int end = Integer.MAX_VALUE;
+			int k = 10;
+			while (iter.hasNext()) {
+				WritableComparableKey key = iter.next();
+				System.out.println(key);
+				Iterator<Interval> invs = index.query(Arrays.asList(key.toString()), start, end, k, "WEIGHTED");
+				if (invs.hasNext()) {
+					Interval inv = invs.next();
+					index.query(Arrays.asList(key.toString()), inv.getStart(), inv.getEnd(), k, "WEIGHTED");
+				}
+			}
+			((BDBKeyIterator) iter).close();
+		}
+		index.close();
+
 	}
 
 	private static void validate(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {

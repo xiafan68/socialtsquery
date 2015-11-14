@@ -41,6 +41,7 @@ public class SkipCell {
 	// 以下字段用于写索引
 	ByteArrayOutputStream bout;
 	DataOutputStream metaDos = null;
+	// 用于存留最后一个bucket的数据
 	ByteArrayOutputStream lastBuckBout;
 	DataOutputStream lastBuckMetaDos;
 
@@ -129,7 +130,10 @@ public class SkipCell {
 		try {
 			metaDos.writeInt(nextMetaBlockIdx);
 			metaDos.writeInt(0);
+			lastBuckBout.reset();
+			lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 			size = 0;
+			skipList.clear();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -147,6 +151,7 @@ public class SkipCell {
 	private boolean addIndex(WritableComparableKey code, int bOffset, short octOffset) throws IOException {
 		if (metaDos == null) {
 			setupWriteStream();
+			reset();
 		}
 		code.write(lastBuckMetaDos);
 		ByteUtil.writeVInt(lastBuckMetaDos, bOffset);
@@ -186,11 +191,39 @@ public class SkipCell {
 		if (lastBuckMetaDos.size() > 0) {
 			metaDos.write(lastBuckBout.toByteArray());
 		}
+		this.nextMetaBlockIdx = nextMetaBlockIdx;
 		byte[] metaArray = bout.toByteArray();
+		ByteUtil.writeInt(nextMetaBlockIdx, metaArray, 0);
 		ByteUtil.writeInt(size, metaArray, 4);
 		metaBlock = new Block(BLOCKTYPE.META_BLOCK, 0);
 		metaBlock.setData(metaArray);
 		return metaBlock;
 	}
 
+	private void deserialize() throws IOException {
+		if (skipList.size() == 0) {
+			DataInputStream input = new DataInputStream(new ByteArrayInputStream(bout.toByteArray()));
+			input.readInt();
+			input.readInt();
+			for (int i = 0; i < size; i++) {
+				WritableComparableKey key = factory.createIndexKey();
+				key.read(input);
+				BucketID bucket = new BucketID();
+				bucket.read(input);
+				skipList.add(new Pair<WritableComparableKey, BucketID>(key, bucket));
+			}
+		}
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		SkipCell oCell = (SkipCell) other;
+		try {
+			this.deserialize();
+			oCell.deserialize();
+			return nextMetaBlockIdx == oCell.nextMetaBlockIdx && this.skipList.equals(oCell.skipList);
+		} catch (IOException e) {
+		}
+		return false;
+	}
 }
