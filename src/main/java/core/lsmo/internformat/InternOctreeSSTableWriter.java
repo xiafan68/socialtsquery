@@ -325,7 +325,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			int bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
 
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
-				if (meta.version==255 && meta.version==7&&cell.blockIdx==524287){
+				if (meta.version==255 && meta.level==7&&cell.blockIdx==524287){
 					System.out.println();
 				}
 				// 创建新的skip cell
