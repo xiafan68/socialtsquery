@@ -493,7 +493,6 @@ public class LSMTInvertedIndex<PType> {
 				}
 				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
 					delIndexFile(reader.getMeta());
-
 				}
 			}
 		}

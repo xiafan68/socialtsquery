@@ -7,10 +7,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.log4j.PropertyConfigurator;
+
+import Util.Configuration;
 import Util.Pair;
 import Util.Profile;
 import core.commom.BDBBtree;
 import core.io.Block;
+import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -41,8 +45,8 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	public boolean isInited() {
 		return true;
 	}
-	
-	public DirEntry getDirEntry(WritableComparableKey key) throws IOException{
+
+	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
 		return dirMap.get(key);
 	}
 
@@ -112,5 +116,27 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	@Override
 	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
 		return new InternPostingListIter(dirMap.get(key), this, start, end);
+	}
+
+	public static void main(String[] args) throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server.properties");
+		Configuration conf = new Configuration();
+		conf.load("conf/index_twitter_intern.conf");
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		BlockBasedSSTableReader reader = new BlockBasedSSTableReader(index, new SSTableMeta(255, 7));
+		reader.init();
+		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
+		for (int i = 516000; i < 527300; i++) {
+			block.setBlockIdx(i);
+			reader.getBlockFromDataFile(block);
+			//System.out.print(i + "");
+			if (block.isDataBlock()) {
+				//System.out.println(" is data");
+			} else {
+				System.out.println(i+" is meta");
+			}
+		}
+		reader.close();
+
 	}
 }

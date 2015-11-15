@@ -319,6 +319,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
+				if (meta.version==255 && meta.level==7&&cell.blockIdx==524287){
+					System.out.println();
+				}
 				// 创建新的skip cell
 				// first write the meta data
 				cell.write(getCurBuckBlockID()).write(dataDos);
