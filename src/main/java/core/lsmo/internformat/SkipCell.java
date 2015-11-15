@@ -171,7 +171,8 @@ public class SkipCell {
 				tempCode.read(input);
 				tempCode.write(metaDos);
 				// 当前的bucket的blockID加1
-				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input) + 1);
+				// TODO:理论上这里应该要+1，但是+1会导致字节数增加
+				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input));
 				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input));
 			}
 			lastBuckBout.reset();

@@ -1,9 +1,7 @@
 package core.lsmo.internformat;
 
-import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -244,6 +242,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public int currentBlockIdx() throws IOException {
+		dataDos.flush();
 		dataFileOs.flush();
 		return (int) (dataFileOs.getChannel().size() / Block.BLOCK_SIZE);
 	}
@@ -319,7 +318,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
-				if (meta.version==255 && meta.level==7&&cell.blockIdx==524287){
+				if (meta.version == 255 && meta.level == 7 && cell.blockIdx == 524287) {
 					System.out.println();
 				}
 				// 创建新的skip cell
