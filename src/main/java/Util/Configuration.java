@@ -52,7 +52,7 @@ public class Configuration {
 	}
 
 	public boolean debugMode() {
-		return Boolean.parseBoolean(props.getProperty("debug", "false"));
+		return Boolean.parseBoolean(props.getProperty("debug", "true"));
 	}
 
 	/**

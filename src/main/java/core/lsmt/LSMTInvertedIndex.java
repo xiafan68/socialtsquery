@@ -101,7 +101,7 @@ public class LSMTInvertedIndex<PType> {
 		CommitLog.INSTANCE.recover(this);
 		CommitLog.INSTANCE.openNewLog(curTable.getMeta().version);
 		compactService = new CompactService(this);
-		compactService.start();
+		//compactService.start();
 		LockManager.INSTANCE.setBootStrap();
 		bootstrap = false;
 
@@ -493,7 +493,6 @@ public class LSMTInvertedIndex<PType> {
 				}
 				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
 					delIndexFile(reader.getMeta());
-
 				}
 			}
 		}

@@ -158,7 +158,7 @@ public enum CommitLog {
 			}
 		} catch (Exception ex) {
 			logger.error(ex.getMessage());
-			throw new RuntimeException(ex);
+			//throw new RuntimeException(ex);
 		}
 		tree.maySwitchMemtable();
 	}

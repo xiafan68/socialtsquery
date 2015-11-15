@@ -32,12 +32,12 @@ public class IndexValidation {
 
 	@Test
 	public void validate() throws IOException {
-		LSMTInvertedIndex index = openIndex("conf/log4j-server2.properties", "conf/index_twitter_intern.conf");
+		LSMTInvertedIndex index = openIndex("conf/log4j-server.properties", "conf/index_twitter_intern.conf");
 		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
 			Iterator<WritableComparableKey> iter = reader.keySetIter();
-			int start = 0;
-			int end = Integer.MAX_VALUE;
+			int start = 696000;
+			int end = 699100;
 			int k = 10;
 			while (iter.hasNext()) {
 				WritableComparableKey key = iter.next();
@@ -45,6 +45,7 @@ public class IndexValidation {
 				Iterator<Interval> invs = index.query(Arrays.asList(key.toString()), start, end, k, "WEIGHTED");
 				if (invs.hasNext()) {
 					Interval inv = invs.next();
+					System.out.println("has " + inv);
 					index.query(Arrays.asList(key.toString()), inv.getStart(), inv.getEnd(), k, "WEIGHTED");
 				}
 			}
