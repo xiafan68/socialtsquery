@@ -1,7 +1,6 @@
 package core.lsmt;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import Util.Configuration;
@@ -48,7 +47,7 @@ public abstract class IndexHelper {
 		curDir.maxTime = Math.max(curDir.maxTime, endTime);
 	}
 
-	public abstract void openIndexFile(File dir, SSTableMeta meta) throws FileNotFoundException;
+	public abstract void openIndexFile(File dir, SSTableMeta meta) throws IOException;
 
 	public abstract void buildIndex(WritableComparableKey code, BucketID id) throws IOException;
 

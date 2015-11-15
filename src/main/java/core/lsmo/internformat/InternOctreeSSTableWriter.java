@@ -62,7 +62,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	FileOutputStream dataFileOs;
 	DataOutputStream dataDos;
-	private BufferedOutputStream dataBuffer;
+	// private BufferedOutputStream dataBuffer;
 
 	private int step;
 	Configuration conf;
@@ -160,7 +160,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				}
 			}
 			writeOctree(treeIter);
-			endPostingList();// end a new posting list
+			indexHelper.endPostingList(null);// end a new posting list
 		}
 	}
 
@@ -190,12 +190,11 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public void close() throws IOException {
-		if (dataBuffer != null) {
+		if (dataDos != null) {
 			indexHelper.close();
 
 			dataDos.close();
-			dataBuffer.close();
-			dataBuffer = null;
+			dataDos = null;
 			dataFileOs.close();
 		}
 	}
@@ -207,10 +206,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private void endPostingList() throws IOException {
-		indexHelper.endPostingList(null);
 	}
 
 	@Override
@@ -248,8 +243,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		return new File(dir, String.format("%d_%d_dir", meta.version, meta.level));
 	}
 
-	public int currentBlockIdx() {
-		return dataDos.size() / Block.BLOCK_SIZE;
+	public int currentBlockIdx() throws IOException {
+		dataFileOs.flush();
+		return (int) (dataFileOs.getChannel().size() / Block.BLOCK_SIZE);
 	}
 
 	/**
@@ -281,7 +277,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 
 		@Override
-		public void openIndexFile(File dir, SSTableMeta meta) throws FileNotFoundException {
+		public void openIndexFile(File dir, SSTableMeta meta) throws IOException {
 			dirMap = new BDBBtree(dirMetaFile(dir, meta), conf);
 			dirMap.open(false, false);
 
@@ -322,12 +318,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
-			int bOffset = tempDataDos.size() / Block.BLOCK_SIZE;
-
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
 				// 创建新的skip cell
 				// first write the meta data
-				cell.write(cell.getBlockIdx() + bOffset + 1).write(dataDos);
+				cell.write(getCurBuckBlockID()).write(dataDos);
 
 				// then write data blocks
 				tempDataBout.writeTo(dataDos);
@@ -449,13 +443,13 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public void open(File dir) throws FileNotFoundException {
+	public void open(File dir) throws IOException {
 		if (!dir.exists())
 			dir.mkdirs();
 
 		dataFileOs = new FileOutputStream(dataFile(dir, meta));
-		dataBuffer = new BufferedOutputStream(dataFileOs);
-		dataDos = new DataOutputStream(dataBuffer);
+		// dataBuffer = new BufferedOutputStream(dataFileOs);
+		dataDos = new DataOutputStream(dataFileOs);
 		indexHelper.openIndexFile(dir, meta);
 	}
 }

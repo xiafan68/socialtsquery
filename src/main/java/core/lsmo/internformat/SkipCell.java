@@ -3,6 +3,7 @@ package core.lsmo.internformat;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -125,6 +126,9 @@ public class SkipCell {
 		}
 	}
 
+	/**
+	 * 重置当前cell，用于开始新的写入
+	 */
 	public void reset() {
 		bout.reset();
 		try {
@@ -160,24 +164,18 @@ public class SkipCell {
 		if (ret) {
 			size++;
 		} else {
-			ByteArrayOutputStream tempBout = new ByteArrayOutputStream();
-			DataOutputStream tempMetaDos = new DataOutputStream(tempBout);
+			// 由于需要新加入一个SkipCell，导致当前的bucket的blockID加1,这里将lastbuck中内容更新之后写入到metaDos中去
 			DataInputStream input = new DataInputStream(new ByteArrayInputStream(lastBuckBout.toByteArray()));
 			WritableComparableKey tempCode = factory.createIndexKey();
-			int curBOffset = 0;
-			int curOctOffset = 0;
 			while (input.available() > 0) {
 				tempCode.read(input);
-				curBOffset = ByteUtil.readVInt(input);
-				curOctOffset = ByteUtil.readVInt(input);
-				tempCode.write(tempMetaDos);
-				ByteUtil.writeVInt(tempMetaDos, curBOffset);
-				ByteUtil.writeVInt(tempMetaDos, curOctOffset);
+				tempCode.write(metaDos);
+				// 当前的bucket的blockID加1
+				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input) + 1);
+				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input));
 			}
-			lastBuckBout.close();
+			lastBuckBout.reset();
 			lastBuckMetaDos.close();
-			lastBuckBout = tempBout;
-			lastBuckMetaDos = tempMetaDos;
 		}
 		return ret;
 	}

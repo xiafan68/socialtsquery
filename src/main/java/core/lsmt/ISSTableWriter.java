@@ -3,7 +3,6 @@ package core.lsmt;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -17,7 +16,7 @@ public abstract class ISSTableWriter {
 
 	public abstract SSTableMeta getMeta();
 
-	public abstract void open(File dir) throws FileNotFoundException;
+	public abstract void open(File dir) throws IOException;
 
 	/**
 	 * 将索引文件写入到dir中
