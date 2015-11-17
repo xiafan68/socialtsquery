@@ -3,10 +3,10 @@ package core.lsmt;
 import java.io.File;
 import java.io.IOException;
 
-import Util.Configuration;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
+import util.Configuration;
 
 /**
  * 用于构建数据文件对应的索引文件

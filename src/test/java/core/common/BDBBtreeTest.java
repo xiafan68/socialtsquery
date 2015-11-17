@@ -1,10 +1,11 @@
 package core.common;
 
-import Util.Configuration;
-import Util.Pair;
 import core.commom.BDBBtree;
 import core.io.Bucket;
 import core.lsmt.WritableComparableKey;
+import util.Configuration;
+import util.Pair;
+
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -10,8 +10,6 @@ import java.util.Map;
 
 import org.apache.log4j.PropertyConfigurator;
 
-import Util.Configuration;
-import Util.Profile;
 import core.lsmt.LSMTInvertedIndex;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -25,6 +23,8 @@ import jline.console.history.MemoryHistory;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import segmentation.Interval;
+import util.Configuration;
+import util.Profile;
 
 public class IndexConsoleClient {
 

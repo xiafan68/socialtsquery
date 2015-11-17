@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import segmentation.Interval;
 import core.commom.TempKeywordQuery;
-import core.executor.domain.CandQueue;
+import core.executor.domain.KeyedCandQueue;
+import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
-import core.executor.domain.TopkQueue;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
+import segmentation.Interval;
 
 /**
  * 定义查询算法的接口,接受一个temporal keyword query，返回topk最受欢迎的items，当前类主要是定义了threhold
@@ -29,8 +29,8 @@ public abstract class IQueryExecutor {
 	IPostingListIterator[] cursors;
 	float[] bestScores;
 	int curListIdx = 0;
-	TopkQueue topk;
-	CandQueue cand;
+	KeyedTopKQueue topk;
+	KeyedCandQueue cand;
 	Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
 	ExecContext ctx;
 

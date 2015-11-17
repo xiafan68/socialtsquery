@@ -13,10 +13,6 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
-import Util.Configuration;
-import Util.GroupByKeyIterator;
-import Util.Pair;
-import Util.PeekIterDecorate;
 import common.MidSegment;
 import core.io.Block;
 import core.io.Bucket;
@@ -25,6 +21,10 @@ import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
+import util.GroupByKeyIterator;
+import util.Pair;
+import util.PeekIterDecorate;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
@@ -180,7 +180,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public void open(File dir) throws FileNotFoundException {
+	public void open(File dir) throws IOException {
 		if (!dir.exists())
 			dir.mkdirs();
 
@@ -259,8 +259,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				helper.first = false;
 				indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 			}
-			MidSegment cur = helper.list.get(0);
-			indexHelper.buildIndex(new SegListKey(cur.getPoint().getZ(), cur.getStart(), cur.mid), buck.blockIdx());
+			//MidSegment cur = helper.list.get(0);
+			//indexHelper.buildIndex(new SegListKey(cur.getPoint().getZ(), cur.getStart(), cur.mid), buck.blockIdx());
 			helper.init();
 		}
 

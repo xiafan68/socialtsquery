@@ -7,12 +7,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
-import Util.Configuration;
-import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import segmentation.Interval;
+import util.Configuration;
+import util.Profile;
 
 public class PartitionExecutorTest {
 	@Test

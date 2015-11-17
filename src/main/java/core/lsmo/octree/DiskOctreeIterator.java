@@ -8,13 +8,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import Util.Pair;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
+import util.Pair;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 

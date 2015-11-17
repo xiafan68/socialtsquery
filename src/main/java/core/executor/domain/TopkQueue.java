@@ -9,9 +9,9 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import Util.MyFile;
 import common.MidSegment;
 import segmentation.Segment;
+import util.MyFile;
 
 public class TopkQueue {
 	private static final Logger logger = LoggerFactory.getLogger(TopkQueue.class);

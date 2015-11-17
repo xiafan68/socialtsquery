@@ -10,10 +10,6 @@ import java.util.Iterator;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import Util.Configuration;
-import Util.Pair;
-import Util.Profile;
-
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -27,6 +23,9 @@ import com.sleepycat.je.PreloadConfig;
 
 import core.io.Bucket.BucketID;
 import core.lsmt.ISSTableWriter.DirEntry;
+import util.Configuration;
+import util.Pair;
+import util.Profile;
 import core.lsmt.WritableComparableKey;
 
 public class BDBBtree {

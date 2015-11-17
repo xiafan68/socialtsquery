@@ -23,8 +23,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import Util.Configuration;
-import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.WeightedQueryExecutor;
@@ -33,6 +31,8 @@ import core.lsmt.LSMTInvertedIndex;
 import expr.QueryGen;
 import net.sf.json.JSONObject;
 import segmentation.Interval;
+import util.Configuration;
+import util.Profile;
 import xiafan.util.Pair;
 import xiafan.util.StreamLogUtils;
 import xiafan.util.StreamUtils;

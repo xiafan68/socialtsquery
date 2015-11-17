@@ -10,13 +10,13 @@ import java.util.Iterator;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
-import Util.Configuration;
 import core.commom.BDBBtree.BDBKeyIterator;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import segmentation.Interval;
+import util.Configuration;
 
 public class IndexValidation {
 

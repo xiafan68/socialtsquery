@@ -7,10 +7,10 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import Util.Configuration;
 import core.commom.BDBBtree;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
 import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
 

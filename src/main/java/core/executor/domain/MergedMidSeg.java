@@ -60,18 +60,40 @@ public class MergedMidSeg {
 	public MergedMidSeg addMidSeg(int keyIdx, MidSegment seg, float weight) {
 		weights[keyIdx] = weight;
 		MergedMidSeg ret = new MergedMidSeg(this);
-		int idx = Collections.binarySearch(segList, seg,
-				new Comparator<MidSegment>() {
-					public int compare(MidSegment arg0, MidSegment arg1) {
-						return Integer.compare(arg0.getStart(), arg1.getStart());
-					}
-				});
+		int idx = Collections.binarySearch(segList, seg, new Comparator<MidSegment>() {
+			public int compare(MidSegment arg0, MidSegment arg1) {
+				return Integer.compare(arg0.getStart(), arg1.getStart());
+			}
+		});
 		if (idx < 0) {
 			idx = Math.abs(idx) - 1;
 			segList.add(idx, seg);
 		}
 		ret.computeScore();
 		return ret;
+	}
+
+	/* 对于这条微博增加一个窗口内的 segment */
+	/**
+	 * 为了降低对内存的消耗，新老对象还是公用了segList，但是当前对象的其它状态不会变
+	 * 
+	 * @param keyIdx
+	 *            关键词列表中的小标，用于指代某个关键词
+	 * @param seg
+	 * @return 返回修改后的MergedMidSeg
+	 */
+	public void addMidSegNoCopy(int keyIdx, MidSegment seg, float weight) {
+		weights[keyIdx] = weight;
+		int idx = Collections.binarySearch(segList, seg, new Comparator<MidSegment>() {
+			public int compare(MidSegment arg0, MidSegment arg1) {
+				return Integer.compare(arg0.getStart(), arg1.getStart());
+			}
+		});
+		if (idx < 0) {
+			idx = Math.abs(idx) - 1;
+			segList.add(idx, seg);
+		}
+		computeScore();
 	}
 
 	public long getMid() {
@@ -94,7 +116,8 @@ public class MergedMidSeg {
 	}
 
 	/**
-	 *  计算该微博的 bestScore 和 worstScore 
+	 * 计算该微博的 bestScore 和 worstScore
+	 * 
 	 * @return true如果当前对象的上下界有所改变
 	 */
 	public boolean computeScore() {
@@ -138,8 +161,7 @@ public class MergedMidSeg {
 		int unHitInv = intern - hitInv + margin;
 
 		// 对于还未遇到的keyword，目前简单地认为所有的查询区间位置
-		int window = Math.min(ctx.getLifeTimeBound()[1], ctx.getQuery()
-				.getQueryWidth());
+		int window = Math.min(ctx.getLifeTimeBound()[1], ctx.getQuery().getQueryWidth());
 		bestscore = worstscore;
 
 		for (int i = 0; i < weights.length; i++) {
@@ -149,8 +171,7 @@ public class MergedMidSeg {
 				bestscore += window * ctx.getBestScore(i) * ctx.getWeight(i);
 		}
 
-		return Float.compare(preBScore, bestscore) != 0
-				|| Float.compare(preWScore, worstscore) != 0;
+		return Float.compare(preBScore, bestscore) != 0 || Float.compare(preWScore, worstscore) != 0;
 	}
 
 	@Override
@@ -163,8 +184,7 @@ public class MergedMidSeg {
 
 	@Override
 	public String toString() {
-		return "MergedMidSeg [segList=" + segList + ", weights="
-				+ Arrays.toString(weights) + ", bestscore=" + bestscore
+		return "MergedMidSeg [segList=" + segList + ", weights=" + Arrays.toString(weights) + ", bestscore=" + bestscore
 				+ ", worstscore=" + worstscore + "]";
 	}
 

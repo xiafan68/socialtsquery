@@ -23,9 +23,9 @@ import org.apache.log4j.Logger;
 
 import com.sleepycat.je.rep.stream.Protocol.Commit;
 
-import Util.Configuration;
-import Util.Pair;
 import common.MidSegment;
+import util.Configuration;
+import util.Pair;
 
 /**
  * TODO: how to grantuee the thread safety of preVersions only one log file is

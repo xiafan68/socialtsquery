@@ -7,8 +7,6 @@ import java.util.List;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
-import Util.Configuration;
-
 import common.MidSegment;
 
 import core.lsmo.OctreeBasedLSMTFactory;
@@ -21,6 +19,7 @@ import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import fanxia.file.DirLineReader;
+import util.Configuration;
 
 public class SSTableWriterTest {
 	@Test

@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import Util.Configuration;
 import common.MidSegment;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.OctreeMemTable;
@@ -12,6 +11,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import fanxia.file.DirLineReader;
+import util.Configuration;
 
 public class MemTableTest {
 	@Test

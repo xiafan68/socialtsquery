@@ -8,8 +8,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import Util.Configuration;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
 
 /**
  * responsible for write data to disk

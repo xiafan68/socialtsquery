@@ -2,8 +2,8 @@ package core.lsmt;
 
 import java.util.List;
 
-import Util.Configuration;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
 
 /**
  * factory used to define different implementations for different components

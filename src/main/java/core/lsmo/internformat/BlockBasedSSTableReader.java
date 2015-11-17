@@ -9,9 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.PropertyConfigurator;
 
-import Util.Configuration;
-import Util.Pair;
-import Util.Profile;
 import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
@@ -25,6 +22,9 @@ import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.bdbindex.BDBBasedIndexHelper;
+import util.Configuration;
+import util.Pair;
+import util.Profile;
 
 public class BlockBasedSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dataInput;

@@ -4,27 +4,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import common.MidSegment;
 import segmentation.Segment;
+import util.KeyedPriorityQueue;
 import util.MyFile;
 
-/**
- * 按照bestscore从大到小排序
- * 
- * @author xiafan
- *
- */
-public class CandQueue {
-	private static final Logger logger = LoggerFactory.getLogger(CandQueue.class);
-	/**
-	 * 使用红黑树
-	 */
-	protected TreeSet<MergedMidSeg> bestQueue = new TreeSet<MergedMidSeg>(SortBestscore.INSTANCE);
+public class KeyedTopKQueue {
+	private static final Logger logger = LoggerFactory.getLogger(KeyedTopKQueue.class);
+	protected KeyedPriorityQueue<Long, MergedMidSeg> worstQueue = new KeyedPriorityQueue<Long, MergedMidSeg>(
+			SortWorstscore.INSTANCE);
 
 	/**
 	 * 获得堆顶对象。
@@ -32,44 +24,37 @@ public class CandQueue {
 	 * @return
 	 */
 	public MergedMidSeg peek() {
-		refreshScore();
-		return bestQueue.first();
+		refreshWorstScore();
+		return worstQueue.first();
 	}
 
 	/**
-	 * 由于每个posting list的bestscore发生了变化，这里也需要重新计算每个cand的bestscore
+	 * worstscore只会越来越大，所以只需要从最小的往最大的开始更新就可以了
+	 * note:其实这里worstscore不需要重新计算，因为只有遇到新的seg才会更新，而这时在插入的时候已经会跟新了
 	 */
-	private void refreshScore() {
-		if (!bestQueue.isEmpty()) {
-			MergedMidSeg seg = bestQueue.pollFirst();
-			while (seg != null && seg.computeScore()) {
-				bestQueue.add(seg);
-				seg = bestQueue.pollFirst();
-			}
-			if (!bestQueue.contains(seg)) {
-				bestQueue.add(seg);
-			}
-		}
+	private void refreshWorstScore() {
+
 	}
 
 	/**
 	 * 移除bestScore最小的一个元素，更新worstScore。
 	 */
 	public void poll() {
-		refreshScore();
-		MergedMidSeg seg = bestQueue.pollFirst();
+		refreshWorstScore();
+		MergedMidSeg seg = worstQueue.poll();
 	}
 
 	/**
-	 * used by cand queue
+	 * used by topk queue
 	 * 
 	 * @return
 	 */
-	public float getMaxBestScore() {
+	public float getMinWorstScore() {
 		float ret = Float.MIN_VALUE;
-		refreshScore();
-		if (!bestQueue.isEmpty()) {
-			ret = bestQueue.first().getBestscore();
+		refreshWorstScore();
+		if (!worstQueue.isEmpty()) {
+			MergedMidSeg cur = worstQueue.first();
+			ret = cur.getWorstscore();
 		}
 		return ret;
 	}
@@ -77,39 +62,41 @@ public class CandQueue {
 	public boolean contains(MergedMidSeg seg) {
 		if (seg == null)
 			return false;
-		return bestQueue.contains(seg);
+		return worstQueue.contains(seg.getMid());
 	}
 
-	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
-		if (preSeg != null) {
-			bestQueue.remove(preSeg);
-		}
-		bestQueue.add(newSeg);
+	public void update(MergedMidSeg seg) {
+		// 由于worstscore只会变大，所以它会沉下去
+		worstQueue.updateFromTop(seg.getMid());
+	}
+
+	public void add(MergedMidSeg seg) {
+		worstQueue.offer(seg.getMid(), seg);
 	}
 
 	public boolean isEmpty() {
-		return bestQueue.isEmpty();
+		return worstQueue.isEmpty();
 	}
 
 	public Iterator<MidSegment> getIter() {
 		List<MidSegment> res = new ArrayList<MidSegment>();
-		for (Iterator iter = bestQueue.iterator(); iter.hasNext();) {
-			MergedMidSeg t = (MergedMidSeg) iter.next();
+		while (!worstQueue.isEmpty()) {
+			MergedMidSeg t = worstQueue.poll();
 			res.add(t.segList.get(0));
 		}
 		return res.iterator();
 	}
 
 	public Iterator<MergedMidSeg> iterator() {
-		return bestQueue.iterator();
+		return worstQueue.iterator();
 	}
 
 	public void remove(MergedMidSeg preSeg) {
-		bestQueue.remove(preSeg);
+		worstQueue.remove(preSeg.getMid());
 	}
 
 	public int size() {
-		return bestQueue.size();
+		return worstQueue.size();
 	}
 
 	public void printTop() {
@@ -118,7 +105,7 @@ public class CandQueue {
 		// MergedMidSeg t = (MergedMidSeg) iter.next();
 		// System.out.println(t.toString());
 		// }
-		for (Iterator iter = bestQueue.iterator(); iter.hasNext();) {
+		for (Iterator iter = worstQueue.iterator(); iter.hasNext();) {
 			MergedMidSeg t = (MergedMidSeg) iter.next();
 			System.out.println(t.toString());
 		}
@@ -130,7 +117,7 @@ public class CandQueue {
 		/*
 		 * 创建一个按照bestscore降序的堆
 		 */
-		CandQueue que = new CandQueue();
+		TopkQueue que = new TopkQueue();
 		MyFile myFile = new MyFile("./data/input", "utf-8");
 		String line = null;
 		while ((line = myFile.readLine()) != null) {

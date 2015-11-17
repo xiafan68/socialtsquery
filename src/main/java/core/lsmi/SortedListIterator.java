@@ -3,10 +3,10 @@ package core.lsmi;
 import java.io.IOException;
 import java.util.List;
 
-import Util.Pair;
 import common.MidSegment;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.WritableComparableKey;
+import util.Pair;
 import core.lsmt.PostingListMeta;
 
 public class SortedListIterator implements IPostingListIterator {

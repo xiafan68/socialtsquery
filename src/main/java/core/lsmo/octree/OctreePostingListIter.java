@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import Util.Pair;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
@@ -19,6 +18,7 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import fanxia.file.ByteUtil;
+import util.Pair;
 
 /**
  * 用于访问disk上的octree

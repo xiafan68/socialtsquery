@@ -1,30 +1,19 @@
 package core.executor.domain;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import common.MidSegment;
-import segmentation.Segment;
-import util.MyFile;
+import util.KeyedPriorityQueue;
 
-/**
- * 按照bestscore从大到小排序
- * 
- * @author xiafan
- *
- */
-public class CandQueue {
-	private static final Logger logger = LoggerFactory.getLogger(CandQueue.class);
-	/**
-	 * 使用红黑树
-	 */
-	protected TreeSet<MergedMidSeg> bestQueue = new TreeSet<MergedMidSeg>(SortBestscore.INSTANCE);
+public class KeyedCandQueue {
+	private static final Logger logger = LoggerFactory.getLogger(KeyedCandQueue.class);
+	protected KeyedPriorityQueue<Long, MergedMidSeg> bestQueue = new KeyedPriorityQueue<Long, MergedMidSeg>(
+			SortBestscore.INSTANCE);
 
 	/**
 	 * 获得堆顶对象。
@@ -41,13 +30,15 @@ public class CandQueue {
 	 */
 	private void refreshScore() {
 		if (!bestQueue.isEmpty()) {
-			MergedMidSeg seg = bestQueue.pollFirst();
-			while (seg != null && seg.computeScore()) {
-				bestQueue.add(seg);
-				seg = bestQueue.pollFirst();
-			}
-			if (!bestQueue.contains(seg)) {
-				bestQueue.add(seg);
+			MergedMidSeg pre = null;
+			while (true) {
+				MergedMidSeg seg = bestQueue.first();
+				if (seg != pre && seg != null && seg.computeScore()) {
+					bestQueue.updateFromTop(seg.getMid());
+					pre = seg;
+				} else {
+					break;
+				}
 			}
 		}
 	}
@@ -57,7 +48,7 @@ public class CandQueue {
 	 */
 	public void poll() {
 		refreshScore();
-		MergedMidSeg seg = bestQueue.pollFirst();
+		bestQueue.poll();
 	}
 
 	/**
@@ -77,14 +68,15 @@ public class CandQueue {
 	public boolean contains(MergedMidSeg seg) {
 		if (seg == null)
 			return false;
-		return bestQueue.contains(seg);
+		return bestQueue.contains(seg.getMid());
 	}
 
-	public void update(MergedMidSeg preSeg, MergedMidSeg newSeg) {
-		if (preSeg != null) {
-			bestQueue.remove(preSeg);
-		}
-		bestQueue.add(newSeg);
+	public void update(MergedMidSeg seg) {
+		bestQueue.updateFromTop(seg.getMid());
+	}
+
+	public void add(MergedMidSeg mid) {
+		bestQueue.offer(mid.getMid(), mid);
 	}
 
 	public boolean isEmpty() {
@@ -105,7 +97,7 @@ public class CandQueue {
 	}
 
 	public void remove(MergedMidSeg preSeg) {
-		bestQueue.remove(preSeg);
+		bestQueue.remove(preSeg.getMid());
 	}
 
 	public int size() {
@@ -124,35 +116,4 @@ public class CandQueue {
 		}
 	}
 
-	public static void main(String args[]) throws IOException {
-		int start = 2;
-		int end = 7;
-		/*
-		 * 创建一个按照bestscore降序的堆
-		 */
-		CandQueue que = new CandQueue();
-		MyFile myFile = new MyFile("./data/input", "utf-8");
-		String line = null;
-		while ((line = myFile.readLine()) != null) {
-			/*
-			 * 获得一个MidSegment
-			 */
-			String record[] = line.split("_");
-			long mid = Long.parseLong(record[0]);
-			int startTime = Integer.parseInt(record[1]);
-			int startCount = Integer.parseInt(record[2]);
-			int endTime = Integer.parseInt(record[3]);
-			int endCount = Integer.parseInt(record[4]);
-
-			MidSegment seg = new MidSegment(mid, new Segment(startTime, startCount, endTime, endCount));
-
-			/*
-			 * 将MidSegment加入堆中
-			 */
-			// que.update(null, seg);
-
-			que.printTop();
-
-		}
-	}
 }

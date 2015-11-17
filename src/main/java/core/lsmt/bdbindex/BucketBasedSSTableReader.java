@@ -16,7 +16,6 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import Util.Pair;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -28,6 +27,7 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import util.Pair;
 
 /**
  * 基于bucket的reader公共类，主要有三个文件： 1. index file:记录的是key-bucketid对 2. dir

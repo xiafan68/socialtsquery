@@ -19,8 +19,6 @@ import org.apache.thrift.transport.TTransportException;
 //李超
 //13661912248
 
-import Util.Configuration;
-import Util.Profile;
 import core.commom.TempKeywordQuery;
 import core.executor.WeightedQueryExecutor;
 import core.lsmo.OctreeBasedLSMTFactory;
@@ -35,6 +33,8 @@ import searchapi.TweetService;
 import searchapi.TweetTuple;
 import searchapi.Tweets;
 import segmentation.Interval;
+import util.Configuration;
+import util.Profile;
 
 public class TKSearchServer implements TweetService.Iface {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);

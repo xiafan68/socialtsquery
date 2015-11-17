@@ -8,9 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import Util.MyMath;
-import Util.Pair;
-import Util.Profile;
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.domain.AndMergedMidSeg;
@@ -21,6 +18,9 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
 import segmentation.Interval;
+import util.MyMath;
+import util.Pair;
+import util.Profile;
 
 /**
  * and query的一个难点是topk中的对象可能并不能保证所有单词都命中

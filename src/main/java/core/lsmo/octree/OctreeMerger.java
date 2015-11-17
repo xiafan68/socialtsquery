@@ -5,9 +5,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import Util.Pair;
 import common.MidSegment;
 import core.lsmt.WritableComparableKey;
+import util.Pair;
 import core.lsmt.PostingListMeta;
 
 /**

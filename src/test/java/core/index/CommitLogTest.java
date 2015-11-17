@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import segmentation.Segment;
-import Util.Configuration;
+import util.Configuration;
 import common.MidSegment;
 import core.lsmt.CommitLog;
 

@@ -5,9 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import Util.Pair;
-
 import common.MidSegment;
+import util.Pair;
 
 /**
  * 用于按照OctreeNode定义的顺序返回节点，和OctreeMerger的逻辑类似

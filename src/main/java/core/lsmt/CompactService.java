@@ -17,11 +17,11 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
 
-import Util.Configuration;
 import core.lsmo.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
 import fanxia.file.FileUtil;
+import util.Configuration;
 
 /**
  * to avoid scan disk to find those posting lists needing compaction, a lazy

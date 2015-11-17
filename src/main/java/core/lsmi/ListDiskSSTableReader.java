@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import Util.Pair;
 import common.MidSegment;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -18,6 +17,7 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.bdbindex.BucketBasedSSTableReader;
+import util.Pair;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
 

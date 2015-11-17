@@ -7,7 +7,6 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import Util.Configuration;
 import common.MidSegment;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
@@ -17,6 +16,7 @@ import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
+import util.Configuration;
 
 public class OctreePostingListIterTest {
 

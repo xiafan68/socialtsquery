@@ -13,7 +13,6 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
-import Util.Pair;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
@@ -27,6 +26,7 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import fanxia.file.ByteUtil;
+import util.Pair;
 
 public class InternPostingListIter implements IOctreeIterator {
 	private static final Logger logger = Logger.getLogger(InternPostingListIter.class);

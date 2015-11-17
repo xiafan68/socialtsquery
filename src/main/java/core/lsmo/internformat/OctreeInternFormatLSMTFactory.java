@@ -2,11 +2,11 @@ package core.lsmo.internformat;
 
 import java.util.List;
 
-import Util.Configuration;
 import core.lsmo.OctreeMemTable;
 import core.lsmt.ILSMTFactory;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;

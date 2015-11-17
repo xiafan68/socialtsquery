@@ -16,7 +16,6 @@ import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
-import Util.Configuration;
 import common.MidSegment;
 import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeBasedLSMTFactory;
@@ -24,6 +23,7 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Configuration;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;

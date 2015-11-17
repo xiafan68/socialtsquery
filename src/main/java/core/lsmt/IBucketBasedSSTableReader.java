@@ -2,9 +2,9 @@ package core.lsmt;
 
 import java.io.IOException;
 
-import Util.Pair;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import util.Pair;
 
 public interface IBucketBasedSSTableReader extends ISSTableReader {
 	public int getBucket(BucketID id, Bucket bucket) throws IOException;

@@ -9,9 +9,6 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import Util.Configuration;
-import Util.Pair;
-
 import common.MidSegment;
 
 import core.lsmo.octree.OctreeNode;
@@ -24,6 +21,8 @@ import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import fanxia.file.DirLineReader;
+import util.Configuration;
+import util.Pair;
 
 public class ReaderWriterTest {
 	@Test

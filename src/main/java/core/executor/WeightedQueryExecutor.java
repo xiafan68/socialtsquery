@@ -8,18 +8,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import Util.MyMath;
-import Util.Pair;
-import Util.Profile;
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
-import core.executor.domain.CandQueue;
+import core.executor.domain.KeyedCandQueue;
+import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
-import core.executor.domain.TopkQueue;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
 import segmentation.Interval;
+import util.MyMath;
+import util.Pair;
+import util.Profile;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询 TODO:某个posting
@@ -46,13 +46,13 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 	 * @param_lifetime 当前BaseExecutor只负责处理所有生命周期不大于lifetime的元素
 	 * @throws java.io.IOException
 	 */
-	public void setupQueryContext(TopkQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
+	public void setupQueryContext(KeyedTopKQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
 		this.map = map;
 		if (topk != null)
 			this.topk = topk;
 		else
-			this.topk = new TopkQueue();
-		cand = new CandQueue();
+			this.topk = new KeyedTopKQueue();
+		cand = new KeyedCandQueue();
 
 		ctx = new ExecContext(query);
 		int part = MyMath.getCeil(maxLifeTime);
@@ -155,43 +155,74 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 	 * @param iWeight
 	 * @return true if the current item is a possible topk
 	 */
-	private boolean updateCandState(int idx, MidSegment midseg, float iWeight) {
-		MergedMidSeg preSeg = null;
-		MergedMidSeg newSeg = null;
+	/*
+	 * private boolean updateCandState(int idx, MidSegment midseg, float
+	 * iWeight) { MergedMidSeg preSeg = null; MergedMidSeg newSeg = null; Long
+	 * mid = midseg.mid;
+	 * 
+	 * update the boundary, put it in the QueCand if (map.containsKey(mid)) {
+	 * preSeg = map.get(mid); newSeg = preSeg.addMidSeg(idx, midseg, iWeight);//
+	 * update the merged } else { newSeg = new MergedMidSeg(ctx); newSeg =
+	 * newSeg.addMidSeg(idx, midseg, iWeight); } // update the map with the new
+	 * mergedseg map.put(mid, newSeg);
+	 * 
+	 * boolean ret = true; update the topk and cands if (topk.contains(preSeg))
+	 * { topk.update(preSeg, newSeg); } else if (topk.size() < query.k ||
+	 * newSeg.getWorstscore() > cand.getMaxBestScore()) { topk.update(preSeg,
+	 * newSeg); if (topk.size() > query.k) { // 把bestScore最小的一个移除
+	 * cand.update(null, topk.peek()); }
+	 * 
+	 * if (preSeg != null) cand.remove(preSeg); } else if (newSeg.getBestscore()
+	 * > topk.getMinWorstScore()) { cand.update(preSeg, newSeg); } else if
+	 * (preSeg != null) { cand.remove(preSeg); map.remove(preSeg.getMid()); ret
+	 * = false; } else { map.remove(mid); ret = false;
+	 * Profile.instance.updateCounter(Profile.WASTED_REC); } return ret; }
+	 */
+
+	/**
+	 * 
+	 * @param idx
+	 * @param midseg
+	 * @param iWeight
+	 * @return true if the current item is a possible topk
+	 */
+	private boolean updateCandState_intern(int idx, MidSegment midseg, float iWeight) {
+		MergedMidSeg seg = null;
 		Long mid = midseg.mid;
 
 		/* update the boundary, put it in the QueCand */
 		if (map.containsKey(mid)) {
-			preSeg = map.get(mid);
-			newSeg = preSeg.addMidSeg(idx, midseg, iWeight);// update the merged
+			seg = map.get(mid);
+			seg.addMidSegNoCopy(idx, midseg, iWeight);// update the merged
 		} else {
-			newSeg = new MergedMidSeg(ctx);
-			newSeg = newSeg.addMidSeg(idx, midseg, iWeight);
+			seg = new MergedMidSeg(ctx);
+			seg.addMidSegNoCopy(idx, midseg, iWeight);
+			map.put(mid, seg);
 		}
-		// update the map with the new mergedseg
-		map.put(mid, newSeg);
 
 		boolean ret = true;
 		/* update the topk and cands */
-		if (topk.contains(preSeg)) {
-			topk.update(preSeg, newSeg);
-		} else if (topk.size() < query.k || newSeg.getWorstscore() > cand.getMaxBestScore()) {
-			topk.update(preSeg, newSeg);
+		if (topk.contains(seg)) {
+			topk.update(seg);
+		} else if (topk.size() < query.k || seg.getWorstscore() > cand.getMaxBestScore()) {
+			topk.add(seg);
 			if (topk.size() > query.k) {
 				// 把bestScore最小的一个移除
-				cand.update(null, topk.peek());
+				cand.add(topk.peek());
+				topk.poll();
 			}
 
-			if (preSeg != null)
-				cand.remove(preSeg);
-		} else if (newSeg.getBestscore() > topk.getMinWorstScore()) {
-			cand.update(preSeg, newSeg);
-		} else if (preSeg != null) {
-			cand.remove(preSeg);
-			map.remove(preSeg.getMid());
-			ret = false;
+			if (cand.contains(seg))
+				cand.remove(seg);
+		} else if (seg.getBestscore() > topk.getMinWorstScore()) {
+			if (cand.contains(seg))
+				cand.update(seg);
+			else {
+				cand.add(seg);
+			}
 		} else {
-			map.remove(mid);
+			cand.remove(seg);
+			map.remove(seg.getMid());
 			ret = false;
 			Profile.instance.updateCounter(Profile.WASTED_REC);
 		}
@@ -202,13 +233,11 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		while (!cand.isEmpty()) {
 			MergedMidSeg seg = cand.peek();
 			cand.poll();
-			if (seg.getMid() == -6294654211l) {
-				System.out.println(seg.getWorstscore());
-			}
+
 			if (seg.getWorstscore() > topk.getMinWorstScore() && seg.getWorstscore() > cand.getMaxBestScore()) {
-				cand.update(null, topk.peek());
+				cand.add(topk.peek());
 				topk.poll();
-				topk.update(null, seg);
+				topk.add(seg);
 			} else if (seg.getBestscore() <= topk.getMinWorstScore()) {
 				break;
 			}
@@ -233,7 +262,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 
 		for (MidSegment midseg : node.getValue()) {
 			if (midseg.getStart() <= query.getEndTime() && midseg.getEndTime() >= query.getStartTime())
-				ret |= updateCandState(curListIdx, midseg, 1.0f);
+				ret |= updateCandState_intern(curListIdx, midseg, 1.0f);
 		}
 		Profile.instance.end(Profile.UPDATE_STATE);
 

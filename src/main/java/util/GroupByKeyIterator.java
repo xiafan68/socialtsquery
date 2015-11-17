@@ -1,13 +1,14 @@
-package Util;
+package util;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
 
-import Util.PeekIterDecorate.PeekableClosableIterator;
+import util.PeekIterDecorate.PeekableClosableIterator;
+
+import java.util.PriorityQueue;
 
 public class GroupByKeyIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 	PriorityQueue<PeekableClosableIterator<Entry<K, V>>> queue;

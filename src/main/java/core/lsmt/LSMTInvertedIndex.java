@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import Util.Configuration;
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
@@ -35,6 +34,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
 import shingle.TextShingle;
+import util.Configuration;
 
 /**
  * 

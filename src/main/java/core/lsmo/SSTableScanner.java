@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import Util.Pair;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.WritableComparableKey;
+import util.Pair;
 
 public class SSTableScanner implements Iterator<Entry<WritableComparableKey, IOctreeIterator>> {
 	ISSTableReader reader;

@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import Util.Pair;
 import common.MidSegment;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.IMemTable.SSTableMeta;
+import util.Pair;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.WritableComparableKey;

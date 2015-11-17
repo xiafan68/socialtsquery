@@ -8,8 +8,6 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import Util.Configuration;
-import Util.Pair;
 import common.MidSegment;
 import core.commom.BDBBtree;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -19,6 +17,8 @@ import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
+import util.Configuration;
+import util.Pair;
 
 public class SortedListIterTest {
 	public int ExpectedResult(WritableComparableKey key, ISSTableReader reader, Interval window) throws IOException {

@@ -1,6 +1,6 @@
 package core.lsmo.octree;
 
-import Util.Pair;
+import util.Pair;
 
 /**
  * 只访问和[start,end]有交集的octants TODO: 按照Z的value，从大到小，返回每个Z对应的IOctreeIterator
