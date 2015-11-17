@@ -103,12 +103,22 @@ public class Encoding extends Point implements WritableComparableKey {
 		encode();
 	}
 
+	/**
+	 * 这个topZ其实是z+edgeLen-1的结果，这个edgeLen是2的次幂
+	 * 
+	 * @return
+	 */
 	public int getTopZ() {
 		return encodes[0];
 	}
 
+	/**
+	 * 这里提供的zTop应该要同上？
+	 * 
+	 * @param zTop
+	 */
 	public void setTop(int zTop) {
-		int len = 1 << paddingBitNum;
+		int len = 1 << paddingBitNum - 1;
 		z = zTop - len;
 		setZ(z);
 	}

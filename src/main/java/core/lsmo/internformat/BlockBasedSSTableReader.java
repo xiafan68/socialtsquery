@@ -13,7 +13,7 @@ import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
-import core.lsmo.OctreeSSTableWriter;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;

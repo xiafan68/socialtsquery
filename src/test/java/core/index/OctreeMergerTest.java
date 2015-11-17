@@ -13,8 +13,8 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.Encoding;
-import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;

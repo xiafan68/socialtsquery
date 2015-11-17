@@ -110,36 +110,4 @@ public class KeyedTopKQueue {
 			System.out.println(t.toString());
 		}
 	}
-
-	public static void main(String args[]) throws IOException {
-		int start = 2;
-		int end = 7;
-		/*
-		 * 创建一个按照bestscore降序的堆
-		 */
-		TopkQueue que = new TopkQueue();
-		MyFile myFile = new MyFile("./data/input", "utf-8");
-		String line = null;
-		while ((line = myFile.readLine()) != null) {
-			/*
-			 * 获得一个MidSegment
-			 */
-			String record[] = line.split("_");
-			long mid = Long.parseLong(record[0]);
-			int startTime = Integer.parseInt(record[1]);
-			int startCount = Integer.parseInt(record[2]);
-			int endTime = Integer.parseInt(record[3]);
-			int endCount = Integer.parseInt(record[4]);
-
-			MidSegment seg = new MidSegment(mid, new Segment(startTime, startCount, endTime, endCount));
-
-			/*
-			 * 将MidSegment加入堆中
-			 */
-			// que.update(null, seg);
-
-			que.printTop();
-
-		}
-	}
 }

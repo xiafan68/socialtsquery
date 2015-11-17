@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
 
-import core.lsmo.OctreeSSTableWriter;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
 import fanxia.file.FileUtil;

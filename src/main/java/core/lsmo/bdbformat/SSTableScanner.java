@@ -1,4 +1,4 @@
-package core.lsmo;
+package core.lsmo.bdbformat;
 
 import java.io.IOException;
 import java.util.Iterator;

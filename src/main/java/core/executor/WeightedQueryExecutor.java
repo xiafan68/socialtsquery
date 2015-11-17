@@ -13,6 +13,7 @@ import core.commom.TempKeywordQuery;
 import core.executor.domain.KeyedCandQueue;
 import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
+import core.executor.domain.WeightedMergedMidSeg;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
@@ -98,25 +99,23 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 				sum += bestScore;
 			}
 			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
-			boolean ret = true;
+			boolean ret = false;
 			// 当前partition不可能有cand能够进入topk
-			if (cand.getMaxBestScore() < topk.getMinWorstScore() && sum < topk.getMinWorstScore()
+			if (cand.getMaxBestScore() <= topk.getMinWorstScore() && sum <= topk.getMinWorstScore()
 					&& topk.size() >= ctx.getQuery().k) {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
 				for (int i = 0; i < cursors.length; i++) {
 					IPostingListIterator cursor = cursors[i];
-					if (cursor != null && cursor.hasNext()) {
+					if (cursor == null || !cursor.hasNext()) {
 						bestScores[i] = 0;
-						ret = false;
-						break;
+						ret = true;
 					}
 				}
 				if (ret) {
 					refreshTopk();
 				}
-
 			}
 			stop = ret;
 
@@ -195,7 +194,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			seg = map.get(mid);
 			seg.addMidSegNoCopy(idx, midseg, iWeight);// update the merged
 		} else {
-			seg = new MergedMidSeg(ctx);
+			seg = new WeightedMergedMidSeg(ctx);
 			seg.addMidSegNoCopy(idx, midseg, iWeight);
 			map.put(mid, seg);
 		}
@@ -204,7 +203,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(seg)) {
 			topk.update(seg);
-		} else if (topk.size() < query.k || seg.getWorstscore() > cand.getMaxBestScore()) {
+		} else if (topk.size() < query.k || seg.getWorstscore() > topk.getMinWorstScore()) {
 			topk.add(seg);
 			if (topk.size() > query.k) {
 				// 把bestScore最小的一个移除
@@ -221,7 +220,8 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 				cand.add(seg);
 			}
 		} else {
-			cand.remove(seg);
+			if (cand.contains(seg))
+				cand.remove(seg);
 			map.remove(seg.getMid());
 			ret = false;
 			Profile.instance.updateCounter(Profile.WASTED_REC);
@@ -257,13 +257,14 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 
 		bestScores[curListIdx] = node.getKey();
 
-		boolean ret = true;
+		boolean ret = false;
 		Profile.instance.start(Profile.UPDATE_STATE);
 
 		for (MidSegment midseg : node.getValue()) {
 			if (midseg.getStart() <= query.getEndTime() && midseg.getEndTime() >= query.getStartTime())
 				ret |= updateCandState_intern(curListIdx, midseg, 1.0f);
 		}
+		cand.prune(topk.getMinWorstScore());
 		Profile.instance.end(Profile.UPDATE_STATE);
 
 		if (!plc.hasNext()) {

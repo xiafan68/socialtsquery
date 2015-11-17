@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import core.io.Bucket;
-import core.lsmo.OctreeSSTableWriter;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 
 /**
  * This class is only responsible for writing the octree into disk file,

@@ -18,7 +18,7 @@ import core.io.Block;
 import core.io.Bucket;
 import core.lsmi.ListDiskSSTableReader.SegListKey;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
-import core.lsmo.OctreeSSTableWriter;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;

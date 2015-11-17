@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.OctreeSSTableWriter;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.FileBasedIndexHelper;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;

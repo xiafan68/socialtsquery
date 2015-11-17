@@ -36,13 +36,7 @@ public class KeyedPriorityQueue<K, V> {
 
 	public V poll() {
 		Pair<K, V> ret = data.get(0);
-		if (data.size() > 1) {
-			data.set(0, data.remove(data.size() - 1));
-			buildHeapFromTop(keyIndex.remove(ret.getKey()));
-		} else {
-			data.remove(0);
-		}
-		keyIndex.remove(ret.getKey());
+		remove(ret.getKey());
 		return ret.getValue();
 	}
 
@@ -130,12 +124,33 @@ public class KeyedPriorityQueue<K, V> {
 		return data.get(keyIndex.get(key)).getValue();
 	}
 
+	public Iterator<Pair<K, V>> tailIterator() {
+		return new Iterator<Pair<K, V>>() {
+			@Override
+			public boolean hasNext() {
+				return !data.isEmpty();
+			}
+
+			@Override
+			public Pair<K, V> next() {
+				return data.get(data.size() - 1);
+			}
+
+			@Override
+			public void remove() {
+				keyIndex.remove(data.remove(data.size() - 1).getKey());
+			}
+		};
+	}
+
 	public void remove(K key) {
 		int idx = keyIndex.get(key);
 		if (idx == data.size() - 1) {
 			data.remove(idx);
 		} else {
-			data.set(idx, data.remove(data.size() - 1));
+			Pair<K, V> pair = data.remove(data.size() - 1);
+			keyIndex.put(pair.getKey(), idx);
+			data.set(idx, pair);
 			buildHeapFromTop(idx);
 		}
 		keyIndex.remove(key);

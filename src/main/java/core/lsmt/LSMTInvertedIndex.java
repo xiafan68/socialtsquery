@@ -82,7 +82,6 @@ public class LSMTInvertedIndex<PType> {
 	public void init() throws IOException {
 		// setup serializer for octreenode!!!
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
-		MemoryOctree.size_threshold = conf.getOctantSizeLimit();
 		bootstrap = true;
 		flushService = new FlushService(this);
 		flushService.start();

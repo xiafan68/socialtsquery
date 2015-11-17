@@ -7,6 +7,8 @@ import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
+import core.lsmo.bdbformat.DiskSSTableBDBReader;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.ILSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 

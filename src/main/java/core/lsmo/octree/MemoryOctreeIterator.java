@@ -21,13 +21,12 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	PostingListMeta meta;
 	int start = Integer.MIN_VALUE;
 	int end = Integer.MAX_VALUE;
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(
-			256, new Comparator<OctreeNode>() {
-				@Override
-				public int compare(OctreeNode o1, OctreeNode o2) {
-					return o1.getEncoding().compareTo(o2.getEncoding());
-				}
-			});
+	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
+		@Override
+		public int compare(OctreeNode o1, OctreeNode o2) {
+			return o1.getEncoding().compareTo(o2.getEncoding());
+		}
+	});
 
 	public MemoryOctreeIterator(MemoryOctree tree) {
 		if (tree != null) {
@@ -49,8 +48,7 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	}
 
 	private boolean intersect(OctreeNode node) {
-		if (node.getCornerPoint().getX() <= end
-				&& node.getCornerPoint().getY() + node.getEdgeLen() > start)
+		if (node.getCornerPoint().getX() <= end && node.getCornerPoint().getY() + node.getEdgeLen() > start)
 			return true;
 		return false;
 	}
@@ -78,8 +76,13 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 				return node;
 			} else {
 				for (int i = 0; i < 8; i++) {
-					if (intersect(node.getChild(i)))
-						traverseQueue.add(node.getChild(i));
+					if (intersect(node.getChild(i))) {
+						OctreeNode child = node.getChild(i);
+						if (!child.isLeaf()) {
+							traverseQueue.add(child);
+						} else if (child.isLeaf() && (child.size() > 0 || OctreeNode.isMarkupNode(child.getEncoding())))
+							traverseQueue.add(child);
+					}
 				}
 			}
 		}
@@ -104,14 +107,13 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	@Override
 	public Pair<Integer, List<MidSegment>> next() throws IOException {
 		OctreeNode node = nextNode();
-		return new Pair<Integer, List<MidSegment>>(
-				node.getEncoding().getTopZ(), new ArrayList<MidSegment>(
-						node.getSegs()));
+		return new Pair<Integer, List<MidSegment>>(node.getEncoding().getTopZ(),
+				new ArrayList<MidSegment>(node.getSegs()));
 	}
 
 	@Override
 	public void skipTo(WritableComparableKey key) throws IOException {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

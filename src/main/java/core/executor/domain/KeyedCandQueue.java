@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import common.MidSegment;
 import util.KeyedPriorityQueue;
+import util.Pair;
+import util.Profile;
 
 public class KeyedCandQueue {
 	private static final Logger logger = LoggerFactory.getLogger(KeyedCandQueue.class);
@@ -31,6 +33,7 @@ public class KeyedCandQueue {
 	private void refreshScore() {
 		if (!bestQueue.isEmpty()) {
 			MergedMidSeg pre = null;
+			Profile.instance.start("cand_refresh");
 			while (true) {
 				MergedMidSeg seg = bestQueue.first();
 				if (seg != pre && seg != null && seg.computeScore()) {
@@ -39,6 +42,25 @@ public class KeyedCandQueue {
 				} else {
 					break;
 				}
+			}
+			Profile.instance.end("cand_refresh");
+		}
+	}
+
+	/**
+	 * 及时删除不可能的元素，降低堆操作的代价 TODO:这个优化不大，主要是octant的上界太大
+	 * 
+	 * @param threshold
+	 */
+	public void prune(float threshold) {
+		Iterator<Pair<Long, MergedMidSeg>> iter = bestQueue.tailIterator();
+		while (iter.hasNext()) {
+			Pair<Long, MergedMidSeg> rec = iter.next();
+			if (rec.getValue().getBestscore() <= threshold) {
+				iter.remove();
+				Profile.instance.updateCounter("pruned_by_topk");
+			} else {
+				break;
 			}
 		}
 	}

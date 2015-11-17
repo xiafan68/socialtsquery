@@ -14,27 +14,11 @@ public class AndMergedMidSeg extends MergedMidSeg {
 	}
 
 	public AndMergedMidSeg(AndMergedMidSeg other) {
-		super(other);
+		super(other.ctx);
 		hittedKeys = other.hittedKeys;
 	}
 
-	public float getBestscore() {
-		return bestscore;
-	}
-
-	public float getWorstscore() {
-		return worstscore;
-	}
-
-	/* 对于这条微博增加一个窗口内的 segment */
-	/**
-	 * 为了降低对内存的消耗，新老对象还是公用了segList，但是当前对象的其它状态不会变
-	 * 
-	 * @param keyIdx
-	 *            关键词列表中的小标，用于指代某个关键词
-	 * @param seg
-	 * @return 返回修改后的MergedMidSeg
-	 */
+	@Override
 	public MergedMidSeg addMidSeg(int keyIdx, MidSegment seg, float weight) {
 		if (weights[keyIdx] < 0) {
 			hittedKeys++;
@@ -54,23 +38,22 @@ public class AndMergedMidSeg extends MergedMidSeg {
 		return ret;
 	}
 
-	public long getMid() {
-		if (segList.size() > 0)
-			return segList.get(0).mid;
-		else
-			return -1;
-	}
-
-	public int getStartTime() {
-		if (segList.isEmpty())
-			return 0;
-		return segList.get(0).getStart();
-	}
-
-	public int getEndTime() {
-		if (segList.isEmpty())
-			return 0;
-		return segList.get(segList.size() - 1).getEndTime();
+	@Override
+	public void addMidSegNoCopy(int keyIdx, MidSegment seg, float weight) {
+		if (weights[keyIdx] < 0) {
+			hittedKeys++;
+		}
+		weights[keyIdx] = weight;
+		int idx = Collections.binarySearch(segList, seg, new Comparator<MidSegment>() {
+			public int compare(MidSegment arg0, MidSegment arg1) {
+				return Integer.compare(arg0.getStart(), arg1.getStart());
+			}
+		});
+		if (idx < 0) {
+			idx = Math.abs(idx) - 1;
+			segList.add(idx, seg);
+			computeScore();
+		}
 	}
 
 	/**
@@ -132,8 +115,8 @@ public class AndMergedMidSeg extends MergedMidSeg {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof MergedMidSeg)
-			return getMid() == ((MergedMidSeg) o).getMid();
+		if (o instanceof WeightedMergedMidSeg)
+			return getMid() == ((WeightedMergedMidSeg) o).getMid();
 		else
 			return false;
 	}

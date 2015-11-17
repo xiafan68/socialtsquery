@@ -17,8 +17,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import common.MidSegment;
-import core.lsmo.DiskSSTableReader;
 import core.lsmo.OctreeBasedLSMTFactory;
+import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;

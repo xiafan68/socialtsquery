@@ -13,7 +13,7 @@ public class OrMergedMidSeg extends MergedMidSeg {
 	}
 
 	public OrMergedMidSeg(OrMergedMidSeg other) {
-		super(other);
+		super(other.ctx);
 	}
 
 	public float getBestscore() {
@@ -49,23 +49,19 @@ public class OrMergedMidSeg extends MergedMidSeg {
 		return ret;
 	}
 
-	public long getMid() {
-		if (segList.size() > 0)
-			return segList.get(0).mid;
-		else
-			return -1;
-	}
-
-	public int getStartTime() {
-		if (segList.isEmpty())
-			return 0;
-		return segList.get(0).getStart();
-	}
-
-	public int getEndTime() {
-		if (segList.isEmpty())
-			return 0;
-		return segList.get(segList.size() - 1).getEndTime();
+	@Override
+	public void addMidSegNoCopy(int keyIdx, MidSegment seg, float weight) {
+		weights[keyIdx] = weight;
+		int idx = Collections.binarySearch(segList, seg, new Comparator<MidSegment>() {
+			public int compare(MidSegment arg0, MidSegment arg1) {
+				return Integer.compare(arg0.getStart(), arg1.getStart());
+			}
+		});
+		if (idx < 0) {
+			idx = Math.abs(idx) - 1;
+			segList.add(idx, seg);
+		}
+		computeScore();
 	}
 
 	/**

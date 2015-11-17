@@ -48,7 +48,7 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 		if (containsKey(key)) {
 			postinglist = get(key);
 		} else {
-			postinglist = new MemoryOctree(new PostingListMeta());
+			postinglist = new MemoryOctree(new PostingListMeta(), index.getConf().getOctantSizeLimit());
 			put(key, postinglist);
 		}
 		postinglist.insert(seg.getPoint(), seg);

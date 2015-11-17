@@ -206,7 +206,7 @@ public class IndexLoader {
 	Thread[] consumersThreads = new Thread[10];
 
 	private void startConsumers() {
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 1; i++) {
 			consumersThreads[i] = new Thread("consumer") {
 
 				@Override

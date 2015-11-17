@@ -135,11 +135,6 @@ public class OctreeNode {
 			Point p = seg.getPoint();
 			search(p).insert(p, seg);
 		}
-		for (OctreeNode child : children) {
-			if (child.getEdgeLen() > 1 && child.size() > MemoryOctree.size_threshold) {
-				child.split();
-			}
-		}
 
 		segs.clear();
 		segs = null;

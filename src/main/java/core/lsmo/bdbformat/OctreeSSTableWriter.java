@@ -1,4 +1,4 @@
-package core.lsmo;
+package core.lsmo.bdbformat;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -190,7 +190,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				int[] hist = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > MemoryOctree.size_threshold * 0.5
+				if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.5
 						&& ((float) hist[0] + 1) / (hist[1] + 1) > 2f) {
 					// 下半部分是上半部分的两倍
 					octreeNode.split();

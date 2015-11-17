@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import core.commom.TempKeywordQuery;
+import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
@@ -27,10 +28,11 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	private LSMTInvertedIndex reader;
 
 	List<WeightedQueryExecutor> executors = new ArrayList<WeightedQueryExecutor>();
-	ISegQueue topk;
+	KeyedTopKQueue topk;
 	TempKeywordQuery query;
 
 	public MultiPartitionExecutor(LSMTInvertedIndex reader) {
+		super(reader);
 		this.reader = reader;
 	}
 
@@ -51,9 +53,10 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	@Override
 	public void query(TempKeywordQuery query) throws IOException {
 		this.query = query;
-		topk = ISegQueue.create(true);
+		topk = new KeyedTopKQueue();
 		Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
-		for (PartitionMeta meta : reader.getPartitions()) {
+		for (int i = 0; i < reader.getPartitions().size(); i++) {
+			PartitionMeta meta = (PartitionMeta) reader.getPartitions().get(i);
 			WeightedQueryExecutor exe = new WeightedQueryExecutor(reader);
 			exe.query(query);
 			exe.setMaxLifeTime(meta.getLifetimeBound());

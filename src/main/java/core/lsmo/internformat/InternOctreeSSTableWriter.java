@@ -18,8 +18,8 @@ import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.OctreeSSTableWriter;
-import core.lsmo.SSTableScanner;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.lsmo.bdbformat.SSTableScanner;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -65,6 +65,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	private int step;
 	Configuration conf;
 	InternIndexHelper indexHelper;
+	float splitingRatio = 2;
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -89,6 +90,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		this.conf = conf;
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
+		splitingRatio = conf.getSplitingRatio();
 	}
 
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
@@ -130,6 +132,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
+		splitingRatio = conf.getSplitingRatio();
 	}
 
 	/**
@@ -173,15 +176,18 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
-				int[] hist = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > MemoryOctree.size_threshold * 0.5
-						&& ((float) hist[0] + 1) / (hist[1] + 1) > 2f) {
-					// 下半部分是上半部分的两倍
-					octreeNode.split();
-					for (int i = 0; i < 8; i++)
-						iter.addNode(octreeNode.getChild(i));
-				} else {
-					indexHelper.addOctant(octreeNode);
+				if (!OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+					int[] hist = octreeNode.histogram();
+					// octreeNode.size() > MemoryOctree.size_threshold * 0.5
+					if (octreeNode.getEdgeLen() > 1
+							&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitingRatio)) {
+						// 下半部分是上半部分的两倍
+						octreeNode.split();
+						for (int i = 0; i < 8; i++)
+							iter.addNode(octreeNode.getChild(i));
+					} else {
+						indexHelper.addOctant(octreeNode);
+					}
 				}
 			}
 		}

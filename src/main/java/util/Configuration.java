@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 
@@ -13,6 +14,7 @@ public class Configuration {
 
 	public void load(String path) throws IOException {
 		props.load(new FileInputStream(path));
+		OctreePrepareForWriteVisitor.INSTANCE.splitingRatio = getSplitingRatio();
 	}
 
 	/**
@@ -61,7 +63,7 @@ public class Configuration {
 	 * @return
 	 */
 	public int getOctantSizeLimit() {
-		return Integer.parseInt(props.getProperty("octant_size_limit", "120"));
+		return Integer.parseInt(props.getProperty("octant_size_limit", "350"));
 	}
 
 	public int getBatchCommitNum() {
@@ -112,4 +114,7 @@ public class Configuration {
 		return props.getProperty("index_factory", "core.lsmi.SortedListBasedLSMTFactory");
 	}
 
+	public float getSplitingRatio() {
+		return Float.parseFloat(props.getProperty("split_ratio", "2"));
+	}
 }

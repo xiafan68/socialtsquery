@@ -10,7 +10,7 @@ import org.junit.Test;
 import common.MidSegment;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
-import core.lsmo.DiskSSTableBDBReader;
+import core.lsmo.bdbformat.DiskSSTableBDBReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
