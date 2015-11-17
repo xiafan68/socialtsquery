@@ -179,7 +179,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				if (!OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 					int[] hist = octreeNode.histogram();
 					// octreeNode.size() > MemoryOctree.size_threshold * 0.5
-					if (octreeNode.getEdgeLen() > 1
+					if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.2
 							&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitingRatio)) {
 						// 下半部分是上半部分的两倍
 						octreeNode.split();
@@ -188,6 +188,8 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 					} else {
 						indexHelper.addOctant(octreeNode);
 					}
+				} else {
+					indexHelper.addOctant(octreeNode);
 				}
 			}
 		}

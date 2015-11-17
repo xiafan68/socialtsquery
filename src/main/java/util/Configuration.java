@@ -15,6 +15,7 @@ public class Configuration {
 	public void load(String path) throws IOException {
 		props.load(new FileInputStream(path));
 		OctreePrepareForWriteVisitor.INSTANCE.splitingRatio = getSplitingRatio();
+		OctreePrepareForWriteVisitor.INSTANCE.octantLimit = getOctantSizeLimit();
 	}
 
 	/**
