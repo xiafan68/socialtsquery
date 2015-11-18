@@ -116,11 +116,13 @@ public class OrQueryExecutor extends IQueryExecutor {
 				ret = true;
 			} else {
 				// 所有的倒排表都已经遍历过了
+				ret = true;
 				for (int i = 0; i < cursors.length; i++) {
 					IPostingListIterator cursor = cursors[i];
 					if (cursor == null || !cursor.hasNext()) {
 						bestScores[i] = 0;
-						ret = true;
+					} else {
+						ret = false;
 					}
 				}
 				if (ret) {
