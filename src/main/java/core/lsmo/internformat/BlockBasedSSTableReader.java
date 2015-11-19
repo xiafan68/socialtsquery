@@ -110,7 +110,7 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 
 	@Override
 	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
-		return new InternPostingListIter(dirMap.get(key), this, 0, Integer.MAX_VALUE);
+		return new InternDiskOctreeIterator(dirMap.get(key), this);
 	}
 
 	@Override
@@ -129,11 +129,11 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 		for (int i = 516000; i < 527300; i++) {
 			block.setBlockIdx(i);
 			reader.getBlockFromDataFile(block);
-			//System.out.print(i + "");
+			// System.out.print(i + "");
 			if (block.isDataBlock()) {
-				//System.out.println(" is data");
+				// System.out.println(" is data");
 			} else {
-				System.out.println(i+" is meta");
+				System.out.println(i + " is meta");
 			}
 		}
 		reader.close();
