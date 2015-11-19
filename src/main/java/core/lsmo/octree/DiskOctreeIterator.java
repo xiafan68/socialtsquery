@@ -95,10 +95,6 @@ public class DiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public void addNode(OctreeNode node) {
-		if (node.getEncoding().getX() == 699344 && node.getEncoding().getY() == 699344 && node.getEncoding().getZ() == 1
-				&& node.getEdgeLen() == 1) {
-			System.out.println("debuging at addNode of DiskOctreeIterator");
-		}
 		traverseQueue.add(node);
 	}
 

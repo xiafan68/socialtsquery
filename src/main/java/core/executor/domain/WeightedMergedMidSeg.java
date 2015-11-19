@@ -82,7 +82,7 @@ public class WeightedMergedMidSeg extends MergedMidSeg {
 		int preXPoint = 0;
 		float preValue = 0f;
 		for (MidSegment seg : segList) {
-			segScore += seg.getValue(); // 计算seg内的分值累积和，不包含最后一个点
+			segScore += seg.getValue(ctx.getQuery().getStartTime(), ctx.getQuery().getEndTime()); // 计算seg内的分值累积和，不包含最后一个点
 			hitInv += seg.getEndTime() - seg.getStart() + 1;
 			if (preXPoint == seg.getStart()) {
 				segScore -= preValue;

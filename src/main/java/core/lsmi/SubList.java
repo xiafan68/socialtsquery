@@ -46,7 +46,12 @@ public class SubList {
 		DataOutputStream dos = new DataOutputStream(output);
 		ByteUtil.writeVInt(dos, segs.size());
 		for (MidSegment seg : segs) {
-			seg.write(dos);
+			dos.writeLong(seg.getMid());
+			ByteUtil.writeVInt(dos, seg.getStart());
+			ByteUtil.writeVInt(dos, seg.getEndTime() - seg.getStart());
+			ByteUtil.writeVInt(dos, seg.getStartCount());
+			ByteUtil.writeVInt(dos, seg.getEndCount());
+			// seg.write(dos);
 		}
 		return output.toByteArray();
 	}
@@ -56,7 +61,12 @@ public class SubList {
 		segs.clear();
 		for (int i = 0; i < size; i++) {
 			MidSegment seg = new MidSegment();
-			seg.readFields(input);
+			seg.mid = input.readLong();
+			seg.setStart(ByteUtil.readVInt(input));
+			seg.setEndTime(ByteUtil.readVInt(input) + seg.getStart());
+			seg.setCount(ByteUtil.readVInt(input));
+			seg.setEndCount(ByteUtil.readVInt(input));
+			// seg.readFields(input);
 			segs.add(seg);
 		}
 	}
@@ -73,7 +83,9 @@ public class SubList {
 		return segs.size();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
@@ -84,13 +96,11 @@ public class SubList {
 	public static void main(String[] args) throws IOException {
 		SubList list = new SubList(10);
 		for (int i = 0; i < 10; i++) {
-			MidSegment seg = new MidSegment(i + 10, new Segment(i + 10, i,
-					i + 10, i + 1));
+			MidSegment seg = new MidSegment(i + 10, new Segment(i + 10, i, i + 10, i + 1));
 			list.addSegment(seg);
 		}
 		SubList bList = new SubList(10);
-		bList.read(new DataInputStream(new ByteArrayInputStream(list
-				.toByteArray())));
+		bList.read(new DataInputStream(new ByteArrayInputStream(list.toByteArray())));
 
 		System.out.println(list);
 		System.out.println(bList);

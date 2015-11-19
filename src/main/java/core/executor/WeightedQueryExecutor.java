@@ -200,7 +200,6 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			seg.addMidSegNoCopy(idx, midseg, iWeight);
 			map.put(mid, seg);
 		}
-
 		boolean ret = true;
 		/* update the topk and cands */
 		if (topk.contains(seg)) {

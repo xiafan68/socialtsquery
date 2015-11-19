@@ -118,7 +118,7 @@ public class Encoding extends Point implements WritableComparableKey {
 	 * @param zTop
 	 */
 	public void setTop(int zTop) {
-		int len = 1 << paddingBitNum - 1;
+		int len = (1 << paddingBitNum) - 1;
 		z = zTop - len;
 		setZ(z);
 	}
