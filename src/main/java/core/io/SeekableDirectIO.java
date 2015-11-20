@@ -1,5 +1,6 @@
 package core.io;
 
+import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -13,7 +14,7 @@ import com.sun.jna.ptr.PointerByReference;
  * @author xiafan
  * 
  */
-public abstract class SeekableDirectIO {
+public abstract class SeekableDirectIO implements DataInput {
 	public static final int BLOCK_SIZE = 4096;
 	// seek arguments
 	public static final int SEEK_SET = 0;
@@ -48,8 +49,7 @@ public abstract class SeekableDirectIO {
 	protected native int close(int fd);
 
 	// memory related api
-	protected native int posix_memalign(PointerByReference memptr,
-			int alignment, int size);
+	protected native int posix_memalign(PointerByReference memptr, int alignment, int size);
 
 	protected native void free(Pointer p);
 
@@ -57,11 +57,11 @@ public abstract class SeekableDirectIO {
 	protected Pointer bufPointer;
 	protected PointerByReference bufPRef;
 
-	public void position(long pos) throws IOException {
+	public void seek(long pos) throws IOException {
 		lseek(fd, pos, SEEK_SET);
 	}
 
-	public long position() {
+	public long seek() {
 		return lseek(fd, 0, SEEK_CUR);
 	}
 
@@ -72,7 +72,7 @@ public abstract class SeekableDirectIO {
 	 * @return
 	 * @throws IOException
 	 */
-	public final int read(byte[] buf) throws IOException {
+	public final void readFully(byte[] buf) throws IOException {
 		int rtn = 0;
 		int cur = 0;
 		int len = 0;
@@ -85,7 +85,7 @@ public abstract class SeekableDirectIO {
 			remain -= len;
 		}
 
-		return rtn;
+		// return rtn;
 	}
 
 	/**
@@ -157,5 +157,89 @@ public abstract class SeekableDirectIO {
 		} else {
 			throw new RuntimeException("unsupported system for directio");
 		}
+	}
+
+	@Override
+	public void readFully(byte[] b, int off, int len) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public int skipBytes(int n) throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean readBoolean() throws IOException {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public byte readByte() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int readUnsignedByte() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public short readShort() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int readUnsignedShort() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public char readChar() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int readInt() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public long readLong() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public float readFloat() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public double readDouble() throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public String readLine() throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String readUTF() throws IOException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

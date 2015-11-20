@@ -173,7 +173,7 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	public Pair<Integer, List<MidSegment>> next() throws IOException {
 		OctreeNode node = nextNode();
 		Pair<Integer, List<MidSegment>> ret = new Pair<Integer, List<MidSegment>>(node.getEncoding().getTopZ(),
-				new ArrayList<MidSegment>(curNode.getSegs()));
+				new ArrayList<MidSegment>(node.getSegs()));
 		return ret;
 	}
 
