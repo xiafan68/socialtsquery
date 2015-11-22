@@ -236,10 +236,13 @@ public class InternPostingListIter implements IOctreeIterator {
 						curSkipBlockIdx = preSkipBlockIdx;
 						break;
 					} else {
+
 						if (skipMeta.lowerKey(curSkipBlockIdx - 1) != null)
 							curSkipBlockIdx = skipMeta.lowerKey(curSkipBlockIdx - 1);
-						else
+						else {
+							// 这种情况也需要返回，说明最小的都时间点都比查询的curMin大
 							break;
+						}
 					}
 				}
 			}
@@ -287,24 +290,28 @@ public class InternPostingListIter implements IOctreeIterator {
 	 * 
 	 * @throws IOException
 	 */
-	private void skipToOctant() throws IOException {
+	private boolean skipToOctant() throws IOException {
 		// searching in current meta blocks
 
 		Pair<WritableComparableKey, BucketID> pair = cellOffset();
-		assert pair != null;
-		// 利用pair跳转，nextID
-		if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
-			curBuck.reset();
-			nextID.copy(pair.getValue());
-		}
-
-		while (diskHasMore()) {
-			Encoding code = readNextOctantCode();
-			if (code.contains(curMin) || code.compareTo(curMin) >= 0) {
-				break;
-			} else {
-				nextID.offset++;
+		if (pair.getKey() != null) {
+			// 利用pair跳转，nextID
+			if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
+				curBuck.reset();
+				nextID.copy(pair.getValue());
 			}
+
+			while (diskHasMore()) {
+				Encoding code = readNextOctantCode();
+				if (code.contains(curMin) || code.compareTo(curMin) >= 0) {
+					break;
+				} else {
+					nextID.offset++;
+				}
+			}
+			return true;
+		} else {
+			return false;
 		}
 	}
 
