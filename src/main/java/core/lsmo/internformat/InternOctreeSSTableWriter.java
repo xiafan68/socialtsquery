@@ -172,6 +172,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 * @throws IOException
 	 */
 	public void writeOctree(IOctreeIterator iter) throws IOException {
+		int size = 0;
 		OctreeNode octreeNode = null;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
@@ -186,12 +187,17 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 						for (int i = 0; i < 8; i++)
 							iter.addNode(octreeNode.getChild(i));
 					} else {
+						size += octreeNode.size();
 						indexHelper.addOctant(octreeNode);
 					}
 				} else {
+					size += octreeNode.size();
 					indexHelper.addOctant(octreeNode);
 				}
 			}
+		}
+		if (size != iter.getMeta().size) {
+			System.out.println();
 		}
 	}
 

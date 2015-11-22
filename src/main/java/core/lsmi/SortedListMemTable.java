@@ -7,6 +7,7 @@ import java.util.List;
 
 import common.MidSegment;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
+import core.lsmt.IPostingList;
 import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
@@ -55,7 +56,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 		valueCount++;
 		SortedListPostinglist postinglist;
 		if (containsKey(key)) {
-			postinglist = get(key);
+			postinglist = (SortedListPostinglist) get(key);
 		} else {
 			postinglist = new SortedListPostinglist();
 			put(key, postinglist);
@@ -63,20 +64,15 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 		postinglist.insert(seg);
 	}
 
-	@Override
-	public Iterator<Entry<WritableComparableKey, SortedListPostinglist>> iterator() {
-		return super.entrySet().iterator();
-	}
-
-	public static class SortedListPostinglist {
+	public static class SortedListPostinglist extends IPostingList {
 		List<MidSegment> list = new ArrayList<MidSegment>();
-		PostingListMeta meta = new PostingListMeta();
 
-		public PostingListMeta getMeta() {
-			return meta;
+		public SortedListPostinglist() {
+			super(new PostingListMeta());
 		}
 
-		public void insert(MidSegment seg) {
+		@Override
+		public boolean insert(MidSegment seg) {
 			meta.size++;
 			meta.minTime = Math.min(meta.minTime, seg.getStart());
 			meta.maxTime = Math.max(meta.maxTime, seg.getEndTime());
@@ -85,6 +81,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 				idx = Math.abs(idx) - 1;
 			}
 			list.add(idx, seg);
+			return true;
 		}
 
 		public Iterator<MidSegment> iterator() {

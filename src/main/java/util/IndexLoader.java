@@ -18,7 +18,6 @@ import org.apache.log4j.PropertyConfigurator;
 
 import common.MidSegment;
 import common.Tweet;
-import core.lsmi.SortedListBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
 import fanxia.file.DirLineReader;
 import joptsimple.OptionParser;
@@ -203,10 +202,12 @@ public class IndexLoader {
 		producer.start();
 	}
 
-	Thread[] consumersThreads = new Thread[10];
+	Thread[] consumersThreads = null;
 
 	private void startConsumers() {
-		for (int i = 0; i < 1; i++) {
+		int count = 1;
+		consumersThreads = new Thread[count];
+		for (int i = 0; i < count; i++) {
 			consumersThreads[i] = new Thread("consumer") {
 
 				@Override

@@ -20,7 +20,7 @@ public class OctreeTest {
 		for (int i = 0; i < 8; i++) {
 			for (int j = i; j < 8; j++) {
 				MidSegment seg = new MidSegment(id++, new Segment(i, i, j, j));
-				tree.insert(seg.getPoint(), seg);
+				tree.insert(seg);
 			}
 		}
 		tree.print();

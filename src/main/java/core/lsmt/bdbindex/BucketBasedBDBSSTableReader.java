@@ -14,6 +14,7 @@ import core.io.Bucket.BucketID;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
@@ -52,6 +53,11 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 
 	public boolean isInited() {
 		return true;
+	}
+
+	@Override
+	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
+		return dirMap.get(key);
 	}
 
 	public void init() throws IOException {

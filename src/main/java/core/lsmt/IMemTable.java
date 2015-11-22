@@ -17,7 +17,7 @@ import common.MidSegment;
  * @param <VType>
  *            postinglist的实现类
  */
-public interface IMemTable<VType> {
+public interface IMemTable<pType extends IPostingList> {
 
 	/**
 	 * 返回读取当前memtable的reader类
@@ -25,6 +25,8 @@ public interface IMemTable<VType> {
 	 * @return the reader
 	 */
 	public ISSTableReader getReader();
+
+	public IPostingList getPostingList(WritableComparableKey key);
 
 	/**
 	 * @return the meta
@@ -57,10 +59,9 @@ public interface IMemTable<VType> {
 	 * 
 	 * @return
 	 */
-	public Iterator<Entry<WritableComparableKey, VType>> iterator();
+	public Iterator<Entry<WritableComparableKey, pType>> iterator();
 
-	public static class SSTableMeta implements Serializable,
-			Comparable<SSTableMeta> {
+	public static class SSTableMeta implements Serializable, Comparable<SSTableMeta> {
 		public int version;
 		public int level = 0;
 		transient boolean persisted = true;
@@ -116,9 +117,8 @@ public interface IMemTable<VType> {
 		 */
 		@Override
 		public String toString() {
-			return "SSTableMeta [version=" + version + ", level=" + level
-					+ ", persisted=" + persisted + ", markAsDel=" + markAsDel
-					+ "]";
+			return "SSTableMeta [version=" + version + ", level=" + level + ", persisted=" + persisted + ", markAsDel="
+					+ markAsDel + "]";
 		}
 	}
 

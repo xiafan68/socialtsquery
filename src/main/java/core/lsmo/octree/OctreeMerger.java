@@ -21,20 +21,18 @@ public class OctreeMerger implements IOctreeIterator {
 	IOctreeIterator rhs;
 	OctreeNode curNode;
 	PostingListMeta meta;
-	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(
-			256, new Comparator<OctreeNode>() {
-				@Override
-				public int compare(OctreeNode o1, OctreeNode o2) {
-					return o1.getEncoding().compareTo(o2.getEncoding());
-				}
-			});
+	PriorityQueue<OctreeNode> splittedNodes = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
+		@Override
+		public int compare(OctreeNode o1, OctreeNode o2) {
+			return o1.getEncoding().compareTo(o2.getEncoding());
+		}
+	});
 
 	public OctreeMerger(IOctreeIterator lhs, IOctreeIterator rhs) {
 		this.lhs = lhs;
 		this.rhs = rhs;
 		if (lhs.getMeta() == null || rhs.getMeta() == null) {
-			meta = new PostingListMeta(lhs.getMeta() != null ? lhs.getMeta()
-					: rhs.getMeta());
+			meta = new PostingListMeta(lhs.getMeta() != null ? lhs.getMeta() : rhs.getMeta());
 		} else {
 			meta = new PostingListMeta(lhs.getMeta(), rhs.getMeta());
 		}
@@ -42,8 +40,8 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		return curNode != null || !splittedNodes.isEmpty() || lnode != null
-				|| lhs.hasNext() || rnode != null || rhs.hasNext();
+		return curNode != null || !splittedNodes.isEmpty() || lnode != null || lhs.hasNext() || rnode != null
+				|| rhs.hasNext();
 	}
 
 	OctreeNode lnode;
@@ -84,13 +82,13 @@ public class OctreeMerger implements IOctreeIterator {
 			} else if (lnode.contains(rnode)) {
 				lnode.split();
 				for (int i = 0; i < 8; i++)
-					if (lnode.getChild(i).size() > 0)
+					if (OctreeNode.isMarkupNode(lnode.getChild(i).getEncoding()) || lnode.getChild(i).size() > 0)
 						lhs.addNode(lnode.getChild(i));
 				lnode = null;
 			} else if (rnode.contains(lnode)) {
 				rnode.split();
 				for (int i = 0; i < 8; i++) {
-					if (rnode.getChild(i).size() > 0)
+					if (OctreeNode.isMarkupNode(rnode.getChild(i).getEncoding()) || rnode.getChild(i).size() > 0)
 						rhs.addNode(rnode.getChild(i));
 				}
 				rnode = null;
@@ -112,8 +110,7 @@ public class OctreeMerger implements IOctreeIterator {
 		advance();
 		if (!splittedNodes.isEmpty()) {
 			if (curNode != null) {
-				int cmp = curNode.getEncoding().compareTo(
-						splittedNodes.peek().getEncoding());
+				int cmp = curNode.getEncoding().compareTo(splittedNodes.peek().getEncoding());
 				if (cmp < 0) {
 					ret = curNode;
 					curNode = null;
@@ -158,8 +155,7 @@ public class OctreeMerger implements IOctreeIterator {
 
 	@Override
 	public Pair<Integer, List<MidSegment>> next() throws IOException {
-		throw new RuntimeException(
-				"next should never be invoked on instance of OctreeMerger");
+		throw new RuntimeException("next should never be invoked on instance of OctreeMerger");
 	}
 
 	@Override

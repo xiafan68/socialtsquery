@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.Encoding;
-import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -89,7 +88,7 @@ public class OctreeMergerTest {
 			int tgap = Math.abs(rand.nextInt()) % 100;
 			int cgap = Math.abs(rand.nextInt()) % 100;
 			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start, count, start + tgap, count + cgap));
-			octree.insert(seg.getPoint(), seg);
+			octree.insert(seg);
 			segs.add(seg);
 		}
 		return octree;
@@ -144,7 +143,8 @@ public class OctreeMergerTest {
 		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(33, 0));
 		rhs.init();
 
-		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(new StringKey("0")), rhs.getPostingListScanner(new StringKey("0")));
+		OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(new StringKey("0")),
+				rhs.getPostingListScanner(new StringKey("0")));
 		DiskSSTableReader rrhs = new DiskSSTableReader(index, new SSTableMeta(34, 0));
 		rrhs.init();
 		OctreeMerger merge3 = new OctreeMerger(merge, rrhs.getPostingListScanner(new StringKey("0")));

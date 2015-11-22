@@ -8,6 +8,7 @@ import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
+import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
 
 public class MemorySSTableReader implements ISSTableReader {
@@ -51,5 +52,10 @@ public class MemorySSTableReader implements ISSTableReader {
 
 	@Override
 	public void init() throws IOException {
+	}
+
+	@Override
+	public DirEntry getDirEntry(WritableComparableKey key) {
+		return null;
 	}
 }

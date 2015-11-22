@@ -25,7 +25,6 @@ import common.MidSegment;
 import core.commom.TempKeywordQuery;
 import core.executor.IQueryExecutor;
 import core.executor.QueryExecutorFactory;
-import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
@@ -41,7 +40,7 @@ import util.Configuration;
  * @author xiafan
  *
  */
-public class LSMTInvertedIndex<PType> {
+public class LSMTInvertedIndex {
 	private static final Logger logger = Logger.getLogger(LSMTInvertedIndex.class);
 
 	// AtomicBoolean running = new AtomicBoolean(true);
@@ -221,7 +220,7 @@ public class LSMTInvertedIndex<PType> {
 
 	// TODO check whether we need to switch the memtable
 	public void maySwitchMemtable() {
-		IMemTable<PType> tmp = curTable;
+		IMemTable tmp = curTable;
 		if (tmp.size() > conf.getFlushLimit() || System.currentTimeMillis() - tmp.createAt() > conf.getDurationTime()) {
 			LockManager.INSTANCE.versionWriteLock();
 			try {
@@ -550,6 +549,59 @@ public class LSMTInvertedIndex<PType> {
 	 */
 	public HashMap<String, List> collectStatistics() {
 		return null;
+	}
+
+	public int getPostingListSize(String keyword) throws IOException {
+		StringKey key = new StringKey(keyword);
+
+		VersionSet curSet = versionSet;
+		int size = 0;
+		if (curSet.curTable.getPostingList(key) != null) {
+			size += curSet.curTable.getPostingList(key).size();
+		}
+
+		for (IMemTable table : versionSet.flushingTables) {
+			if (table.getPostingList(key) != null) {
+				size += table.getPostingList(key).size();
+			}
+		}
+
+		for (SSTableMeta meta : versionSet.diskTreeMetas) {
+			ISSTableReader reader = getSSTableReader(versionSet, meta);
+			if (reader.getDirEntry(key) != null) {
+				size += reader.getDirEntry(key).size;
+			}
+		}
+
+		return size;
+	}
+
+	public int getPostingListSizeByExec(String keyword) throws IOException {
+		StringKey key = new StringKey(keyword);
+
+		VersionSet curSet = versionSet;
+		int size = 0;
+		if (curSet.curTable.getPostingList(key) != null) {
+			size += curSet.curTable.getPostingList(key).size();
+		}
+
+		for (IMemTable table : versionSet.flushingTables) {
+			if (table.getPostingList(key) != null) {
+				size += table.getPostingList(key).size();
+			}
+		}
+
+		for (SSTableMeta meta : versionSet.diskTreeMetas) {
+			if (!meta.markAsDel.get()) {
+				ISSTableReader reader = getSSTableReader(versionSet, meta);
+				IPostingListIterator scanner = reader.getPostingListScanner(key);
+				while (scanner.hasNext()) {
+					size += scanner.next().getValue().size();
+				}
+			}
+		}
+
+		return size;
 	}
 
 	/**

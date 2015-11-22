@@ -103,12 +103,12 @@ public class IndexConsoleClient {
 						}
 						answer = client.query(keywords, start, end, k, type.toUpperCase());
 					} else if (args[0].equals("stats")) {
-						Map<Float, Integer> stats = client.collectStatistics(args[1]);
+						Map<Integer, Integer> stats = client.collectStatistics(args[1]);
 						System.out.println(stats);
 					}
 				} catch (Exception ex) {
 					ex.printStackTrace();
-					//client.close();
+					// client.close();
 				}
 				long cost = System.currentTimeMillis() - startTime;
 

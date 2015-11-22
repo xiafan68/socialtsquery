@@ -28,6 +28,8 @@ import util.Pair;
  */
 public class InternDiskOctreeIterator implements IOctreeIterator {
 	DirEntry entry;
+	int segNum = 0;
+
 	BucketID nextID = new BucketID(0, (short) 0); // 下一个需要读取的octant
 	private Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
 	private int nextBlockID = 0; // 下一个bucket的blockid
@@ -113,12 +115,8 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	private void readNextOctant(Encoding curCode) throws IOException {
 		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
 		curNode.read(input);
-
-		if (!traverseQueue.isEmpty() && curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0) {
-			traverseQueue.offer(curNode);
-			curNode = traverseQueue.poll();
-		}
-
+		if (curNode != null)
+			segNum += curNode.getSegs().size();
 		input.close();
 		input = null;
 	}
@@ -129,14 +127,23 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	 * @return
 	 */
 	private boolean diskHasMore() {
-		return nextID.compareTo(entry.endBucketID) <= 0;
+		return nextID.compareTo(entry.endBucketID) <= 0 || !traverseQueue.isEmpty();
 	}
 
 	private void advance() throws IOException {
 		while (curNode == null && diskHasMore()) {
-			Encoding curCode = readNextOctantCode();
-			readNextOctant(curCode);
-			nextID.offset++;
+			if (nextID.compareTo(entry.endBucketID) <= 0) {
+				Encoding curCode = readNextOctantCode();
+				readNextOctant(curCode);
+				nextID.offset++;
+			}
+			if (curNode == null) {
+				curNode = traverseQueue.poll();
+			} else if (!traverseQueue.isEmpty()
+					&& curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0) {
+				traverseQueue.offer(curNode);
+				curNode = traverseQueue.poll();
+			}
 		}
 	}
 
@@ -187,6 +194,12 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	public boolean hasNext() throws IOException {
 		if (entry != null && curNode == null && diskHasMore()) {
 			advance();
+		}
+		if (curNode == null) {
+			if (entry.size != segNum) {
+				System.out.println(entry.curKey);
+			}
+			assert entry.size == segNum;
 		}
 		return curNode != null;
 	}

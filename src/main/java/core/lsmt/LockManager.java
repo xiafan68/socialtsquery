@@ -60,9 +60,10 @@ public enum LockManager {
 	}
 
 	public void shutdown() {
-		versionLock = null;
-		for (int i = 0; i < postsLocks.length; i++)
-			postsLocks[i] = null;
-
+		if (versionLock != null) {
+			versionLock = null;
+			for (int i = 0; i < postsLocks.length; i++)
+				postsLocks[i] = null;
+		}
 	}
 }

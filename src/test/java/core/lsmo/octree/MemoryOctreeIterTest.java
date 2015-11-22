@@ -32,9 +32,8 @@ public class MemoryOctreeIterTest {
 			int count = Math.abs(rand.nextInt()) % 200;
 			int tgap = Math.abs(rand.nextInt()) % 100;
 			int cgap = Math.abs(rand.nextInt()) % 100;
-			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start,
-					count, start + tgap, count + cgap));
-			octree.insert(seg.getPoint(), seg);
+			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start, count, start + tgap, count + cgap));
+			octree.insert(seg);
 			segs.add(seg);
 		}
 		MemoryOctreeIterator iter = new MemoryOctreeIterator(octree);
@@ -60,15 +59,14 @@ public class MemoryOctreeIterTest {
 	@Test
 	public void test() throws IOException {
 		// "/Users/xiafan/Documents/dataset/expr/twitter/twitter_segs"
-		DirLineReader reader = new DirLineReader(
-				"/home/xiafan/dataset/twitter/twitter_segs");
+		DirLineReader reader = new DirLineReader("/home/xiafan/dataset/twitter/twitter_segs");
 		String line = null;
 		int i = 0;
 		MemoryOctree octree = new MemoryOctree(new PostingListMeta());
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			octree.insert(seg.getPoint(), seg);
+			octree.insert(seg);
 			if (i++ >= 100000) {
 				break;
 			}
@@ -84,8 +82,7 @@ public class MemoryOctreeIterTest {
 			Encoding cur = curNode.getEncoding();
 			if (pre != null) {
 				Assert.assertTrue(pre.compareTo(cur) < 0);
-				Assert.assertTrue(pre.getZ() + pre.getEdgeLen() >= cur.getZ()
-						+ cur.getEdgeLen());
+				Assert.assertTrue(pre.getZ() + pre.getEdgeLen() >= cur.getZ() + cur.getEdgeLen());
 			}
 			pre = cur;
 		}

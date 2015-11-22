@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.MidSegment;
 import core.commom.Point;
+import core.lsmt.IPostingList;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -13,9 +14,8 @@ import core.lsmt.PostingListMeta;
  * @author xiafan
  *
  */
-public class MemoryOctree {
+public class MemoryOctree extends IPostingList {
 	public final int size_threshold; // MidSegment的大小为24byte，如果压缩的话更小，因此这个100略小
-	PostingListMeta meta;
 
 	Point lower = new Point(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 	Point upper = new Point(0, 0, 0);
@@ -25,25 +25,17 @@ public class MemoryOctree {
 	private AtomicBoolean immutable = new AtomicBoolean(false);
 
 	public MemoryOctree(PostingListMeta meta) {
-		this.meta = meta;
+		super(meta);
 		size_threshold = 350;
 	}
 
 	public MemoryOctree(PostingListMeta postingListMeta, int octantSizeLimit) {
-		this.meta = postingListMeta;
+		super(postingListMeta);
 		size_threshold = octantSizeLimit;
 	}
 
 	public void immutable() {
 		immutable.set(true);
-	}
-
-	public PostingListMeta getMeta() {
-		return meta;
-	}
-
-	public int size() {
-		return meta.size;
 	}
 
 	private void genNewRoot(Point point) {
@@ -80,10 +72,11 @@ public class MemoryOctree {
 	 * @param seg
 	 * @return true if insert success false if current tree is immutable
 	 */
-	public boolean insert(Point point, MidSegment seg) {
+	public boolean insert(MidSegment seg) {
 		if (immutable.get()) {
 			return false;
 		}
+		Point point = seg.getPoint();
 		meta.size++;
 		meta.minTime = Math.min(meta.minTime, point.getX());
 		meta.maxTime = Math.max(meta.maxTime, point.getY());
@@ -101,6 +94,7 @@ public class MemoryOctree {
 			if (preRoot != null) {
 				if (preRoot.isLeaf()) {
 					root.addSegs(preRoot.getSegs());
+					preRoot = null;
 				} else {
 					OctreeNode cur = root;
 					boolean preRootInserted = false;

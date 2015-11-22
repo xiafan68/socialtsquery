@@ -11,6 +11,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import util.Pair;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
+import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
 
@@ -119,5 +120,11 @@ public class SortedListMemTableReader implements ISSTableReader {
 
 	@Override
 	public void close() throws IOException {
+	}
+
+	@Override
+	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

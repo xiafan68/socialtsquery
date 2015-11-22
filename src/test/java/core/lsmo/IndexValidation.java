@@ -12,11 +12,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import core.commom.BDBBtree.BDBKeyIterator;
+import core.executor.QueryExecutorFactory.ExecType;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
 import util.Configuration;
 
@@ -107,7 +110,59 @@ public class IndexValidation {
 		fos.close();
 	}
 
-	private static void validate(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {
+	private static void validatePostingListSize(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {
+		for (SSTableMeta meta : indexA.getVersion().diskTreeMetas) {
+			ISSTableReader reader = indexA.getSSTableReader(indexA.getVersion(), meta);
+			Iterator<WritableComparableKey> iter = reader.keySetIter();
+			WritableComparableKey key;
+			while (iter.hasNext()) {
+				key = iter.next();
+				try {
+					int sizeA = indexA.getPostingListSize(key.toString());
+					int sizeB = indexB.getPostingListSize(key.toString());
+					System.out.println(key + " " + sizeA + " " + sizeB);
+					Assert.assertEquals(sizeA, sizeB);
+				} catch (Exception ex) {
+					System.out.println(meta + "\t" + key);
+				}
+			}
+			((BDBKeyIterator) iter).close();
+		}
+	}
+
+	private static void validatePostingListSize(WritableComparableKey key, LSMTInvertedIndex indexA,
+			LSMTInvertedIndex indexB) throws IOException {
+		try {
+			int sizeA = indexA.getPostingListSize(key.toString());
+			int sizeB = indexB.getPostingListSize(key.toString());
+			System.out.println(key + " " + sizeA + " " + sizeB);
+			Assert.assertEquals(sizeA, sizeB);
+		} catch (Exception ex) {
+		}
+	}
+
+	private static void validatePostingListSizeByExec(WritableComparableKey key, LSMTInvertedIndex indexA,
+			LSMTInvertedIndex indexB) throws IOException {
+		try {
+			int sizeA = indexA.getPostingListSizeByExec(key.toString());
+			int sizeB = indexB.getPostingListSizeByExec(key.toString());
+			System.out.println(key + " " + sizeA + " " + sizeB);
+			Assert.assertEquals(sizeA, sizeB);
+		} catch (Exception ex) {
+		}
+	}
+
+	@Test
+	public void crossValidateSize() throws IOException {
+		LSMTInvertedIndex lsmiIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter_lsmi.conf");
+		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter_intern.conf");
+		validatePostingListSizeByExec(new StringKey("the"), lsmiIndex, internIndex);
+		// validatePostingListSize(lsmiIndex, internIndex);
+		lsmiIndex.close();
+		internIndex.close();
+	}
+
+	private static void validateTQuery(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {
 		int ts = 0;
 		int te = 700000;
 		int topk = 300;
@@ -144,18 +199,18 @@ public class IndexValidation {
 
 	@Test
 	public void crossValidateIntern() throws IOException {
-		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter.conf");
-		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter_intern.conf");
-		validate(bdbIndex, internIndex);
+		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter.conf");
+		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter_intern.conf");
+		validateTQuery(bdbIndex, internIndex);
 		bdbIndex.close();
 		internIndex.close();
 	}
 
 	@Test
 	public void crossValidateLSMI() throws IOException {
-		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter.conf");
-		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server2.properties", "conf/index_twitter_lsmi.conf");
-		validate(bdbIndex, internIndex);
+		LSMTInvertedIndex bdbIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter.conf");
+		LSMTInvertedIndex internIndex = openIndex("conf/log4j-server.properties", "conf/index_twitter_lsmi.conf");
+		validateTQuery(bdbIndex, internIndex);
 		bdbIndex.close();
 		internIndex.close();
 	}

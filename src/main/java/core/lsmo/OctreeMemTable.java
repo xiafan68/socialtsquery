@@ -1,9 +1,6 @@
 package core.lsmo;
 
-import java.util.Iterator;
-
 import common.MidSegment;
-
 import core.lsmo.octree.MemoryOctree;
 import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
@@ -46,21 +43,16 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 		valueCount++;
 		MemoryOctree postinglist;
 		if (containsKey(key)) {
-			postinglist = get(key);
+			postinglist = (MemoryOctree) get(key);
 		} else {
 			postinglist = new MemoryOctree(new PostingListMeta(), index.getConf().getOctantSizeLimit());
 			put(key, postinglist);
 		}
-		postinglist.insert(seg.getPoint(), seg);
-	}
-
-	public Iterator<Entry<WritableComparableKey, MemoryOctree>> iterator() {
-		return super.entrySet().iterator();
+		postinglist.insert(seg);
 	}
 
 	@Override
 	public long createAt() {
 		return createAt;
 	}
-
 }

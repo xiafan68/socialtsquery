@@ -59,6 +59,10 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		this.keyFactory = keyFactory;
 	}
 
+	public DirEntry getDirEntry(WritableComparableKey key) {
+		return dirMap.get(key);
+	}
+
 	public boolean isInited() {
 		return true;
 	}

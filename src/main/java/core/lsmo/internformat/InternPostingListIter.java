@@ -4,11 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
 import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
@@ -49,12 +47,13 @@ public class InternPostingListIter implements IOctreeIterator {
 	TreeMap<Integer, SkipCell> skipMeta = new TreeMap<Integer, SkipCell>();
 	int curSkipBlockIdx;
 
-	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-		@Override
-		public int compare(OctreeNode o1, OctreeNode o2) {
-			return o1.getEncoding().compareTo(o2.getEncoding());
-		}
-	});
+	/*
+	 * PriorityQueue<OctreeNode> traverseQueue = new
+	 * PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
+	 * 
+	 * @Override public int compare(OctreeNode o1, OctreeNode o2) { return
+	 * o1.getEncoding().compareTo(o2.getEncoding()); } });
+	 */
 
 	/**
 	 * 
@@ -369,10 +368,11 @@ public class InternPostingListIter implements IOctreeIterator {
 		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
 		curNode.read(input);
 
-		if (!traverseQueue.isEmpty() && curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0) {
-			traverseQueue.offer(curNode);
-			curNode = traverseQueue.poll();
-		}
+		/*
+		 * if (!traverseQueue.isEmpty() &&
+		 * curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) >
+		 * 0) { traverseQueue.offer(curNode); curNode = traverseQueue.poll(); }
+		 */
 
 		input.close();
 		input = null;
@@ -425,7 +425,8 @@ public class InternPostingListIter implements IOctreeIterator {
 
 	@Override
 	public void addNode(OctreeNode node) {
-		traverseQueue.add(node);
+		throw new RuntimeException("unimplemented addNode");
+		// traverseQueue.add(node);
 	}
 
 }
