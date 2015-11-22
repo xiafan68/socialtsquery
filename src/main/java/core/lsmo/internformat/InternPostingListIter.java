@@ -169,7 +169,7 @@ public class InternPostingListIter implements IOctreeIterator {
 			loadMetaBlock(nextIdx);
 		}
 
-		Integer preKey = skipMeta.floorKey(nextIdx);
+		Integer preKey = skipMeta.lowerKey(nextIdx - 1);
 		if (preKey != null) {
 			// clear cache
 			Iterator<Entry<Integer, SkipCell>> iter = skipMeta.entrySet().iterator();
@@ -226,6 +226,7 @@ public class InternPostingListIter implements IOctreeIterator {
 					ret.setKey(tmp.getKey());
 					ret.setValue(
 							new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
+					break;
 				} else {
 					// assert ret.getKey() != null;
 					hitFirst = true;
@@ -235,8 +236,10 @@ public class InternPostingListIter implements IOctreeIterator {
 						curSkipBlockIdx = preSkipBlockIdx;
 						break;
 					} else {
-						assert skipMeta.floorKey(curSkipBlockIdx) != null;
-						curSkipBlockIdx = skipMeta.floorKey(curSkipBlockIdx);
+						if (skipMeta.lowerKey(curSkipBlockIdx - 1) != null)
+							curSkipBlockIdx = skipMeta.lowerKey(curSkipBlockIdx - 1);
+						else
+							break;
 					}
 				}
 			}
