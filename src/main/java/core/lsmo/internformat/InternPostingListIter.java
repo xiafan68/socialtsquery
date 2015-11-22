@@ -170,14 +170,17 @@ public class InternPostingListIter implements IOctreeIterator {
 			loadMetaBlock(nextIdx);
 		}
 
-		// clear cache
-		Iterator<Entry<Integer, SkipCell>> iter = skipMeta.entrySet().iterator();
-		while (iter.hasNext()) {
-			Entry<Integer, SkipCell> entry = iter.next();
-			if (entry.getKey() < nextIdx) {
-				iter.remove();
-			} else {
-				break;
+		Integer preKey = skipMeta.floorKey(nextIdx);
+		if (preKey != null) {
+			// clear cache
+			Iterator<Entry<Integer, SkipCell>> iter = skipMeta.entrySet().iterator();
+			while (iter.hasNext()) {
+				Entry<Integer, SkipCell> entry = iter.next();
+				if (entry.getKey() < preKey.intValue()) {
+					iter.remove();
+				} else {
+					break;
+				}
 			}
 		}
 	}
@@ -225,56 +228,18 @@ public class InternPostingListIter implements IOctreeIterator {
 					ret.setValue(
 							new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
 				} else {
-					// 对于这种情况下，一定是在前一个block中已经找到了
 					// assert ret.getKey() != null;
 					hitFirst = true;
-					if (preSkipBlockIdx >= 0)
+					if (preSkipBlockIdx >= 0) {
+						// 对于这种情况下，一定是在前一个block中已经找到了
+						assert ret.getKey() != null;
 						curSkipBlockIdx = preSkipBlockIdx;
-					else {
-						assert skipMeta.ceilingKey(curSkipBlockIdx) != null;
-						curSkipBlockIdx = skipMeta.ceilingKey(curSkipBlockIdx);
+						break;
+					} else {
+						assert skipMeta.floorKey(curSkipBlockIdx) != null;
+						curSkipBlockIdx = skipMeta.floorKey(curSkipBlockIdx);
 					}
 				}
-				break;
-			}
-		} while (true);
-		return ret;
-	}
-
-	private Pair<WritableComparableKey, BucketID> cellOffset_pre() throws IOException {
-		Pair<WritableComparableKey, BucketID> ret = new Pair<WritableComparableKey, BucketID>(null, null);
-		SkipCell curCell = null;
-
-		int preSkipBlockIdx = -1;
-		do {
-			readMetaBlockAndClearCache(curSkipBlockIdx);
-			curCell = skipMeta.get(curSkipBlockIdx);
-
-			int skipIdx = 0;
-			int start = curSkipBlockIdx == DirEntry.indexBlockIdx(entry.indexStartOffset)
-					? DirEntry.indexOffsetInBlock(entry.indexStartOffset) : 0;
-			int end = curSkipBlockIdx == DirEntry.indexBlockIdx(entry.sampleNum)
-					? DirEntry.indexOffsetInBlock(entry.sampleNum) + 1 : curCell.size();
-			skipIdx = curCell.cellOffset(curMin, start, end);
-
-			if (curCell.size() == 0) {
-				curSkipBlockIdx = preSkipBlockIdx;
-				break;
-			} else if (skipIdx == curCell.size() - 1) {
-				Pair<WritableComparableKey, BucketID> temp = curCell.getIndexEntry(skipIdx);
-				ret.setKey(temp.getKey());
-				ret.setValue(new BucketID(curCell.getBlockIdx() + temp.getValue().blockID + 1, temp.getValue().offset));
-				preSkipBlockIdx = curSkipBlockIdx;
-				curSkipBlockIdx = curCell.nextMetaBlockIdx;
-			} else {
-				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
-				if (ret == null || tmp.getKey().compareTo(curMin) <= 0) {
-					assert tmp.getKey().compareTo(curMin) <= 0;
-					ret.setKey(tmp.getKey());
-					ret.setValue(
-							new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
-				}
-				break;
 			}
 		} while (true);
 		return ret;
