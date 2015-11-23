@@ -62,6 +62,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	DataOutputStream dataDos;
 	// private BufferedOutputStream dataBuffer;
 
+	FileOutputStream markFileOs;
+	DataOutputStream markDos;
+
 	private int step;
 	Configuration conf;
 	InternIndexHelper indexHelper;
@@ -385,7 +388,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			byte[] data = baos.toByteArray();
 			if (OctreeNode.isMarkupNode(node.getEncoding())) {
 				if (!markUpBuck.canStore(data.length)) {
-					
+
 				}
 				markUpBuck.storeOctant(data);
 			} else {
@@ -474,5 +477,16 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		// dataBuffer = new BufferedOutputStream(dataFileOs);
 		dataDos = new DataOutputStream(dataFileOs);
 		indexHelper.openIndexFile(dir, meta);
+	}
+
+	private static class MarkDirEntry extends DirEntry {
+		public BucketID startMarkOffset;
+		public int num;
+
+		public MarkDirEntry(DirEntry curDir) {
+			super(curDir);
+			// TODO Auto-generated constructor stub
+		}
+
 	}
 }
