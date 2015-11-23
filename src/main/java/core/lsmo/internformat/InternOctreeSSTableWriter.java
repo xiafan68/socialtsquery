@@ -278,6 +278,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		ByteArrayOutputStream tempDataBout = new ByteArrayOutputStream();
 		DataOutputStream tempDataDos = new DataOutputStream(tempDataBout);
 
+		Bucket markUpBuck;
 		Bucket dataBuck;
 		List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 		List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
@@ -382,19 +383,25 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			node.getEncoding().write(dos);
 			node.write(dos);
 			byte[] data = baos.toByteArray();
+			if (OctreeNode.isMarkupNode(node.getEncoding())) {
+				if (!markUpBuck.canStore(data.length)) {
+					
+				}
+				markUpBuck.storeOctant(data);
+			} else {
+				if (!dataBuck.canStore(data.length)) {
+					flushLastBuck();
+				}
+				dataBuck.storeOctant(data);
 
-			if (!dataBuck.canStore(data.length)) {
-				flushLastBuck();
-			}
-			dataBuck.storeOctant(data);
+				if (writeFirstBlock) {
+					this.startPostingList();
+				}
 
-			if (writeFirstBlock) {
-				this.startPostingList();
-			}
-
-			// sample index
-			if (curStep++ % step == 0) {
-				buildIndex(node.getEncoding(), null);
+				// sample index
+				if (curStep++ % step == 0) {
+					buildIndex(node.getEncoding(), null);
+				}
 			}
 		}
 

@@ -2,6 +2,7 @@ package core.lsmo.octree;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import common.IntegerUtil;
 import common.MidSegment;
 import core.commom.Point;
 import core.lsmt.IPostingList;
@@ -39,6 +40,21 @@ public class MemoryOctree extends IPostingList {
 	}
 
 	private void genNewRoot(Point point) {
+		genNewRootFromOrigin(point);
+	}
+
+	private void genNewRootFromOrigin(Point point) {
+		int power = Math.max(IntegerUtil.firstNoneZero(point.getX()), IntegerUtil.firstNoneZero(point.getY()));
+		int len = 1 << (Math.max(power, IntegerUtil.firstNoneZero(point.getZ())) + 1);
+		root = new OctreeNode(new Point(0, 0, 0), len);
+	}
+
+	/**
+	 * 这方法会导致不同sstable的cube无法合并
+	 * 
+	 * @param point
+	 */
+	private void genNewRootWithMinCube(Point point) {
 		lower.setX(Math.min(lower.getX(), point.getX()));
 		lower.setY(Math.min(lower.getY(), point.getY()));
 		lower.setZ(Math.min(lower.getZ(), point.getZ()));
