@@ -99,7 +99,8 @@ public class LSMTInvertedIndex {
 		CommitLog.INSTANCE.recover(this);
 		CommitLog.INSTANCE.openNewLog(curTable.getMeta().version);
 		compactService = new CompactService(this);
-		compactService.start();
+		if (conf.shouldCompact())
+			compactService.start();
 		LockManager.INSTANCE.setBootStrap();
 		bootstrap = false;
 

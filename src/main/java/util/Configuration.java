@@ -118,4 +118,8 @@ public class Configuration {
 	public float getSplitingRatio() {
 		return Float.parseFloat(props.getProperty("split_ratio", "2"));
 	}
+
+	public boolean shouldCompact() {
+		return Boolean.parseBoolean(props.getProperty("compact", "true"));
+	}
 }

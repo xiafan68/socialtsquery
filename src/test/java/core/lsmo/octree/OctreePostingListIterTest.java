@@ -1,6 +1,7 @@
 package core.lsmo.octree;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -11,6 +12,7 @@ import common.MidSegment;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.lsmo.bdbformat.DiskSSTableBDBReader;
+import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
@@ -36,7 +38,7 @@ public class OctreePostingListIterTest {
 			if (code.getX() <= window.getEnd() && code.getY() + code.getEdgeLen() >= window.getStart()) {
 				ret[0]++;
 				// System.out.print("hit ");
-				//System.out.println(code);
+				// System.out.println(code);
 				// System.out.println(((DiskOctreeIterator)
 				// scanner).nextBucketID);
 			} else {
@@ -136,6 +138,44 @@ public class OctreePostingListIterTest {
 					System.out.println("expected size:" + expect[0] + "," + expect[1]);
 					Assert.assertEquals(expect[0], answer[0]);
 					Assert.assertEquals(expect[1], answer[1]);
+				}
+				((BDBBtree.BDBKeyIterator) iter).close();
+			}
+		} finally {
+			index.close();
+		}
+	}
+
+	@Test
+	public void scannerTest() throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server2.properties");
+
+		Configuration conf = new Configuration();
+		conf.load("conf/index_twitter_intern.conf");
+
+		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
+		index.init();
+
+		System.out.println("begin to verify");
+		System.out.flush();
+		// 遍历所有的posting list
+
+		try {
+			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
+				BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(),
+						meta);
+				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				HashSet<Encoding> mids = new HashSet<Encoding>();
+				while (iter.hasNext()) {
+					WritableComparableKey key = iter.next();
+					IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);
+					while (scanner.hasNext()) {
+						OctreeNode cur = scanner.nextNode();
+						Assert.assertFalse(mids.contains(cur));
+						mids.add(cur.getEncoding());
+						// System.out.println(scanner.nextNode());
+					}
+					System.out.println(key + " success");
 				}
 				((BDBBtree.BDBKeyIterator) iter).close();
 			}

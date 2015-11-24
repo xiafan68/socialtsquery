@@ -72,6 +72,8 @@ public class IndexLoader {
 
 	private void startProducer() {
 		producer = new Thread("producer") {
+			int minTime = 695435;
+
 			@Override
 			public void run() {
 				DirLineReader reader = null;
@@ -84,8 +86,8 @@ public class IndexLoader {
 				int i = 0;
 				long start = System.currentTimeMillis();
 				while (null != (line = reader.readLine())) {
-					parseSeries(line);
-
+					// parseSeries(line);
+					parseTweetSegs(line);
 					if (++i % 1000 == 0) {
 						long time = System.currentTimeMillis() - start;
 						logger.info("inserting " + i + " items costs " + time + " ms, " + " average "
@@ -124,6 +126,8 @@ public class IndexLoader {
 				String histField = line.substring(idx + 1);
 				Segment seg = new Segment();
 				seg.parse(histField);
+				seg.setStart(seg.getStart() - minTime);
+				seg.setEndTime(seg.getEndTime() - minTime);
 				Tweet tweet = new Tweet();
 				tweet.parse(tweetField);
 				long mid = -1;

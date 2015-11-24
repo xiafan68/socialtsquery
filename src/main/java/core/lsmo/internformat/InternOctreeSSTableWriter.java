@@ -1,5 +1,7 @@
 package core.lsmo.internformat;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,6 +30,7 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
@@ -180,7 +183,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
-				if (!OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+				if (octreeNode.size() > 0) {
 					int[] hist = octreeNode.histogram();
 					// octreeNode.size() > MemoryOctree.size_threshold * 0.5
 					if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.2
@@ -200,7 +203,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			}
 		}
 		if (size != iter.getMeta().size) {
-			System.out.println();
+			System.err.println(size + " size do not  equals + " + iter.getMeta().size);
 		}
 	}
 
@@ -211,6 +214,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			dataDos.close();
 			dataDos = null;
 			dataFileOs.close();
+
+			markDos.close();
+			markFileOs.close();
 		}
 	}
 
@@ -235,8 +241,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public void moveToDir(File preDir, File dir) {
-		File tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
-		tmpFile.renameTo(OctreeSSTableWriter.dataFile(dir, getMeta()));
+		File tmpFile = dataFile(preDir, getMeta());
+		tmpFile.renameTo(dataFile(dir, getMeta()));
+		tmpFile = markFile(preDir, getMeta());
+		tmpFile.renameTo(markFile(dir, getMeta()));
 		indexHelper.moveToDir(preDir, dir, meta);
 	}
 
@@ -251,6 +259,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	@Override
 	public void delete(File indexDir, SSTableMeta meta) {
 		dataFile(conf.getIndexDir(), meta).delete();
+		markFile(conf.getIndexDir(), meta).delete();
 		indexHelper.delete(conf.getIndexDir(), meta);
 	}
 
@@ -289,6 +298,8 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		boolean writeFirstBlock = true;
 		boolean sampleFirstIndex = true;
 
+		private boolean writeFirstMark = true;
+
 		public InternIndexHelper(Configuration conf) {
 			super(conf);
 		}
@@ -300,14 +311,21 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 			cell = new SkipCell(currentBlockIdx(), conf.getIndexValueFactory());
 			dataBuck = new Bucket((cell.getBlockIdx() + 1) * Block.BLOCK_SIZE);
+			markUpBuck = new Bucket(currentMarkIdx() * Block.BLOCK_SIZE);
+		}
+
+		private int currentMarkIdx() throws IOException {
+			return (int) (markFileOs.getChannel().size() / Block.BLOCK_SIZE);
 		}
 
 		@Override
 		public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
-			curDir = new DirEntry(conf.getIndexKeyFactory());
-			super.startPostingList(key, newListStart);
+			curDir = new MarkDirEntry(conf.getIndexKeyFactory());
+			curDir.curKey = key;
 			writeFirstBlock = true;
 			sampleFirstIndex = true;
+			writeFirstMark = true;
+
 		}
 
 		/**
@@ -336,9 +354,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		@Override
 		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
-				if (meta.version == 255 && meta.level == 7 && cell.blockIdx == 524287) {
-					System.out.println();
-				}
 				// 创建新的skip cell
 				// first write the meta data
 				cell.write(getCurBuckBlockID()).write(dataDos);
@@ -386,11 +401,20 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			node.getEncoding().write(dos);
 			node.write(dos);
 			byte[] data = baos.toByteArray();
-			if (OctreeNode.isMarkupNode(node.getEncoding())) {
+			// && OctreeNode.isMarkupNode(node.getEncoding())
+			if (node.size() == 0) {
 				if (!markUpBuck.canStore(data.length)) {
-
+					markUpBuck.write(markDos);
+					markDos.flush();
+					markUpBuck.reset();
+					markUpBuck.setBlockIdx(currentMarkIdx());
 				}
 				markUpBuck.storeOctant(data);
+				if (writeFirstMark) {
+					((MarkDirEntry) curDir).startMarkOffset.copy(markUpBuck.blockIdx());
+					writeFirstMark = false;
+				}
+				((MarkDirEntry) curDir).markNum++;
 			} else {
 				if (!dataBuck.canStore(data.length)) {
 					flushLastBuck();
@@ -439,6 +463,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			if (tempDataBout != null) {
 				flushLastBuck();
 				flushSkipCell();
+				markUpBuck.write(markDos);
 				dirMap.close();
 			}
 		}
@@ -463,6 +488,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
+	public static File markFile(File dir, SSTableMeta meta) {
+		return new File(dir, String.format("%d_%d.mark", meta.version, meta.level));
+	}
+
 	@Override
 	public SSTableMeta getMeta() {
 		return meta;
@@ -476,16 +505,36 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		dataFileOs = new FileOutputStream(dataFile(dir, meta));
 		// dataBuffer = new BufferedOutputStream(dataFileOs);
 		dataDos = new DataOutputStream(dataFileOs);
+
+		markFileOs = new FileOutputStream(markFile(dir, meta));
+		markDos = new DataOutputStream(markFileOs);
 		indexHelper.openIndexFile(dir, meta);
 	}
 
-	private static class MarkDirEntry extends DirEntry {
-		public BucketID startMarkOffset;
-		public int num;
+	public static class MarkDirEntry extends DirEntry {
+		public BucketID startMarkOffset = new BucketID(0, (short) 0);
+		public int markNum = 0;
+
+		public MarkDirEntry(WritableComparableKeyFactory factory) {
+			super(factory);
+		}
 
 		public MarkDirEntry(DirEntry curDir) {
 			super(curDir);
-			// TODO Auto-generated constructor stub
+		}
+
+		@Override
+		public void write(DataOutput output) throws IOException {
+			super.write(output);
+			startMarkOffset.write(output);
+			output.writeInt(markNum);
+		}
+
+		@Override
+		public void read(DataInput input) throws IOException {
+			super.read(input);
+			startMarkOffset.read(input);
+			markNum = input.readInt();
 		}
 
 	}

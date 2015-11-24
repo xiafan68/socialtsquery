@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -13,6 +14,7 @@ import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.ISSTableWriter.DirEntry;
@@ -26,7 +28,7 @@ import util.Pair;
  * @author xiafan
  *
  */
-public class InternDiskOctreeIterator implements IOctreeIterator {
+public class InternDiskOctreeScanner implements IOctreeIterator {
 	DirEntry entry;
 	int segNum = 0;
 
@@ -34,7 +36,13 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	private Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
 	private int nextBlockID = 0; // 下一个bucket的blockid
 
-	private OctreeNode curNode = null;
+	BucketID nextMarkID = new BucketID(0, (short) 0); // 下一个需要读取的octant
+	private Bucket curMarkBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
+	private int nextMarkBlockID = 0; // 下一个bucket的blockid
+	private int readMarkNum = 0;
+
+	private OctreeNode[] curNodes = new OctreeNode[] { null, null };
+
 	DataInputStream input = null;
 	private BlockBasedSSTableReader reader;
 
@@ -52,11 +60,12 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	 * @param meta
 	 *            the meta data of the octree
 	 */
-	public InternDiskOctreeIterator(DirEntry entry, BlockBasedSSTableReader reader) {
+	public InternDiskOctreeScanner(DirEntry entry, BlockBasedSSTableReader reader) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
 			nextID.copy(entry.startBucketID);
+			nextMarkID.copy(((MarkDirEntry) entry).startMarkOffset);
 		}
 	}
 
@@ -113,10 +122,10 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	}
 
 	private void readNextOctant(Encoding curCode) throws IOException {
-		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
-		curNode.read(input);
-		if (curNode != null)
-			segNum += curNode.getSegs().size();
+		curNodes[0] = new OctreeNode(curCode, curCode.getEdgeLen());
+		curNodes[0].read(input);
+		if (curNodes[0] != null)
+			segNum += curNodes[0].getSegs().size();
 		input.close();
 		input = null;
 	}
@@ -127,30 +136,82 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 	 * @return
 	 */
 	private boolean diskHasMore() {
-		return nextID.compareTo(entry.endBucketID) <= 0 || !traverseQueue.isEmpty();
+		return curNodes[0] != null || curNodes[1] != null || nextID.compareTo(entry.endBucketID) <= 0
+				|| !traverseQueue.isEmpty() || readMarkNum < ((MarkDirEntry) entry).markNum;
 	}
 
-	private void advance() throws IOException {
-		while (curNode == null && diskHasMore()) {
-			if (nextID.compareTo(entry.endBucketID) <= 0) {
-				Encoding curCode = readNextOctantCode();
-				readNextOctant(curCode);
-				nextID.offset++;
+	private void nextMarkNode() throws IOException {
+		if (readMarkNum < ((MarkDirEntry) entry).markNum && curNodes[1] == null) {
+			if (curMarkBuck.blockIdx().blockID < 0) {
+				curMarkBuck.reset();
+				curMarkBuck.setBlockIdx(nextMarkID.blockID);
+				nextMarkBlockID = reader.getBucketFromMarkFile(curMarkBuck);
+			} else if (nextMarkID.offset >= curMarkBuck.octNum()) {
+				curMarkBuck.reset();
+				nextMarkID.blockID = nextMarkBlockID;
+				nextMarkID.offset = 0;
+				curMarkBuck.setBlockIdx(nextMarkBlockID);
+				nextMarkBlockID = reader.getBucketFromMarkFile(curMarkBuck);
 			}
-			if (curNode == null) {
-				curNode = traverseQueue.poll();
-			} else if (!traverseQueue.isEmpty()
-					&& curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0) {
-				traverseQueue.offer(curNode);
-				curNode = traverseQueue.poll();
-			}
+			Encoding curCode = new Encoding();
+			byte[] data = curMarkBuck.getOctree(nextMarkID.offset);
+			input = new DataInputStream(new ByteArrayInputStream(data));
+			curCode.read(input);
+			curNodes[1] = new OctreeNode(curCode, curCode.getEdgeLen());
+			nextMarkID.offset++;
+			readMarkNum++;
 		}
 	}
 
+	private void nextDataOctant() throws IOException {
+		if (curNodes[0] == null && nextID.compareTo(entry.endBucketID) <= 0) {
+			Encoding curCode = readNextOctantCode();
+			readNextOctant(curCode);
+			nextID.offset++;
+		}
+	}
+
+	private int largeNode() {
+		int ret = -1;
+		if (curNodes[0] == null && curNodes[1] == null)
+			return -1;
+		if (curNodes[0] != null && curNodes[1] == null) {
+			ret = 0;
+		} else if (curNodes[0] == null && curNodes[1] != null) {
+			ret = 1;
+		} else {
+			if (curNodes[0].getEncoding().compareTo(curNodes[1].getEncoding()) <= 0) {
+				ret = 0;
+			} else {
+				ret = 1;
+			}
+		}
+		return ret;
+	}
+
+	private OctreeNode advance() throws IOException {
+		OctreeNode ret = null;
+		if (diskHasMore()) {
+			nextDataOctant();
+			nextMarkNode();
+			int idx = largeNode();
+			if (idx == -1) {
+				ret = traverseQueue.poll();
+			} else {
+				if (!traverseQueue.isEmpty()
+						&& curNodes[idx].getEncoding().compareTo(traverseQueue.peek().getEncoding()) > 0)
+					ret = traverseQueue.poll();
+				else {
+					ret = curNodes[idx];
+					curNodes[idx] = null;
+				}
+			}
+		}
+		return ret;
+	}
+
 	public OctreeNode nextNode() throws IOException {
-		advance();
-		OctreeNode ret = curNode;
-		curNode = null;
+		OctreeNode ret = advance();
 		return ret;
 	}
 
@@ -192,15 +253,16 @@ public class InternDiskOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		if (entry != null && curNode == null && diskHasMore()) {
-			advance();
-		}
-		if (curNode == null) {
-			if (entry.size != segNum) {
-				System.out.println(entry.curKey);
-			}
-			assert entry.size == segNum;
-		}
-		return curNode != null;
+		return diskHasMore();
+		// if (entry != null && curNodes[0] == null && diskHasMore()) {
+		// advance();
+		// }
+		// if (curNodes[0] == null) {
+		// if (entry.size != segNum) {
+		// System.out.println(entry.curKey);
+		// }
+		// assert entry.size == segNum;
+		// }
+		// return curNodes[0] != null;
 	}
 }

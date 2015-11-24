@@ -185,6 +185,23 @@ public class BDBBtree {
 		}
 	}
 
+	public void get(WritableComparableKey curkey, DirEntry entry) throws IOException {
+		Profile.instance.start("readdir");
+		DatabaseEntry key = getDBEntry(curkey);
+		DatabaseEntry data = new DatabaseEntry();
+
+		Cursor cursor = nodeDb.openCursor(null, null);
+		try {
+			OperationStatus status = cursor.getSearchKey(key, data, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				entry.read(new DataInputStream(new ByteArrayInputStream(data.getData())));
+			}
+		} finally {
+			cursor.close();
+		}
+		Profile.instance.end("readdir");
+	}
+
 	public DirEntry get(WritableComparableKey curkey) throws IOException {
 		Profile.instance.start("readdir");
 		DatabaseEntry key = getDBEntry(curkey);

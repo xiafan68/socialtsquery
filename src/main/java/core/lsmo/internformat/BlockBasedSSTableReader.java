@@ -12,8 +12,9 @@ import org.apache.log4j.PropertyConfigurator;
 import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
+import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
@@ -28,18 +29,22 @@ import util.Profile;
 
 public class BlockBasedSSTableReader implements ISSTableReader {
 	protected RandomAccessFile dataInput;
+	protected RandomAccessFile markInput;
+
 	protected BDBBtree dirMap = null;
 
 	protected AtomicBoolean init = new AtomicBoolean(false);
 
 	protected LSMTInvertedIndex index;
 	protected SSTableMeta meta;
+	WritableComparableKeyFactory valueFactory;
 	WritableComparableKeyFactory keyFactory;
 
 	public BlockBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
 		this.index = index;
 		this.meta = meta;
-		this.keyFactory = index.getConf().getIndexValueFactory();
+		this.valueFactory = index.getConf().getIndexValueFactory();
+		this.keyFactory = index.getConf().getIndexKeyFactory();
 	}
 
 	public boolean isInited() {
@@ -47,7 +52,9 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	}
 
 	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
-		return dirMap.get(key);
+		MarkDirEntry ret = new MarkDirEntry(keyFactory);
+		dirMap.get(key, ret);
+		return ret;
 	}
 
 	public void init() throws IOException {
@@ -55,7 +62,8 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					dataInput = new RandomAccessFile(InternOctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					markInput = new RandomAccessFile(InternOctreeSSTableWriter.markFile(dataDir, meta), "r");
 					loadDirMeta();
 				}
 				init.set(true);
@@ -66,6 +74,17 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	private void loadDirMeta() throws IOException {
 		dirMap = new BDBBtree(BDBBasedIndexHelper.dirMetaFile(index.getConf().getIndexDir(), meta), index.getConf());
 		dirMap.open(false, false);
+	}
+
+	public synchronized int getBucketFromMarkFile(Bucket block) throws IOException {
+		Profile.instance.start("markblock");
+		try {
+			markInput.seek(block.blockIdx().getFileOffset());
+			block.read(markInput);
+			return (int) (markInput.getChannel().position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end("markblock");
+		}
 	}
 
 	public synchronized int getBlockFromDataFile(Block block) throws IOException {
@@ -88,7 +107,7 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	};
 
 	public WritableComparableKeyFactory getFactory() {
-		return keyFactory;
+		return valueFactory;
 	}
 
 	@Override
@@ -102,20 +121,32 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	}
 
 	@Override
+	protected void finalize() throws Throwable {
+		close();
+	};
+
+	@Override
 	public void close() throws IOException {
-		if (dataInput != null)
+		if (dataInput != null) {
 			dataInput.close();
-		dirMap.close();
+			dataInput = null;
+			markInput.close();
+			dirMap.close();
+		}
 	}
 
 	@Override
 	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
-		return new InternDiskOctreeIterator(dirMap.get(key), this);
+		MarkDirEntry entry = new MarkDirEntry(keyFactory);
+		dirMap.get(key, entry);
+		return new InternDiskOctreeScanner(entry, this);
 	}
 
 	@Override
 	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
-		return new InternPostingListIter(dirMap.get(key), this, start, end);
+		MarkDirEntry entry = new MarkDirEntry(keyFactory);
+		dirMap.get(key, entry);
+		return new InternPostingListIter(entry, this, start, end);
 	}
 
 	public static void main(String[] args) throws IOException {
