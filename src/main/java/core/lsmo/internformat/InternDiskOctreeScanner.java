@@ -5,9 +5,10 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+
+import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.Encoding;
@@ -29,6 +30,8 @@ import util.Pair;
  *
  */
 public class InternDiskOctreeScanner implements IOctreeIterator {
+	private Logger logger = Logger.getLogger(InternDiskOctreeScanner.class);
+
 	DirEntry entry;
 	int segNum = 0;
 
@@ -254,15 +257,5 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	@Override
 	public boolean hasNext() throws IOException {
 		return diskHasMore();
-		// if (entry != null && curNodes[0] == null && diskHasMore()) {
-		// advance();
-		// }
-		// if (curNodes[0] == null) {
-		// if (entry.size != segNum) {
-		// System.out.println(entry.curKey);
-		// }
-		// assert entry.size == segNum;
-		// }
-		// return curNodes[0] != null;
 	}
 }

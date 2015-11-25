@@ -203,7 +203,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			}
 		}
 		if (size != iter.getMeta().size) {
-			System.err.println(size + " size do not  equals + " + iter.getMeta().size);
+			System.err.println(size + " size do not  equals " + iter.getMeta().size);
 		}
 	}
 

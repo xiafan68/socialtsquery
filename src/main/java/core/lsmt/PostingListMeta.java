@@ -50,4 +50,9 @@ public class PostingListMeta {
 		minTime = ByteUtil.readVInt(input);
 		maxTime = ByteUtil.readVInt(input);
 	}
+
+	@Override
+	public String toString() {
+		return "PostingListMeta [size=" + size + ", maxTime=" + maxTime + ", minTime=" + minTime + "]";
+	}
 }
