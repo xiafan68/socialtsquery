@@ -18,16 +18,13 @@ public class Profile {
 	public static final String UPDATE_STATE = "update";
 
 	// IO
-	public static final String DATA_BLOCK = "atomic";
-	public static final String META_BLOCK = "meta block";
-	public static final String SKIPPED_BLOCK = "skip block";
-	
+	public static final String READ_BLOCK = "block_time";
+	public static final String NUM_BLOCK = "#block";
+
 	public static final String TOPK = "topk";
 	public static final String CAND = "cand";
 	public static final String WASTED_REC = "waste";
-	public static final String TWASTED_REC = "twaste";
 
-		
 	private static Logger logger = LoggerFactory.getLogger(Profile.class);
 
 	public static Profile instance = new Profile();
@@ -72,8 +69,7 @@ public class Profile {
 		if (eCounters.containsKey(counter)) {
 			eCounters.get(counter).addAndGet(count);
 		} else {
-			AtomicInteger ret = eCounters.putIfAbsent(counter,
-					new AtomicInteger(count));
+			AtomicInteger ret = eCounters.putIfAbsent(counter, new AtomicInteger(count));
 			if (ret != null)
 				ret.addAndGet(count);
 		}
@@ -153,16 +149,16 @@ public class Profile {
 	}
 
 	public void nextBlock() {
-		/*	if (curCursorID >= 0)
-				visitGaps.get(curCursorID).add(
-						visitCounts[curCursorID - lastActive]);*/
+		/*
+		 * if (curCursorID >= 0) visitGaps.get(curCursorID).add(
+		 * visitCounts[curCursorID - lastActive]);
+		 */
 	}
 
 	public void printVisitPattern() {
 		for (Entry<Integer, List<Integer>> entry : visitGaps.entrySet()) {
 			System.out.println(entry);
-			System.out.println("list counts:"
-					+ listCounts[entry.getKey() - lastActive]);
+			System.out.println("list counts:" + listCounts[entry.getKey() - lastActive]);
 		}
 
 		lastActive = -1;

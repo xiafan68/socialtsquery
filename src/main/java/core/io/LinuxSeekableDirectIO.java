@@ -36,7 +36,7 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 	public static final int O_CLOEXEC = 02000000;
 
 	public LinuxSeekableDirectIO(String pathname) throws IOException {
-		this(pathname, LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
+		this(pathname, LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT);
 	}
 
 	public LinuxSeekableDirectIO(String pathname, int flags) throws IOException {
@@ -48,23 +48,23 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 		bufPRef = new PointerByReference();
 		posix_memalign(bufPRef, BLOCK_SIZE, BLOCK_SIZE);
 		bufPointer = bufPRef.getValue();
-	}
-
-	public void position(long pos) throws IOException {
-		lseek(fd, pos, SEEK_SET);
+		memset(bufPointer, BLOCK_SIZE, 0);
 	}
 
 	public static void main(String[] test) throws IOException {
 		SeekableDirectIO io = new LinuxSeekableDirectIO("/tmp/iotest.txt",
 				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
-		io.seek(10);
+		//io.seek(10);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream bos = new DataOutputStream(baos);
 		for (int i = 0; i < 100; i++) {
 			bos.writeInt(i);
 		}
 		io.write(baos.toByteArray());
-		io.seek(10);
+		io.close();
+		io = new LinuxSeekableDirectIO("/tmp/iotest.txt",
+				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
+		//io.seek(10);
 		byte[] bytes = new byte[baos.toByteArray().length];
 		io.readFully(bytes);
 		DataInputStream bis = new DataInputStream(new ByteArrayInputStream(bytes));

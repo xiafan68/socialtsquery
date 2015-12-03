@@ -2,7 +2,6 @@ package core.lsmt.bdbindex;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,6 +10,7 @@ import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.io.SeekableDirectIO;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -29,14 +29,9 @@ import util.Profile;
  *
  */
 public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTableReader {
-	protected RandomAccessFile dataInput;
-	// protected RandomAccessFile dirInput;
-	// protected RandomAccessFile idxInput;
-
+	protected SeekableDirectIO dataInput;
 	protected BDBBtree dirMap = null;
 	protected BDBBtree skipList = null;
-	// private Map<WritableComparableKey, Integer> wordFreq = new
-	// HashMap<WritableComparableKey, Integer>();
 
 	protected AtomicBoolean init = new AtomicBoolean(false);
 
@@ -65,7 +60,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					dataInput = SeekableDirectIO.create(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
 					// loadStats();
 					loadDirMeta();
 					loadIndex();
@@ -105,15 +100,15 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 * @throws IOException
 	 */
 	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
-		Profile.instance.start("getBucket");
+		Profile.instance.start(Profile.instance.READ_BLOCK);
 		try {
 			bucket.reset();
 			bucket.setBlockIdx(id.blockID);
 			dataInput.seek(id.getFileOffset());
 			bucket.read(dataInput);
-			return (int) (dataInput.getChannel().position() / Block.BLOCK_SIZE);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
 		} finally {
-			Profile.instance.end("getBucket");
+			Profile.instance.end(Profile.instance.READ_BLOCK);
 		}
 	}
 

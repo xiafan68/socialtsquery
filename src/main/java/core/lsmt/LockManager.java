@@ -3,9 +3,7 @@ package core.lsmt;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public enum LockManager {
-	INSTANCE;
-
+public class LockManager {
 	// locks for posting list
 	private ReadWriteLock[] postsLocks;
 	// any operation to the version set needs to occupy this lock
@@ -15,7 +13,7 @@ public enum LockManager {
 
 	private final int PARALLEL = 10240;
 
-	private LockManager() {
+	public LockManager() {
 		postsLocks = new ReadWriteLock[PARALLEL];
 		versionLock = new ReentrantReadWriteLock();
 		for (int i = 0; i < PARALLEL; i++) {

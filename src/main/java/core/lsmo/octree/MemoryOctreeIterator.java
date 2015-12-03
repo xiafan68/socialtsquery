@@ -70,23 +70,29 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 
 	@Override
 	public OctreeNode nextNode() {
+		OctreeNode ret = null;
 		while (!traverseQueue.isEmpty()) {
 			OctreeNode node = traverseQueue.poll();
 			if (node.isLeaf()) {
-				return node;
+				ret = node;
+				break;
 			} else {
 				for (int i = 0; i < 8; i++) {
 					if (intersect(node.getChild(i))) {
 						OctreeNode child = node.getChild(i);
 						if (!child.isLeaf()) {
 							traverseQueue.add(child);
-						} else if (child.isLeaf() && (child.size() > 0 || OctreeNode.isMarkupNode(child.getEncoding())))
+						} else if (child.isLeaf()
+								&& (child.size() > 0 || OctreeNode.isMarkupNode(child.getEncoding()))) {
 							traverseQueue.add(child);
+						} else {
+							ret = child;
+						}
 					}
 				}
 			}
 		}
-		return null;
+		return ret;
 	}
 
 	@Override

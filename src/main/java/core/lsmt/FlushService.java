@@ -31,9 +31,9 @@ public class FlushService extends Thread {
 	@Override
 	public void run() {
 		while (!index.stop) {
-			LockManager.INSTANCE.versionReadLock();
+			index.getLockManager().versionReadLock();
 			List<IMemTable> flushingTables = new ArrayList<IMemTable>(index.getVersion().flushingTables);
-			LockManager.INSTANCE.versionReadUnLock();
+			index.getLockManager().versionReadUnLock();
 			if (!flushingTables.isEmpty()) {
 				flushingTables = flushingTables.subList(0, 1);
 				StringBuffer buf = new StringBuffer("flushing versions ");

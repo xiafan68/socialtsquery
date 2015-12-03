@@ -2,7 +2,6 @@ package core.lsmo.internformat;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,6 +13,7 @@ import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.io.SeekableDirectIO;
 import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
@@ -28,8 +28,8 @@ import util.Pair;
 import util.Profile;
 
 public class BlockBasedSSTableReader implements ISSTableReader {
-	protected RandomAccessFile dataInput;
-	protected RandomAccessFile markInput;
+	protected SeekableDirectIO dataInput;
+	protected SeekableDirectIO markInput;
 
 	protected BDBBtree dirMap = null;
 
@@ -62,8 +62,8 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(InternOctreeSSTableWriter.dataFile(dataDir, meta), "r");
-					markInput = new RandomAccessFile(InternOctreeSSTableWriter.markFile(dataDir, meta), "r");
+					dataInput = SeekableDirectIO.create(InternOctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					markInput = SeekableDirectIO.create(InternOctreeSSTableWriter.markFile(dataDir, meta), "r");
 					loadDirMeta();
 				}
 				init.set(true);
@@ -81,20 +81,20 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 		try {
 			markInput.seek(block.blockIdx().getFileOffset());
 			block.read(markInput);
-			return (int) (markInput.getChannel().position() / Block.BLOCK_SIZE);
+			return (int) (markInput.position() / Block.BLOCK_SIZE);
 		} finally {
 			Profile.instance.end("markblock");
 		}
 	}
 
 	public synchronized int getBlockFromDataFile(Block block) throws IOException {
-		Profile.instance.start("block");
+		Profile.instance.start(Profile.instance.READ_BLOCK);
 		try {
 			dataInput.seek(block.getFileOffset());
 			block.read(dataInput);
-			return (int) (dataInput.getChannel().position() / Block.BLOCK_SIZE);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
 		} finally {
-			Profile.instance.end("block");
+			Profile.instance.end(Profile.instance.READ_BLOCK);
 		}
 	}
 

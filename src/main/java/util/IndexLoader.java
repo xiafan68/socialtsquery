@@ -5,13 +5,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.collections.BidiMap;
+import org.apache.commons.collections.bidimap.TreeBidiMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -69,6 +71,8 @@ public class IndexLoader {
 	}
 
 	Thread producer;
+	AtomicInteger midGen = new AtomicInteger(-1);
+	long largestNum = -2;
 
 	private void startProducer() {
 		producer = new Thread("producer") {
@@ -103,7 +107,7 @@ public class IndexLoader {
 			}
 
 			TextShingle shingle = new TextShingle(null);
-			private Map<String, Long> mapping;
+			private BidiMap mapping = new TreeBidiMap();
 
 			private void parseSegs(String line) {
 				MidSegment seg = new MidSegment();
@@ -135,10 +139,21 @@ public class IndexLoader {
 					mid = Long.parseLong(tweet.getMid());
 				} catch (Exception ex) {
 					// logger.error(ex.getMessage());
+					/*
+					 * if (mapping.containsKey(tweet.getMid())) { mid =
+					 * mapping.get(tweet.getMid()); } else { mid = 0 -
+					 * mapping.size(); mapping.put(tweet.getMid(), mid); }
+					 */
 					if (mapping.containsKey(tweet.getMid())) {
-						mid = mapping.get(tweet.getMid());
+						mid = (long) mapping.get(tweet.getMid());
 					} else {
-						mid = 0 - mapping.size();
+						while (mapping.size() > 500000) {
+							if (mapping.containsValue(largestNum)) {
+								mapping.removeValue(largestNum);
+							}
+							largestNum--;
+						}
+						mid = midGen.addAndGet(-1);
 						mapping.put(tweet.getMid(), mid);
 					}
 				}

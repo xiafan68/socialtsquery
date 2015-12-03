@@ -122,4 +122,8 @@ public class Configuration {
 	public boolean shouldCompact() {
 		return Boolean.parseBoolean(props.getProperty("compact", "true"));
 	}
+
+	public int queryStartTime() {
+		return Integer.parseInt(props.getProperty("starttime", "0"));
+	}
 }

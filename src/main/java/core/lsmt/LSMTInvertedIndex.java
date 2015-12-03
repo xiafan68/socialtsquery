@@ -52,6 +52,7 @@ public class LSMTInvertedIndex {
 	volatile VersionSet versionSet = new VersionSet();
 	int nextVersion = 0;
 
+	LockManager lockManager;
 	FlushService flushService;
 	CompactService compactService;
 	Configuration conf;
@@ -73,6 +74,10 @@ public class LSMTInvertedIndex {
 		valWriter = implFactory.newSSTableWriterForCompaction(null, new ArrayList<ISSTableReader>(), conf);
 	}
 
+	public LockManager getLockManager() {
+		return lockManager;
+	}
+
 	/**
 	 * TODO: 1. 扫描磁盘文件，确定一个版本集合。2. 启动写出服务;3. 启动日志服务，开始日志恢复;4. 启动压缩服务，开始接受更新与查询
 	 * 
@@ -82,26 +87,21 @@ public class LSMTInvertedIndex {
 		// setup serializer for octreenode!!!
 		OctreeNode.HANDLER = CompressedSerializer.INSTANCE;
 		bootstrap = true;
+		lockManager = new LockManager();
+		lockManager.setBootStrap();
+
 		flushService = new FlushService(this);
 		flushService.start();
-		LockManager.INSTANCE.setBootStrap();
 
-		/*
-		 * File keyFile = new File(conf.getIndexDir(), "keyfile.meta");
-		 * DataInputStream dis = null; try { dis = new DataInputStream(new
-		 * FileInputStream(keyFile)); while (dis.available() > 0) {
-		 * keyCode.put(dis.readUTF(), dis.readInt()); } } catch (Exception
-		 * exception) { } finally { if (dis != null) dis.close(); } keyWriter =
-		 * new DataOutputStream(new FileOutputStream(keyFile, true));
-		 */
 		setupVersionSet();
+
 		CommitLog.INSTANCE.init(conf);
 		CommitLog.INSTANCE.recover(this);
 		CommitLog.INSTANCE.openNewLog(curTable.getMeta().version);
 		compactService = new CompactService(this);
 		if (conf.shouldCompact())
 			compactService.start();
-		LockManager.INSTANCE.setBootStrap();
+		lockManager.setBootStrap();
 		bootstrap = false;
 
 	}
@@ -196,21 +196,21 @@ public class LSMTInvertedIndex {
 	 */
 
 	public void insert(List<String> keywords, MidSegment seg) throws IOException {
-		LockManager.INSTANCE.versionReadLock();
+		lockManager.versionReadLock();
 		try {
 			for (String keyword : keywords) {
 				if (!bootstrap)
 					CommitLog.INSTANCE.write(keyword, seg);
 				// int code = getKeywordCode(keyword);
-				LockManager.INSTANCE.postWriteLock(keyword.hashCode());
+				lockManager.postWriteLock(keyword.hashCode());
 				try {
 					curTable.insert(new StringKey(keyword), seg);
 				} finally {
-					LockManager.INSTANCE.postWriteUnLock(keyword.hashCode());
+					lockManager.postWriteUnLock(keyword.hashCode());
 				}
 			}
 		} finally {
-			LockManager.INSTANCE.versionReadUnLock();
+			lockManager.versionReadUnLock();
 		}
 		maySwitchMemtable();
 	}
@@ -223,7 +223,7 @@ public class LSMTInvertedIndex {
 	public void maySwitchMemtable() {
 		IMemTable tmp = curTable;
 		if (tmp.size() > conf.getFlushLimit() || System.currentTimeMillis() - tmp.createAt() > conf.getDurationTime()) {
-			LockManager.INSTANCE.versionWriteLock();
+			lockManager.versionWriteLock();
 			try {
 				// check for violation again
 				if (tmp == curTable) {
@@ -236,7 +236,7 @@ public class LSMTInvertedIndex {
 					curTable = tmp;
 				}
 			} finally {
-				LockManager.INSTANCE.versionWriteUnLock();
+				lockManager.versionWriteUnLock();
 			}
 		}
 
@@ -259,22 +259,22 @@ public class LSMTInvertedIndex {
 	 */
 	public void flushTables(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 		logger.info("flushed tables for versions " + versions);
-		LockManager.INSTANCE.versionWriteLock();
+		lockManager.versionWriteLock();
 		versionSet = versionSet.clone();
 		versionSet.flush(versions, newMeta);
 
 		// mark redo logs as deleted
 		for (SSTableMeta version : versions)
 			CommitLog.INSTANCE.deleteLog(version.version);
-		LockManager.INSTANCE.versionWriteUnLock();
+		lockManager.versionWriteUnLock();
 	}
 
 	public void compactTables(Set<SSTableMeta> versions, SSTableMeta newMeta) {
 		logger.info("compacted versions for " + versions);
-		LockManager.INSTANCE.versionWriteLock();
+		lockManager.versionWriteLock();
 		versionSet = versionSet.clone();
 		versionSet.compact(versions, newMeta);
-		LockManager.INSTANCE.versionWriteUnLock();
+		lockManager.versionWriteUnLock();
 	}
 
 	/**
@@ -286,14 +286,13 @@ public class LSMTInvertedIndex {
 	}
 
 	public VersionSet getVersion() {
-		// LockManager.INSTANCE.versionReadLock();
-		// VersionSet ret = versionSet;
-		// LockManager.INSTANCE.versionReadUnLock();
 		return versionSet;
 	}
 
 	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)
 			throws IOException {
+		start -= conf.queryStartTime();
+		end -= conf.queryStartTime();
 		IQueryExecutor exec = QueryExecutorFactory.createExecutor(this, execType);
 		String[] wordArr = new String[keywords.size()];
 		keywords.toArray(wordArr);
@@ -469,13 +468,13 @@ public class LSMTInvertedIndex {
 		for (ISSTableReader reader : readers.values()) {
 			reader.close();
 		}
-		LockManager.INSTANCE.versionWriteLock();
+		lockManager.versionWriteLock();
 		try {
 			CommitLog.INSTANCE.shutdown();
 		} finally {
-			LockManager.INSTANCE.versionWriteUnLock();
+			lockManager.versionWriteUnLock();
 		}
-		LockManager.INSTANCE.shutdown();
+		lockManager.shutdown();
 	}
 
 	// private boolean debug = false;

@@ -84,7 +84,9 @@ public class IndexConsoleClient {
 		String line = reader.readLine();
 		PrintWriter out = new PrintWriter(reader.getOutput());
 		try {
+			int minTime = 695435;
 			while (!line.startsWith("quit")) {
+
 				List<String> mids = new ArrayList<String>();
 				Iterator<Interval> answer = null;
 
@@ -95,8 +97,8 @@ public class IndexConsoleClient {
 						int i = 1;
 						String type = args[i++];
 						int k = Integer.parseInt(args[i++]);
-						int start = Integer.parseInt(args[i++]);
-						int end = Integer.parseInt(args[i++]);
+						int start = Integer.parseInt(args[i++]) - minTime;
+						int end = Integer.parseInt(args[i++]) - minTime;
 						List<String> keywords = new ArrayList<String>();
 						for (int idx = i; idx < args.length; idx++) {
 							keywords.add(args[idx]);

@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.io.SeekableDirectIO;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.FileBasedIndexHelper;
 import core.lsmt.IBucketBasedSSTableReader;
@@ -37,9 +37,8 @@ import util.Pair;
  *
  */
 public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableReader {
-	protected RandomAccessFile dataInput;
-	protected RandomAccessFile dirInput;
-	// protected RandomAccessFile idxInput;
+	protected SeekableDirectIO dataInput;
+	protected SeekableDirectIO dirInput;
 
 	protected Map<WritableComparableKey, DirEntry> dirMap = new TreeMap<WritableComparableKey, DirEntry>();
 	protected Map<WritableComparableKey, List> skipList = new HashMap<WritableComparableKey, List>();
@@ -72,7 +71,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = new RandomAccessFile(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					dataInput = SeekableDirectIO.create(OctreeSSTableWriter.dataFile(dataDir, meta).getAbsolutePath());
 					// loadStats();
 					loadDirMeta();
 					loadIndex();
@@ -137,7 +136,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		bucket.reset();
 		dataInput.seek(id.getFileOffset());
 		bucket.read(dataInput);
-		return (int) (dataInput.getChannel().position() / Block.BLOCK_SIZE);
+		return (int) (dataInput.position() / Block.BLOCK_SIZE);
 	}
 
 	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {

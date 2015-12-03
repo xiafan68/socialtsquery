@@ -1,10 +1,14 @@
 package core.io;
 
 import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.sun.jna.Native;
+import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
@@ -25,9 +29,12 @@ public abstract class SeekableDirectIO implements DataInput {
 	public static final int S_IRWXU = 00700;
 
 	// public static final int BLOCK_SIZE = 4096;
-
 	static {
-		Native.register("c");
+		try {
+			Native.register(Platform.C_LIBRARY_NAME);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	// read the string repr of errno
@@ -42,8 +49,6 @@ public abstract class SeekableDirectIO implements DataInput {
 
 	protected native int write(int fd, Pointer buf, int count);
 
-	protected native int lseek(int fd, long offset, int whence);
-
 	protected native int lseek(int fd, int offset, int whence);
 
 	protected native int close(int fd);
@@ -51,17 +56,49 @@ public abstract class SeekableDirectIO implements DataInput {
 	// memory related api
 	protected native int posix_memalign(PointerByReference memptr, int alignment, int size);
 
+	protected native Pointer memset(Pointer p, int size, int value);
+
 	protected native void free(Pointer p);
 
 	protected int fd;
 	protected Pointer bufPointer;
 	protected PointerByReference bufPRef;
 
-	public void seek(long pos) throws IOException {
-		lseek(fd, pos, SEEK_SET);
+	public static SeekableDirectIO create(String path) throws IOException {
+		SeekableDirectIO ret = null;
+		// return new RandomAccessFileIO(path);
+		String os = System.getProperty("os.name").toLowerCase();
+		if (os.contains("linux")) {
+			ret = new LinuxSeekableDirectIO(path);
+		} else if (os.contains("mac")) {
+			ret = new MacSeekableDirectIO(path);
+		} else {
+			throw new RuntimeException("unsupported system for directio");
+		}
+		// ret = new RandomAccessFileIO(path);
+		return ret;
 	}
 
-	public long seek() {
+	public static SeekableDirectIO create(File path, String mode) throws IOException {
+		return create(path.getAbsolutePath(), mode);
+	}
+
+	public static SeekableDirectIO create(String path, String mode) throws IOException {
+		return create(path);
+	}
+
+	byte[] oneByte = new byte[1];
+
+	protected int read() throws IOException {
+		readFully(oneByte);
+		return oneByte[0];
+	}
+
+	public void seek(long pos) throws IOException {
+		lseek(fd, (int) pos, SEEK_SET);
+	}
+
+	public long position() throws IOException {
 		return lseek(fd, 0, SEEK_CUR);
 	}
 
@@ -72,14 +109,14 @@ public abstract class SeekableDirectIO implements DataInput {
 	 * @return
 	 * @throws IOException
 	 */
-	public final void readFully(byte[] buf) throws IOException {
+	public void readFully(byte[] buf) throws IOException {
 		int rtn = 0;
 		int cur = 0;
 		int len = 0;
 		int remain = buf.length;
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
-			rtn += read(fd, bufPointer, BLOCK_SIZE);
+			rtn += read(fd, bufPointer, len);
 			bufPointer.read(0, buf, cur, len);
 			cur += len;
 			remain -= len;
@@ -95,7 +132,7 @@ public abstract class SeekableDirectIO implements DataInput {
 	 * @return
 	 * @throws IOException
 	 */
-	public final int read(ByteBuffer byteBuffer) throws IOException {
+	public int read(ByteBuffer byteBuffer) throws IOException {
 		int rtn = 0;
 		int cur = 0;
 		int len = 0;
@@ -103,7 +140,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		int remain = buf.length;
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
-			rtn += read(fd, bufPointer, BLOCK_SIZE);
+			rtn += read(fd, bufPointer, len);
 			bufPointer.read(0, buf, cur, len);
 			cur += len;
 			remain -= len;
@@ -117,7 +154,7 @@ public abstract class SeekableDirectIO implements DataInput {
 	 * @return
 	 * @throws IOException
 	 */
-	public final int write(byte[] buf) throws IOException {
+	public int write(byte[] buf) throws IOException {
 		int rtn = 0;
 		int cur = 0;
 		int len = 0;
@@ -125,7 +162,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
 			bufPointer.write(0, buf, cur, len);
-			rtn += write(fd, bufPointer, BLOCK_SIZE);
+			rtn += write(fd, bufPointer, len);
 			cur += len;
 			remain -= len;
 		}
@@ -139,96 +176,108 @@ public abstract class SeekableDirectIO implements DataInput {
 	 * @return
 	 * @throws IOException
 	 */
-	public final int write(ByteBuffer buf) throws IOException {
+	public int write(ByteBuffer buf) throws IOException {
 		return write(buf.array());
 	}
 
-	public final void close() throws IOException {
+	public void close() throws IOException {
 		if (close(fd) < 0)
 			throw new IOException("Problems occured while doing close()");
 	}
 
-	public static SeekableDirectIO create(String path) throws IOException {
-		String os = System.getProperty("os.name").toLowerCase();
-		if (os.contains("linux")) {
-			return new LinuxSeekableDirectIO(path);
-		} else if (os.contains("mac")) {
-			return new MacSeekableDirectIO(path);
-		} else {
-			throw new RuntimeException("unsupported system for directio");
+	@Override
+	public void readFully(byte[] b, int off, int len) throws IOException {
+		int cur = off;
+		int remain = len;
+		while (remain > 0) {
+			len = Math.min(remain, BLOCK_SIZE);
+			read(fd, bufPointer, len);
+			bufPointer.read(0, b, cur, len);
+			cur += len;
+			remain -= len;
 		}
 	}
 
 	@Override
-	public void readFully(byte[] b, int off, int len) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public int skipBytes(int n) throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		return (int) lseek(fd, n, SEEK_CUR);
 	}
 
 	@Override
 	public boolean readBoolean() throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		int ch = this.read();
+		if (ch < 0)
+			throw new EOFException();
+		return (ch != 0);
 	}
 
 	@Override
 	public byte readByte() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch = this.read();
+		if (ch < 0)
+			throw new EOFException();
+		return (byte) ch;
 	}
 
 	@Override
 	public int readUnsignedByte() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch = this.read();
+		if (ch < 0)
+			throw new EOFException();
+		return (byte) ch;
 	}
 
 	@Override
 	public short readShort() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch1 = this.read();
+		int ch2 = this.read();
+		if ((ch1 | ch2) < 0)
+			throw new EOFException();
+		return (short) ((ch1 << 8) + (ch2 << 0));
 	}
 
 	@Override
 	public int readUnsignedShort() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch1 = this.read();
+		int ch2 = this.read();
+		if ((ch1 | ch2) < 0)
+			throw new EOFException();
+		return (ch1 << 8) + (ch2 << 0);
 	}
 
 	@Override
 	public char readChar() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch1 = this.read();
+		int ch2 = this.read();
+		if ((ch1 | ch2) < 0)
+			throw new EOFException();
+		return (char) ((ch1 << 8) + (ch2 << 0));
 	}
 
 	@Override
 	public int readInt() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		int ch1 = this.read();
+		int ch2 = this.read();
+		int ch3 = this.read();
+		int ch4 = this.read();
+		if ((ch1 | ch2 | ch3 | ch4) < 0)
+			throw new EOFException();
+		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
 	}
 
 	@Override
 	public long readLong() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		return ((long) (readInt()) << 32) + (readInt() & 0xFFFFFFFFL);
 	}
 
 	@Override
 	public float readFloat() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		return Float.intBitsToFloat(readInt());
 	}
 
 	@Override
 	public double readDouble() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		return Double.longBitsToDouble(readLong());
 	}
 
 	@Override
@@ -239,7 +288,7 @@ public abstract class SeekableDirectIO implements DataInput {
 
 	@Override
 	public String readUTF() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return DataInputStream.readUTF(this);
 	}
+
 }
