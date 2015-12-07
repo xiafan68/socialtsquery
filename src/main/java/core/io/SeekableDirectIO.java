@@ -208,24 +208,24 @@ public abstract class SeekableDirectIO implements DataInput {
 	@Override
 	public boolean readBoolean() throws IOException {
 		int ch = this.read();
-		if (ch < 0)
-			throw new EOFException();
+		//if (ch < 0)
+		//	throw new EOFException();
 		return (ch != 0);
 	}
 
 	@Override
 	public byte readByte() throws IOException {
 		int ch = this.read();
-		if (ch < 0)
-			throw new EOFException();
+		//if (ch < 0)
+			//throw new EOFException();
 		return (byte) ch;
 	}
 
 	@Override
 	public int readUnsignedByte() throws IOException {
 		int ch = this.read();
-		if (ch < 0)
-			throw new EOFException();
+		//if (ch < 0)
+			//throw new EOFException();
 		return (byte) ch;
 	}
 
@@ -233,8 +233,8 @@ public abstract class SeekableDirectIO implements DataInput {
 	public short readShort() throws IOException {
 		int ch1 = this.read();
 		int ch2 = this.read();
-		if ((ch1 | ch2) < 0)
-			throw new EOFException();
+		//if ((ch1 | ch2) < 0)
+		//	throw new EOFException();
 		return (short) ((ch1 << 8) + (ch2 << 0));
 	}
 
@@ -242,8 +242,8 @@ public abstract class SeekableDirectIO implements DataInput {
 	public int readUnsignedShort() throws IOException {
 		int ch1 = this.read();
 		int ch2 = this.read();
-		if ((ch1 | ch2) < 0)
-			throw new EOFException();
+	//	if ((ch1 | ch2) < 0)
+			//throw new EOFException();
 		return (ch1 << 8) + (ch2 << 0);
 	}
 
@@ -251,8 +251,8 @@ public abstract class SeekableDirectIO implements DataInput {
 	public char readChar() throws IOException {
 		int ch1 = this.read();
 		int ch2 = this.read();
-		if ((ch1 | ch2) < 0)
-			throw new EOFException();
+		//if ((ch1 | ch2) < 0)
+			//throw new EOFException();
 		return (char) ((ch1 << 8) + (ch2 << 0));
 	}
 
@@ -262,8 +262,8 @@ public abstract class SeekableDirectIO implements DataInput {
 		int ch2 = this.read();
 		int ch3 = this.read();
 		int ch4 = this.read();
-		if ((ch1 | ch2 | ch3 | ch4) < 0)
-			throw new EOFException();
+		//if ((ch1 | ch2 | ch3 | ch4) < 0)
+		//	throw new EOFException();
 		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
 	}
 

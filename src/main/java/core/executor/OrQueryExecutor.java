@@ -21,6 +21,7 @@ import segmentation.Interval;
 import util.MyMath;
 import util.Pair;
 import util.Profile;
+import util.ProfileField;
 
 /**
  * or keyword query其实是weighted keyword query的一个特例
@@ -132,8 +133,8 @@ public class OrQueryExecutor extends IQueryExecutor {
 			stop = ret;
 
 			if (stop) {
-				Profile.instance.updateCounter(Profile.TOPK, topk.size());
-				Profile.instance.updateCounter(Profile.CAND, cand.size());
+				Profile.instance.updateCounter(ProfileField.TOPK.toString(), topk.size());
+				Profile.instance.updateCounter(ProfileField.CAND.toString(), cand.size());
 			}
 
 			return ret;
@@ -202,7 +203,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 			cand.remove(seg);
 			map.remove(seg.getMid());
 			ret = false;
-			Profile.instance.updateCounter(Profile.WASTED_REC);
+			Profile.instance.updateCounter(ProfileField.WASTED_REC.toString());
 		}
 		return ret;
 	}
@@ -220,11 +221,11 @@ public class OrQueryExecutor extends IQueryExecutor {
 		bestScores[curListIdx] = node.getKey();
 
 		boolean ret = true;
-		Profile.instance.start(Profile.UPDATE_STATE);
+		Profile.instance.start(ProfileField.UPDATE_CAND.toString());
 
 		for (MidSegment midseg : node.getValue())
 			ret |= updateCandState(curListIdx, midseg, 1.0f);
-		Profile.instance.end(Profile.UPDATE_STATE);
+		Profile.instance.end(ProfileField.UPDATE_CAND.toString());
 
 		if (!plc.hasNext()) {
 			bestScores[curListIdx] = 0;

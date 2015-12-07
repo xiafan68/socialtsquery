@@ -11,6 +11,7 @@ import common.MidSegment;
 import util.KeyedPriorityQueue;
 import util.Pair;
 import util.Profile;
+import util.ProfileField;
 
 public class KeyedCandQueue {
 	private static final Logger logger = LoggerFactory.getLogger(KeyedCandQueue.class);
@@ -31,9 +32,9 @@ public class KeyedCandQueue {
 	 * 由于每个posting list的bestscore发生了变化，这里也需要重新计算每个cand的bestscore
 	 */
 	private void refreshScore() {
+		Profile.instance.start(ProfileField.MAINTAIN_CAND.toString());
 		if (!bestQueue.isEmpty()) {
 			MergedMidSeg pre = null;
-			Profile.instance.start("cand_refresh");
 			while (true) {
 				MergedMidSeg seg = bestQueue.first();
 				if (seg != pre && seg != null && seg.computeScore()) {
@@ -43,8 +44,8 @@ public class KeyedCandQueue {
 					break;
 				}
 			}
-			Profile.instance.end("cand_refresh");
 		}
+		Profile.instance.end(ProfileField.MAINTAIN_CAND.toString());
 	}
 
 	/**

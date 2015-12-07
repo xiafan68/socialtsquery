@@ -30,7 +30,7 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 	public static final int O_NDELAY = O_NONBLOCK;
 	public static final int O_SYNC = 010000;
 	public static final int O_ASYNC = 020000;
-	public static final int O_DIRECT = 040000;
+	public static final int O_DIRECT = 0x0100000;
 	public static final int O_DIRECTORY = 0200000;
 	public static final int O_NOFOLLOW = 0400000;
 	public static final int O_NOATIME = 01000000;
@@ -53,7 +53,7 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 	}
 
 	public static void main(String[] test) throws IOException {
-		SeekableDirectIO io = new LinuxSeekableDirectIO("/tmp/iotest.txt",
+		SeekableDirectIO io = new LinuxSeekableDirectIO("/data/iotest.txt",
 				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
 		// io.seek(10);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -63,7 +63,7 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 		}
 		io.write(baos.toByteArray());
 		io.close();
-		io = new LinuxSeekableDirectIO("/tmp/iotest.txt",
+		io = new LinuxSeekableDirectIO("/data/iotest.txt",
 				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
 		// io.seek(10);
 		byte[] bytes = new byte[baos.toByteArray().length];

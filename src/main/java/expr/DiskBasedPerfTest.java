@@ -19,6 +19,7 @@ import net.sf.json.JSONObject;
 import segmentation.Interval;
 import util.Configuration;
 import util.Profile;
+import util.ProfileField;
 import xiafan.util.Pair;
 import xiafan.util.StreamLogUtils;
 import xiafan.util.StreamUtils;
@@ -33,8 +34,10 @@ public class DiskBasedPerfTest {
 	}
 
 	public void loadQuery() throws IOException {
-		// /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt
-		gen.loadQueryWithTime("/home/xiafan/dataset/twitter/tqueryseed.txt");
+		//
+		String seed = "/home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt";
+		// "/home/xiafan/dataset/twitter/tqueryseed.txt"
+		gen.loadQueryWithTime(seed);
 	}
 
 	public static LSMTInvertedIndex load(String confFile) throws IOException {
@@ -53,6 +56,7 @@ public class DiskBasedPerfTest {
 	 */
 	// complete test
 
+	public static final String[] queryTypes = new String[] { "WEIGHTED", "AND", "OR" };
 	public static final int[] widths = new int[] { 2, 8, 12, 24, 48, 48 * 7, 48 * 30 };
 	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250, 300, 350, 400 };
 	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7, 48 * 30 };
@@ -66,7 +70,7 @@ public class DiskBasedPerfTest {
 	 * @return
 	 * @throws IOException
 	 */
-	private HashMap<String, Double> testOneRound(int offset, int width, int k) throws IOException {
+	private HashMap<String, Double> testOneRound(int offset, int width, int k, String queryType) throws IOException {
 		HashMap<String, Double> counter = new HashMap<String, Double>();
 		DefaultedPutMap<String, Double> map = DefaultedPutMap.decorate(counter, new Factory() {
 			@Override
@@ -80,9 +84,9 @@ public class DiskBasedPerfTest {
 			List<String> keywords = query.arg0;
 			int start = query.arg1 + offset;
 			try {
-				index.query(keywords, start, start + width, k, "WEIGHTED");
+				index.query(keywords, start, start + width, k, queryType);
 			} catch (Exception ex) {
-				logger.error(k + " " + start + " " + (start + width) + " " + keywords.size());
+				logger.error(ex.toString() + "----" + k + " " + start + " " + (start + width) + " " + keywords.size());
 			}
 			JSONObject perf = Profile.instance.toJSON();
 			logger.info(offset + " " + width + " " + k + " " + perf);
@@ -99,33 +103,35 @@ public class DiskBasedPerfTest {
 		// if (!dirFile.exists())
 		// dirFile.mkdirs();
 		index = load(conf);
-		testOneRound(0, 100, 100);
+		testOneRound(0, 100, 100, queryTypes[0]);
 		File logFile = oFile;
 		if (logFile.exists())
 			logFile.delete();
 		OutputStream os = StreamUtils.outputStream(logFile);
-		for (int offset : offsets) {
-			List<String> logs = new ArrayList<String>();
-			for (int width : widths) {
-				for (int k : ks) {
-					HashMap<String, Double> counter = testOneRound(offset, width, k);
-					HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
-					profile.put("width", width);
-					profile.put("words", 2);
-					profile.put("k", k);
-					profile.put("offset", offset);
-					logger.info(JSONObject.fromObject(profile));
-					logs.add(JSONObject.fromObject(profile).toString());
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
+		for (String queryType : queryTypes)
+			for (int offset : offsets) {
+				List<String> logs = new ArrayList<String>();
+				for (int width : widths) {
+					for (int k : ks) {
+						HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
+						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
+						profile.put("width", width);
+						profile.put("words", 2);
+						profile.put("k", k);
+						profile.put("offset", offset);
+						profile.put("type", queryType);
+						logger.info(JSONObject.fromObject(profile));
+						logs.add(JSONObject.fromObject(profile).toString());
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+						}
 					}
-				}
-			} // end of widths
-			for (String log : logs)
-				StreamLogUtils.log(os, log);
-			os.flush();
-		}
+				} // end of widths
+				for (String log : logs)
+					StreamLogUtils.log(os, log);
+				os.flush();
+			}
 		os.close();
 		index.close();
 	}
@@ -134,13 +140,15 @@ public class DiskBasedPerfTest {
 		return obj.getDouble("totalTime") / obj.getDouble("count");
 	}
 
-	static final String[] pFields = new String[] { Profile.TOTAL_TIME };
+	static final String[] pFields = new String[] { ProfileField.TOTAL_TIME.toString(),
+			ProfileField.UPDATE_CAND.toString(), ProfileField.MAINTAIN_CAND.toString() };
 
-	static final String[] candFields = new String[] { Profile.CAND, };
+	static final String[] candFields = new String[] { ProfileField.CAND.toString(),
+			ProfileField.WASTED_REC.toString() };
 
-	static final String[] IOFields = new String[] { Profile.NUM_BLOCK };
+	static final String[] IOFields = new String[] { ProfileField.NUM_BLOCK.toString() };
 
-	static final String[] IOTimeFields = new String[] { Profile.READ_BLOCK };
+	static final String[] IOTimeFields = new String[] { ProfileField.READ_BLOCK.toString() };
 
 	/**
 	 * 将新测试的代价更新到map中去
@@ -204,27 +212,6 @@ public class DiskBasedPerfTest {
 		return ret;
 	}
 
-	public void test(int start, int width, int k, int iter, String conf, List<String> keywords)
-			throws ParseException, IOException {
-		LSMTInvertedIndex index = load(conf);
-		for (int i = 0; i < iter; i++) {
-			Iterator<Interval> invs = index.query(keywords, start, start + width, k, "WEIGHTED");
-			JSONObject obj = Profile.instance.toJSON();
-			obj.put("words", keywords.size());
-			obj.put("width", width);
-			obj.put("k", k);
-			if (iter == 1 || i >= 1)
-				System.out.println(obj);
-			Profile.instance.reset();
-		}
-		index.close();
-		System.gc();
-		try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-		}
-	}
-
 	public static void main(String[] args) throws ParseException, IOException {
 		DiskBasedPerfTest test = new DiskBasedPerfTest();
 		test.loadQuery();
@@ -233,11 +220,9 @@ public class DiskBasedPerfTest {
 			oDir.mkdirs();
 		String[] confDirs = new String[] { "./conf/index_weibo_intern.conf", "./conf/index_weibo_lsmi.conf" };
 
-		int i = 1;
-
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
-			File oFile = new File(oDir, new File(conf).getName().replace("properties", "txt"));
+			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
 			test.test(conf, oFile);
 		}
 

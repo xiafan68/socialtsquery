@@ -20,6 +20,7 @@ import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Pair;
 import util.Profile;
+import util.ProfileField;
 
 /**
  * 基于bucket的reader公共类，主要有三个文件： 1. index file:记录的是key-bucketid对 2. dir
@@ -100,7 +101,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 * @throws IOException
 	 */
 	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
-		Profile.instance.start(Profile.instance.READ_BLOCK);
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
 		try {
 			bucket.reset();
 			bucket.setBlockIdx(id.blockID);
@@ -108,7 +109,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 			bucket.read(dataInput);
 			return (int) (dataInput.position() / Block.BLOCK_SIZE);
 		} finally {
-			Profile.instance.end(Profile.instance.READ_BLOCK);
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
 		}
 	}
 

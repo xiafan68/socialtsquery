@@ -26,6 +26,7 @@ import core.lsmt.bdbindex.BDBBasedIndexHelper;
 import util.Configuration;
 import util.Pair;
 import util.Profile;
+import util.ProfileField;
 
 public class BlockBasedSSTableReader implements ISSTableReader {
 	protected SeekableDirectIO dataInput;
@@ -88,13 +89,13 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 	}
 
 	public synchronized int getBlockFromDataFile(Block block) throws IOException {
-		Profile.instance.start(Profile.instance.READ_BLOCK);
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
 		try {
 			dataInput.seek(block.getFileOffset());
 			block.read(dataInput);
 			return (int) (dataInput.position() / Block.BLOCK_SIZE);
 		} finally {
-			Profile.instance.end(Profile.instance.READ_BLOCK);
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
 		}
 	}
 

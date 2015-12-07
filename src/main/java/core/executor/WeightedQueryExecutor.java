@@ -21,6 +21,7 @@ import segmentation.Interval;
 import util.MyMath;
 import util.Pair;
 import util.Profile;
+import util.ProfileField;
 
 /**
  * 实现一个baseline算法,基于某个partition的索引执行查询 TODO:某个posting
@@ -122,8 +123,8 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 			stop = ret;
 
 			if (stop) {
-				Profile.instance.updateCounter(Profile.TOPK, topk.size());
-				Profile.instance.updateCounter(Profile.CAND, cand.size());
+				Profile.instance.updateCounter(ProfileField.TOPK.toString(), topk.size());
+				Profile.instance.updateCounter(ProfileField.CAND.toString(), cand.size());
 			}
 
 			return ret;
@@ -225,7 +226,7 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 				cand.remove(seg);
 			map.remove(seg.getMid());
 			ret = false;
-			Profile.instance.updateCounter(Profile.WASTED_REC);
+			Profile.instance.updateCounter(ProfileField.WASTED_REC.toString());
 		}
 		return ret;
 	}
@@ -260,14 +261,14 @@ public class WeightedQueryExecutor extends IQueryExecutor {
 		bestScores[curListIdx] = node.getKey();
 
 		boolean ret = false;
-		Profile.instance.start(Profile.UPDATE_STATE);
+		Profile.instance.start(ProfileField.UPDATE_CAND.toString());
 
 		for (MidSegment midseg : node.getValue()) {
 			if (midseg.getStart() <= query.getEndTime() && midseg.getEndTime() >= query.getStartTime())
 				ret |= updateCandState_intern(curListIdx, midseg, 1.0f);
 		}
 		cand.prune(topk.getMinWorstScore());
-		Profile.instance.end(Profile.UPDATE_STATE);
+		Profile.instance.end(ProfileField.UPDATE_CAND.toString());
 
 		if (!plc.hasNext()) {
 			bestScores[curListIdx] = 0;

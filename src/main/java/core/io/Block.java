@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import util.Profile;
+import util.ProfileField;
 
 public class Block {
 	public static final int BLOCK_SIZE = 1024 * 4;
@@ -55,7 +56,7 @@ public class Block {
 	}
 
 	public void read(DataInput input) throws IOException {
-		Profile.instance.updateCounter(Profile.instance.NUM_BLOCK);
+		Profile.instance.updateCounter(ProfileField.NUM_BLOCK.toString());
 		btype = BLOCKTYPE.values()[input.readInt()];
 		input.readInt();
 		data = new byte[availableSpace()];

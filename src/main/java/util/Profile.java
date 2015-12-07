@@ -14,17 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Profile {
-	public static final String TOTAL_TIME = "total";
-	public static final String UPDATE_STATE = "update";
-
-	// IO
-	public static final String READ_BLOCK = "block_time";
-	public static final String NUM_BLOCK = "#block";
-
-	public static final String TOPK = "topk";
-	public static final String CAND = "cand";
-	public static final String WASTED_REC = "waste";
-
 	private static Logger logger = LoggerFactory.getLogger(Profile.class);
 
 	public static Profile instance = new Profile();

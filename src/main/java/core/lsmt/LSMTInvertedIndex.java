@@ -34,6 +34,8 @@ import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
 import shingle.TextShingle;
 import util.Configuration;
+import util.Profile;
+import util.ProfileField;
 
 /**
  * 
@@ -291,14 +293,19 @@ public class LSMTInvertedIndex {
 
 	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)
 			throws IOException {
-		start -= conf.queryStartTime();
-		end -= conf.queryStartTime();
-		IQueryExecutor exec = QueryExecutorFactory.createExecutor(this, execType);
-		String[] wordArr = new String[keywords.size()];
-		keywords.toArray(wordArr);
-		exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
-		exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
-		return exec.getAnswer();
+		Profile.instance.start(ProfileField.TOTAL_TIME.toString());
+		try {
+			start -= conf.queryStartTime();
+			end -= conf.queryStartTime();
+			IQueryExecutor exec = QueryExecutorFactory.createExecutor(this, execType);
+			String[] wordArr = new String[keywords.size()];
+			keywords.toArray(wordArr);
+			exec.setMaxLifeTime(60 * 60 * 24 * 365 * 10);
+			exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
+			return exec.getAnswer();
+		} finally {
+			Profile.instance.end(ProfileField.TOTAL_TIME.toString());
+		}
 	}
 
 	public Map<String, IPostingListIterator> getPostingListIter(List<String> keywords, int start, int end)

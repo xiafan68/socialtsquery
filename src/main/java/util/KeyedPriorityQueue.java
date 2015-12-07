@@ -144,16 +144,18 @@ public class KeyedPriorityQueue<K, V> {
 	}
 
 	public void remove(K key) {
-		int idx = keyIndex.get(key);
-		if (idx == data.size() - 1) {
-			data.remove(idx);
-		} else {
-			Pair<K, V> pair = data.remove(data.size() - 1);
-			keyIndex.put(pair.getKey(), idx);
-			data.set(idx, pair);
-			buildHeapFromTop(idx);
+		if (keyIndex.containsKey(key)) {
+			int idx = keyIndex.get(key);
+			if (idx == data.size() - 1) {
+				data.remove(idx);
+			} else {
+				Pair<K, V> pair = data.remove(data.size() - 1);
+				keyIndex.put(pair.getKey(), idx);
+				data.set(idx, pair);
+				buildHeapFromTop(idx);
+			}
+			keyIndex.remove(key);
 		}
-		keyIndex.remove(key);
 	}
 
 	public Iterator<V> iterator() {
