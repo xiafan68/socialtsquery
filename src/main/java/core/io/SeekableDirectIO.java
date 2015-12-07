@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
@@ -31,6 +32,7 @@ public abstract class SeekableDirectIO implements DataInput {
 	// public static final int BLOCK_SIZE = 4096;
 	static {
 		try {
+			System.out.println("os type:" + Platform.getOSType());
 			Native.register(Platform.C_LIBRARY_NAME);
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -45,18 +47,18 @@ public abstract class SeekableDirectIO implements DataInput {
 	// file related api
 	protected native int open(String pathname, int flags, int mode);
 
-	protected native int read(int fd, Pointer buf, int count);
+	protected native NativeLong read(int fd, Pointer buf, NativeLong count);
 
-	protected native int write(int fd, Pointer buf, int count);
+	protected native NativeLong write(int fd, Pointer buf, NativeLong count);
 
-	protected native int lseek(int fd, int offset, int whence);
+	protected native NativeLong lseek(int fd, NativeLong offset, int whence);
 
 	protected native int close(int fd);
 
 	// memory related api
 	protected native int posix_memalign(PointerByReference memptr, int alignment, int size);
 
-	protected native Pointer memset(Pointer p, int size, int value);
+	protected native Pointer memset(Pointer p, int value, NativeLong size);
 
 	protected native void free(Pointer p);
 
@@ -95,11 +97,11 @@ public abstract class SeekableDirectIO implements DataInput {
 	}
 
 	public void seek(long pos) throws IOException {
-		lseek(fd, (int) pos, SEEK_SET);
+		lseek(fd, new NativeLong( pos), SEEK_SET);
 	}
 
 	public long position() throws IOException {
-		return lseek(fd, 0, SEEK_CUR);
+		return lseek(fd, new NativeLong(0), SEEK_CUR).longValue();
 	}
 
 	/**
@@ -116,7 +118,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		int remain = buf.length;
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
-			rtn += read(fd, bufPointer, len);
+			rtn += read(fd, bufPointer, new NativeLong(len)).longValue();
 			bufPointer.read(0, buf, cur, len);
 			cur += len;
 			remain -= len;
@@ -140,7 +142,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		int remain = buf.length;
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
-			rtn += read(fd, bufPointer, len);
+			rtn += read(fd, bufPointer, new NativeLong(len)).longValue();
 			bufPointer.read(0, buf, cur, len);
 			cur += len;
 			remain -= len;
@@ -162,7 +164,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
 			bufPointer.write(0, buf, cur, len);
-			rtn += write(fd, bufPointer, len);
+			rtn += write(fd, bufPointer, new NativeLong(len)).longValue();
 			cur += len;
 			remain -= len;
 		}
@@ -191,7 +193,7 @@ public abstract class SeekableDirectIO implements DataInput {
 		int remain = len;
 		while (remain > 0) {
 			len = Math.min(remain, BLOCK_SIZE);
-			read(fd, bufPointer, len);
+			read(fd, bufPointer, new NativeLong(len));
 			bufPointer.read(0, b, cur, len);
 			cur += len;
 			remain -= len;
@@ -200,7 +202,7 @@ public abstract class SeekableDirectIO implements DataInput {
 
 	@Override
 	public int skipBytes(int n) throws IOException {
-		return (int) lseek(fd, n, SEEK_CUR);
+		return  lseek(fd, new NativeLong(n), SEEK_CUR).intValue();
 	}
 
 	@Override
