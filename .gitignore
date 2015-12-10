@@ -1,3 +1,4 @@
+.pydevproject
 .gitignore~
 *.class
 conf/log4j*.properties
