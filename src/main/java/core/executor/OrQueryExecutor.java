@@ -107,7 +107,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 		} else {
 			float sum = 0;
 			for (float bestScore : bestScores) {
-				sum += bestScore;
+				sum = Math.max(sum, bestScore);
 			}
 			sum *= Math.min(maxLifeTime, query.getEndTime() - query.getStartTime());
 			boolean ret = false;
