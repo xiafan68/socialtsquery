@@ -6,7 +6,6 @@ import java.util.Comparator;
 
 import common.MidSegment;
 import core.executor.ExecContext;
-import util.Profile;
 
 /**
  * 用以在内存中维护每个item已经读到的entries，利用这些信息用于计算当前元素的最好和最差分值

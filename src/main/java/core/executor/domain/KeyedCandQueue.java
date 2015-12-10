@@ -69,9 +69,9 @@ public class KeyedCandQueue {
 	/**
 	 * 移除bestScore最小的一个元素，更新worstScore。
 	 */
-	public void poll() {
+	public MergedMidSeg poll() {
 		refreshScore();
-		bestQueue.poll();
+		return bestQueue.poll();
 	}
 
 	/**
@@ -80,7 +80,7 @@ public class KeyedCandQueue {
 	 * @return
 	 */
 	public float getMaxBestScore() {
-		float ret = Float.MIN_VALUE;
+		float ret = Float.MAX_VALUE;
 		refreshScore();
 		if (!bestQueue.isEmpty()) {
 			ret = bestQueue.first().getBestscore();

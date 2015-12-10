@@ -7,7 +7,8 @@ import common.MidSegment;
 import core.executor.ExecContext;
 
 public class AndMergedMidSeg extends MergedMidSeg {
-	private int hittedKeys = 0;
+	private short hittedKeys = 0;
+	private int curMin = Integer.MAX_VALUE;
 
 	public AndMergedMidSeg(ExecContext ctx) {
 		super(ctx);
@@ -31,6 +32,9 @@ public class AndMergedMidSeg extends MergedMidSeg {
 			}
 		});
 		if (idx < 0) {
+			curMin = Math.min(curMin, seg.getStartCount());
+			curMin = Math.min(curMin, seg.getEndCount());
+
 			idx = Math.abs(idx) - 1;
 			segList.add(idx, seg);
 			ret.computeScore();
@@ -62,6 +66,24 @@ public class AndMergedMidSeg extends MergedMidSeg {
 	 * @return true如果当前对象的上下界有所改变
 	 */
 	public boolean computeScore() {
+		if (hittedKeys == -1)
+			return false;
+
+		// 这里使用所有一出现的posting list的最小值当做当前对象的最大值，因为它在这些列表中度出现
+		double postTopValue = Double.MAX_VALUE;
+		for (int i = 0; i < weights.length; i++) {
+			if (weights[i] != -1f)
+				postTopValue = Math.min(postTopValue, ctx.getBestScore(i));
+		}
+
+		// 当前item绝不可能出现
+		if (curMin > postTopValue) {
+			hittedKeys = -1;
+			bestscore = IMPOSSIBLE_VALUE;
+			worstscore = IMPOSSIBLE_VALUE;
+			return true;
+		}
+
 		float preBScore = bestscore;
 		float preWScore = worstscore;
 
@@ -81,7 +103,6 @@ public class AndMergedMidSeg extends MergedMidSeg {
 			}
 			preXPoint = seg.getStart();
 			preValue = seg.getStartCount();
-
 		}
 
 		int startTime = segList.get(0).getStart();
@@ -97,15 +118,10 @@ public class AndMergedMidSeg extends MergedMidSeg {
 		int unHitInv = intern - hitInv + margin;
 
 		bestscore = worstscore;
-
-		// 这里使用所有一出现的posting list的最小值当做当前对象的最大值，因为它在这些列表中度出现
-		double postTopValue = Double.MAX_VALUE;
-		for (int i = 0; i < weights.length; i++) {
-			if (weights[i] != -1f)
-				postTopValue = Math.min(postTopValue, ctx.getBestScore(i));
-		}
 		bestscore += unHitInv * postTopValue;
-
+		if (hittedKeys != weights.length) {
+			worstscore = INIT_VALUE;
+		}
 		return Float.compare(preBScore, bestscore) != 0 || Float.compare(preWScore, worstscore) != 0;
 	}
 

@@ -179,34 +179,41 @@ public class AndQueryExecutor extends IQueryExecutor {
 		// update the map with the new mergedseg
 
 		boolean ret = true;
-		/* update the topk and cands */
-		if (topk.contains(seg)) {
-			topk.update(seg);
-		} else if (topk.size() < query.k || seg.getWorstscore() > cand.getMaxBestScore()) {
-			topk.add(seg);
-			if (topk.size() > query.k) {
-				// 把bestScore最小的一个移除
-				cand.add(topk.peek());
-				topk.poll();
-			}
-
-			if (cand.contains(seg))
+		if (seg.getWorstscore() == MergedMidSeg.IMPOSSIBLE_VALUE) {
+			if (topk.contains(seg))
+				topk.remove(seg);
+			else if (cand.contains(seg))
 				cand.remove(seg);
-		} else if (seg.getBestscore() > topk.getMinWorstScore()) {
-			if (cand.contains(seg))
-				cand.update(seg);
-			else {
-				cand.add(seg);
-			}
 		} else {
-			if (cand.contains(seg)) {
-				cand.remove(seg);
+			/* update the topk and cands */
+			if (topk.contains(seg)) {
+				topk.update(seg);
+			} else if (topk.size() < query.k || seg.getWorstscore() > topk.getMinWorstScore()) {
+				topk.add(seg);
+				if (topk.size() > query.k) {
+					// 把bestScore最小的一个移除
+					cand.add(topk.poll());
+				}
+
+				if (cand.contains(seg))
+					cand.remove(seg);
+			} else if (seg.getBestscore() > topk.getMinWorstScore()) {
+				if (cand.contains(seg))
+					cand.update(seg);
+				else {
+					cand.add(seg);
+				}
+			} else {
+				if (cand.contains(seg)) {
+					cand.remove(seg);
+				}
+				map.remove(seg.getMid());
+				ret = false;
+				Profile.instance.updateCounter(ProfileField.WASTED_REC.toString());
 			}
-			map.remove(seg.getMid());
-			ret = false;
-			Profile.instance.updateCounter(ProfileField.WASTED_REC.toString());
 		}
 		return ret;
+
 	}
 
 	@Override

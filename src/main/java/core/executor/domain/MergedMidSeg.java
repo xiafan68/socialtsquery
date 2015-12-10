@@ -8,11 +8,13 @@ import common.MidSegment;
 import core.executor.ExecContext;
 
 public abstract class MergedMidSeg {
+	public static int INIT_VALUE = -2;
+	public static int IMPOSSIBLE_VALUE = Integer.MIN_VALUE;
 	List<MidSegment> segList = new ArrayList<MidSegment>();
 	ExecContext ctx;
 	float[] weights; // item相关的weight
-	protected float bestscore = 0;
-	protected float worstscore = 0;
+	protected float bestscore = INIT_VALUE;
+	protected float worstscore = INIT_VALUE;
 
 	public MergedMidSeg(ExecContext ctx) {
 		this.ctx = ctx;

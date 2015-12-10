@@ -39,9 +39,9 @@ public class KeyedTopKQueue {
 	/**
 	 * 移除bestScore最小的一个元素，更新worstScore。
 	 */
-	public void poll() {
+	public MergedMidSeg poll() {
 		refreshWorstScore();
-		MergedMidSeg seg = worstQueue.poll();
+		return worstQueue.poll();
 	}
 
 	/**
@@ -50,7 +50,7 @@ public class KeyedTopKQueue {
 	 * @return
 	 */
 	public float getMinWorstScore() {
-		float ret = Float.MIN_VALUE;
+		float ret = MergedMidSeg.INIT_VALUE + 1;
 		refreshWorstScore();
 		if (!worstQueue.isEmpty()) {
 			MergedMidSeg cur = worstQueue.first();

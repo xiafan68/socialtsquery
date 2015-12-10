@@ -183,7 +183,7 @@ public class OrQueryExecutor extends IQueryExecutor {
 		/* update the topk and cands */
 		if (topk.contains(seg)) {
 			topk.update(seg);
-		} else if (topk.size() < query.k || seg.getWorstscore() > cand.getMaxBestScore()) {
+		} else if (topk.size() < query.k || seg.getWorstscore() > topk.getMinWorstScore()) {
 			topk.add(seg);
 			if (topk.size() > query.k) {
 				// 把bestScore最小的一个移除
