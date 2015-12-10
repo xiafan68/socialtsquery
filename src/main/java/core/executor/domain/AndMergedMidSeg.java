@@ -54,6 +54,8 @@ public class AndMergedMidSeg extends MergedMidSeg {
 			}
 		});
 		if (idx < 0) {
+			curMin = Math.min(curMin, seg.getStartCount());
+			curMin = Math.min(curMin, seg.getEndCount());
 			idx = Math.abs(idx) - 1;
 			segList.add(idx, seg);
 			computeScore();
