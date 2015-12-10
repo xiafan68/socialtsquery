@@ -264,7 +264,7 @@ public class IndexLoader {
 				}
 			}
 		}
-		index.close();
+		//index.close();
 	}
 
 	public static void main(String[] args) throws IOException {
