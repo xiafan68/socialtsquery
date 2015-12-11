@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -15,8 +14,9 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import core.lsmt.LSMTInvertedIndex;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import net.sf.json.JSONObject;
-import segmentation.Interval;
 import util.Configuration;
 import util.Profile;
 import util.ProfileField;
@@ -33,9 +33,10 @@ public class DiskBasedPerfTest {
 	public DiskBasedPerfTest() {
 	}
 
-	public void loadQuery() throws IOException {
+	public void loadQuery(String seed) throws IOException {
 		//
-		String seed = "/home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt";
+		// String seed =
+		// "/home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt";
 		// "/home/xiafan/dataset/twitter/tqueryseed.txt"
 		gen.loadQueryWithTime(seed);
 	}
@@ -213,13 +214,34 @@ public class DiskBasedPerfTest {
 	}
 
 	public static void main(String[] args) throws ParseException, IOException {
+		OptionParser parser = new OptionParser();
+		parser.accepts("e", "experiment directory").withRequiredArg().ofType(String.class);
+		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
+		parser.accepts("q", "data file location").withRequiredArg().ofType(String.class);
+
+		OptionSet opts = null;
+		try {
+			opts = parser.parse(args);
+		} catch (Exception exception) {
+			parser.printHelpOn(System.out);
+			return;
+		}
+		if (!opts.hasOptions()) {
+			parser.printHelpOn(System.out);
+			return;
+		}
+
 		DiskBasedPerfTest test = new DiskBasedPerfTest();
-		test.loadQuery();
-		File oDir = new File("/home/xiafan/KuaiPan/dataset/weiboexpr/2015_12_03/raw/");
+		test.loadQuery(opts.valueOf("q").toString());
+
+		File oDir = new File(opts.valueOf("e").toString());
 		if (!oDir.exists())
 			oDir.mkdirs();
-		String[] confDirs = new String[] { "./conf/index_weibo_intern.conf", "./conf/index_weibo_lsmi.conf" };
 
+		String[] confDirs = new String[opts.valuesOf("c").size()];
+		// new String[] { "./conf/index_weibo_intern.conf",
+		// "./conf/index_weibo_lsmi.conf" };
+		opts.valuesOf("c").toArray(confDirs);
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
 			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
