@@ -93,7 +93,7 @@ public class DiskBasedPerfTest {
 			logger.info(offset + " " + width + " " + k + " " + perf);
 			updateProfile(map, perf);
 			Profile.instance.reset();
-			Runtime.getRuntime().exec("sync && echo 1 > /proc/sys/vm/drop_caches");
+			//Runtime.getRuntime().exec("sync && echo 1 > /proc/sys/vm/drop_caches");
 		}
 		System.gc();
 		return counter;
