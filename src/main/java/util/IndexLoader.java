@@ -51,11 +51,11 @@ public class IndexLoader {
 		PropertyConfigurator.configure(log);
 		Configuration conf = new Configuration();
 		conf.load(confFile);
-
+		
 		try {
-			FileUtils.deleteDirectory(conf.getIndexDir());
+		    //FileUtils.deleteDirectory(conf.getIndexDir());
 			conf.getIndexDir().mkdirs();
-			FileUtils.deleteDirectory(conf.getCommitLogDir());
+			//FileUtils.deleteDirectory(conf.getCommitLogDir());
 			conf.getCommitLogDir().mkdirs();
 			System.out.println(conf.toString());
 		} catch (Exception exception) {

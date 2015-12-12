@@ -151,7 +151,7 @@ public enum CommitLog {
 				dis.readFully(bytes);
 				String word = new String(bytes, Charset.forName("utf8"));
 				seg.readFields(dis);
-				tree.insert(word, seg);
+				tree.insert(Arrays.asList(word), seg);
 				if (count++ % 1000 == 0) {
 					logger.info("have recovered " + count + " log items");
 				}
