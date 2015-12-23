@@ -43,6 +43,15 @@ struct Tweets{
 	1: map<i64, TweetTuple> tweetMap,
 }
 
+struct TweetSeg{
+	1: string mid,
+	2: string content,
+	3: i32 starttime,
+	4: i32 startcount,
+	5: i32 endtime,
+	6, i32 endcount
+}
+
 /**
  * Structs can also be exceptions, if they are nasty.
  */
@@ -51,7 +60,9 @@ exception InvalidJob {
   2: string why
 }
 
+
 service TweetService {
+	void indexTweetSeg(1: TweetSeg seg),
 	list<i64> search(1:TKeywordQuery query),
    	Tweets fetchTweets(1:FetchTweetQuery query) throws (1:InvalidJob ex),
 }

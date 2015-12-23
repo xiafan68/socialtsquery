@@ -1,13 +1,16 @@
 # encoding:utf8
-import sys
-import os
-import json
-from optparse import OptionParser
-import matplotlib.pyplot as plt
-from symbol import factor
 from itertools import cycle
 import itertools
+import json
+from optparse import OptionParser
+import os
+import re
+from symbol import factor
+import sys
+
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+
 
 lines = ["-"]
 markers = ["s", "o", "d", "p", "h", "x", "^", "v", "8"]
@@ -39,6 +42,7 @@ class ExprPloter(object):
         self.factor = factor
         self.respondent = respondent
         self.dataMatrix = {}
+        self.pattern = re.compile("part([0-9]+)(_([-0-9]+))*")
     
     @staticmethod
     def getFileFactors(curMap, factors):
@@ -51,9 +55,7 @@ class ExprPloter(object):
     def setupLineFactor(curMap, lineFactors):
         key = ",".join(lineFactors)
         if not(key in curMap):
-            curMap[key] = {}
-            curMap[key]["factor"] = []
-            curMap[key]["respondent"] = []       
+            curMap[key] = []
         return curMap[key]
         
     """
@@ -62,58 +64,97 @@ class ExprPloter(object):
     def loadFiles(self, dir):
         fileNames = os.listdir(dir)
         for fileName in fileNames:
-            fd = open(os.path.join(dir, fileName), "r")
-            curMethod = ""
-            if "lsmi" in fileName:
-                curMethod = "lsmi"
+            if fileName.startswith("."):
+                continue
+            if os.path.isdir(os.path.join(dir, fileName)):
+                self.loadFiles(os.path.join(dir, fileName))
             else:
-                curMethod = "lsmo"
-            
-            for line in fd.readlines():
-                rec = json.loads(line)
-                factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
-                fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
-                lineFactors = [rec[factor] for factor in self.lineFactors]
-                lineFactors.insert(0, curMethod)
-                lineMap = ExprPloter.setupLineFactor(fileMap, lineFactors)
-                lineMap['factor'].append(rec[self.factor])
-                lineMap['respondent'].append(rec[self.respondent])
-            fd.close()
+                groups = self.pattern.match(os.path.basename(dir))
+                if groups == None:
+                    return
+                size = long(groups.group(1))
+                fd = open(os.path.join(dir, fileName), "r")
+                curMethod = ""
+                if "lsmi" in fileName:
+                    curMethod = "lsmi"
+                else:
+                    curMethod = "lsmo"
                 
-    def plotFigures(self, outDir):
+                for line in fd.readlines():
+                    rec = json.loads(line)
+                    if rec['width'] != 24:
+                        continue
+                    rec["size"] = size
+                    factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
+                    fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
+                    lineFactors = [rec[factor] for factor in self.lineFactors]
+                    lineFactors.insert(0, curMethod)
+                    lineArr = ExprPloter.setupLineFactor(fileMap, lineFactors)
+                    lineArr.append({'factor':rec[self.factor], 'respondent':rec[self.respondent]})
+                fd.close()
+                
+    def plotFigures(self, outDir, scalex):
         if os.path.exists(outDir):
             # os.rmdir(outDir)
             cleanDirs(outDir)   
-        
-        os.mkdir(outDir)
+
+        os.makedirs(outDir)
         
         for k in self.dataMatrix.keys():
             v = self.dataMatrix[k]
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.set_xscale('log')
+            if scalex:
+                ax.set_xscale('log')
             for (line, ltype, mtype) in zip(v.keys(), itertools.cycle(lines), itertools.cycle(markers)):
-                lineData = v[line]
-                ax.plot(lineData['factor'], lineData["respondent"], "k" + ltype + mtype,
+                tmpMap = {}
+                for x in v[line]:
+                    if (not x['factor'] in tmpMap):
+                        tmpMap[x['factor']] = []
+                    tmpMap[x['factor']].append(x['respondent'])  
+                points = []
+                for (factor, values) in sorted(tmpMap.items()):
+                    sum = 0.0
+                    for rec in values:
+                        sum += rec
+                    points.append({'factor':factor, 'respondent':sum / len(values)})
+                xline = [rec['factor'] for rec in points ]
+                yline = [rec['respondent'] for rec in points ]
+                
+                ax.plot(xline, yline, "k" + ltype + mtype,
                          label=line, markerfacecolor="none", markeredgewidth=1.5)
                 xlab = ax.set_xlabel(self.factor)
                 plt.setp(xlab, "fontsize", 18)
                 ylab = ax.set_ylabel(self.respondent)
                 plt.setp(ylab, "fontsize", 18)
+
             ax.legend(loc='best', framealpha=0.0, fontsize=22 * 0.7, numpoints=1)
             fig.savefig(os.path.join(outDir, str(k) + ".pdf"))
             
+
+def plotScale():
+    inputPath = "/Users/kc/Documents/dataset/weibo/expr/rawdata/"
+    outputDir = "/Users/kc/Documents/dataset/weibo/expr/weibofigure_ubuntu/weibofigure_scale"
+    ploter = ExprPloter(["offset", "width", "k"], ["type"], "size", "TOTAL_TIME")
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "size"), False)
     
-if __name__ == "__main__":
+def plotAll():
+    inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
+    outputDir = "/Users/kc/Documents/dataset/weibo/expr/weibofigure_ubuntu/weibofigure_20"
     ploter = ExprPloter(["width", "k"], ["type"], "offset", "TOTAL_TIME")
-    ploter.loadFiles("/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw")
-    ploter.plotFigures("/Users/kc/Documents/dataset/weibo/expr/weibofigure/offset")
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "offset"), True)
     
     ploter = ExprPloter(["width", "offset"], ["type"], "k", "TOTAL_TIME")
-    ploter.loadFiles("/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw")
-    ploter.plotFigures("/Users/kc/Documents/dataset/weibo/expr/weibofigure/k")
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "k"), True)
     
     ploter = ExprPloter(["k", "offset"], ["type"], "width", "TOTAL_TIME")
-    ploter.loadFiles("/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw")
-    ploter.plotFigures("/Users/kc/Documents/dataset/weibo/expr/weibofigure/width")
-
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "width"), True)
+if __name__ == "__main__":
+    # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
+    plotAll()
+    #plotScale()
+    
