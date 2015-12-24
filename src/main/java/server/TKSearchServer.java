@@ -41,10 +41,10 @@ public class TKSearchServer implements TweetService.Iface {
 	public void start() throws IOException {
 		// Path dir = new Path("/Users/xiafan/temp/output/");
 		// dir = new Path("/home/xiafan/temp/invindex_parts");
-		conn.connect("");
+		conn.connect("127.0.0.1");
 
 		Configuration conf = new Configuration();
-		conf.load("conf/index_twitter.conf");
+		conf.load("conf/index_twitter_intern.conf");
 		indexReader = new LSMTInvertedIndex(conf);
 		try {
 			indexReader.init();
