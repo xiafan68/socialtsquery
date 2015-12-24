@@ -82,8 +82,8 @@ class ExprPloter(object):
                 
                 for line in fd.readlines():
                     rec = json.loads(line)
-                    if rec['width'] != 24:
-                        continue
+                    #if rec['width'] != 24:
+                    #    continue
                     rec["size"] = size
                     factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
                     fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
@@ -142,6 +142,7 @@ def plotScale():
 def plotAll():
     inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
     outputDir = "/Users/kc/Documents/dataset/weibo/expr/weibofigure_ubuntu/weibofigure_20"
+    
     ploter = ExprPloter(["width", "k"], ["type"], "offset", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
     ploter.plotFigures(os.path.join(outputDir, "offset"), True)
