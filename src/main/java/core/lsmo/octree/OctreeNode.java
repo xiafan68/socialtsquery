@@ -53,11 +53,14 @@ public class OctreeNode {
 		}
 	}
 
-	public void insert(Point point, MidSegment seg) {
-		if (segs.contains(seg)){
-			System.err.println(seg.toString());
+	public boolean insert(Point point, MidSegment seg) {
+		boolean ret = true;
+		if (segs.contains(seg)) {
+			// System.err.println(seg.toString());
+			ret = false;
 		}
 		segs.add(seg);
+		return ret;
 	}
 
 	/**

@@ -93,7 +93,7 @@ public class MemoryOctree extends IPostingList {
 			return false;
 		}
 		Point point = seg.getPoint();
-		meta.size++;
+
 		meta.minTime = Math.min(meta.minTime, point.getX());
 		meta.maxTime = Math.max(meta.maxTime, point.getY());
 
@@ -136,7 +136,8 @@ public class MemoryOctree extends IPostingList {
 			}
 		}
 		OctreeNode leaf = root.search(point);
-		leaf.insert(point, seg);
+		if (leaf.insert(point, seg))
+			meta.size++;
 		splitNode(leaf);
 		return true;
 	}

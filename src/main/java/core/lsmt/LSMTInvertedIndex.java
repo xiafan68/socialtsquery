@@ -291,6 +291,10 @@ public class LSMTInvertedIndex {
 		return versionSet;
 	}
 
+	public Iterator<Interval> query(String query, int start, int end, int k, String execType) throws IOException {
+		return query(shingle.shingling(query), start, end, k, execType);
+	}
+
 	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)
 			throws IOException {
 		Profile.instance.start(ProfileField.TOTAL_TIME.toString());
