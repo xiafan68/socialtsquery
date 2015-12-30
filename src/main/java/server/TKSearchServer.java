@@ -1,5 +1,6 @@
 package server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.sql.SQLException;
@@ -53,6 +54,7 @@ public class TKSearchServer implements TweetService.Iface {
 			e.printStackTrace();
 			indexReader = null;
 		}
+		logger.info("index initialized");
 		// try {
 		// jdbc = new
 		// JDBC("jdbc:mysql://localhost:3306/tseries?useUnicode=true&characterEncoding=utf8",
@@ -121,7 +123,7 @@ public class TKSearchServer implements TweetService.Iface {
 	}
 
 	public static void main(String[] args) throws TTransportException, IOException, SQLException {
-		PropertyConfigurator.configure("conf/log4j-server.properties");
+
 		// args = new String[] { "-c", "127.0.0.1", "-k", "localhost:9092" };
 		OptionParser parser = new OptionParser();
 		parser.accepts("c", "cassandra server address").withRequiredArg().ofType(String.class);
@@ -132,6 +134,9 @@ public class TKSearchServer implements TweetService.Iface {
 			parser.printHelpOn(new PrintStream(System.out));
 			System.exit(1);
 		}
+
+		PropertyConfigurator.configure(
+				new File(System.getProperty("basedir", "./"), "conf/log4j-server.properties").getAbsolutePath());
 
 		TServerTransport serverTransport = new TServerSocket(Short.parseShort(set.valueOf("p").toString()));
 		TKSearchServer tserver = new TKSearchServer();

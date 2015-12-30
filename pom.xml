@@ -5,6 +5,7 @@
 		<groupId>fanxia</groupId>
 		<artifactId>weibostack</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../weibostack/pom.xml</relativePath>
 	</parent>
 	<artifactId>socialtsquery</artifactId>
 	<version>1.0-SNAPSHOT</version>
@@ -150,7 +151,7 @@
 		</dependency>
 		<dependency>
 			<groupId>fanxia</groupId>
-			<artifactId>tweetkafka</artifactId>
+			<artifactId>microblogdao</artifactId>
 			<version>0.0.1</version>
 		</dependency>
 	</dependencies>

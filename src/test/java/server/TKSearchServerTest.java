@@ -13,10 +13,9 @@ public class TKSearchServerTest {
 	@Test
 	public void test() throws IOException, SQLException {
 		TKSearchServer server = new TKSearchServer();
-		server.start();
+		server.start("", "");
 		FetchTweetQuery query = new FetchTweetQuery();
-		query.setTids(Arrays.asList(-10908147781l, -10908147781l,
-				-10908147782l, -10908312824011l));
+		query.setTids(Arrays.asList(-10908147781l, -10908147781l, -10908147782l, -10908312824011l));
 		try {
 			Tweets tweets = server.fetchTweets(query);
 			System.out.println(tweets);
