@@ -49,6 +49,13 @@ public class TKSearchServer implements TweetService.Iface {
 		conf.load(idxConf);
 		indexReader = new LSMTInvertedIndex(conf);
 		try {
+			try {
+				conf.getIndexDir().mkdirs();
+				conf.getCommitLogDir().mkdirs();
+				System.out.println(conf.toString());
+			} catch (Exception exception) {
+
+			}
 			indexReader.init();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -135,8 +142,8 @@ public class TKSearchServer implements TweetService.Iface {
 			System.exit(1);
 		}
 
-		PropertyConfigurator.configure(
-				new File(System.getProperty("basedir", "./"), "conf/log4j-server.properties").getAbsolutePath());
+		PropertyConfigurator
+				.configure(new File(System.getProperty("basedir", "./"), "conf/log4j.properties").getAbsolutePath());
 
 		TServerTransport serverTransport = new TServerSocket(Short.parseShort(set.valueOf("p").toString()));
 		TKSearchServer tserver = new TKSearchServer();

@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import common.MidSegment;
@@ -297,6 +298,7 @@ public class LSMTInvertedIndex {
 
 	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)
 			throws IOException {
+		logger.info("querying keywords:" + StringUtils.join(keywords, ","));
 		Profile.instance.start(ProfileField.TOTAL_TIME.toString());
 		try {
 			start -= conf.queryStartTime();
