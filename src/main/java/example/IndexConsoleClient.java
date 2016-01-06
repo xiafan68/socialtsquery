@@ -25,6 +25,7 @@ import joptsimple.OptionSet;
 import segmentation.Interval;
 import util.Configuration;
 import util.Profile;
+import xiafan.util.DateUtil;
 
 public class IndexConsoleClient {
 
@@ -96,8 +97,8 @@ public class IndexConsoleClient {
 						int i = 1;
 						String type = args[i++];
 						int k = Integer.parseInt(args[i++]);
-						int start = Integer.parseInt(args[i++]);
-						int end = Integer.parseInt(args[i++]);
+						int start = DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
+						int end = DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
 						List<String> keywords = new ArrayList<String>();
 						for (int idx = i; idx < args.length; idx++) {
 							keywords.add(args[idx]);

@@ -62,7 +62,7 @@ public class InternPostingListIter implements IOctreeIterator {
 	 * @param te
 	 */
 	public InternPostingListIter(DirEntry entry, BlockBasedSSTableReader reader, int ts, int te) {
-		if (entry != null) {
+		if (entry.curKey != null) {
 			this.entry = entry;
 			this.reader = reader;
 			this.ts = ts;
