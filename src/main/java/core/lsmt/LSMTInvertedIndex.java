@@ -218,8 +218,12 @@ public class LSMTInvertedIndex {
 		maySwitchMemtable();
 	}
 
-	public void insert(String keywords, MidSegment seg) throws IOException {
-		insert(shingle.shingling(keywords), seg);
+	public void insert(String keywords, String uname, MidSegment seg) throws IOException {
+		List<String> words = shingle.shingling(keywords);
+		if (uname != null) {
+			words.add(String.format("&%s&", uname));
+		}
+		insert(words, seg);
 	}
 
 	// TODO check whether we need to switch the memtable
@@ -293,7 +297,7 @@ public class LSMTInvertedIndex {
 	}
 
 	public Iterator<Interval> query(String query, int start, int end, int k, String execType) throws IOException {
-		return query(shingle.shingling(query), start, end, k, execType);
+		return query(shingle.shingling(query, true), start, end, k, execType);
 	}
 
 	public Iterator<Interval> query(List<String> keywords, int start, int end, int k, String execType)

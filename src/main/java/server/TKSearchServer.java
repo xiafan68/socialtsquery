@@ -32,6 +32,8 @@ import searchapi.Tweets;
 import segmentation.Interval;
 import segmentation.Segment;
 import util.Configuration;
+import weibo4j.org.json.JSONException;
+import weibo4j.org.json.JSONObject;
 
 public class TKSearchServer implements TweetService.Iface {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);
@@ -161,14 +163,16 @@ public class TKSearchServer implements TweetService.Iface {
 	public void indexTweetSeg(TweetSeg seg) throws TException {
 		logger.info("indexing " + seg.toString());
 		try {
-			String text = tweetDao.getStatusContentByMid(seg.mid);
-			if (text == null) {
+			String status = tweetDao.getStatusByMid(seg.mid);
+			if (status == null) {
 				throw new TException("content of " + seg.mid + " is not found!!!!");
+			} else {
+				JSONObject obj = new JSONObject(status);
+				indexReader.insert(obj.getString("text"), obj.getString("uname"),
+						new MidSegment(Long.parseLong(seg.mid),
+								new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
 			}
-
-			indexReader.insert(text, new MidSegment(Long.parseLong(seg.mid),
-					new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
-		} catch (NumberFormatException | IOException e) {
+		} catch (NumberFormatException | IOException | JSONException e) {
 			logger.error(e.getMessage());
 			throw new TException(e.getMessage());
 		}
