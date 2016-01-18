@@ -13,17 +13,17 @@ import org.apache.commons.collections.Factory;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import collection.DefaultedPutMap;
 import core.lsmt.LSMTInvertedIndex;
+import io.StreamLogUtils;
+import io.StreamUtils;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import net.sf.json.JSONObject;
 import util.Configuration;
+import util.Pair;
 import util.Profile;
 import util.ProfileField;
-import xiafan.util.Pair;
-import xiafan.util.StreamLogUtils;
-import xiafan.util.StreamUtils;
-import xiafan.util.collection.DefaultedPutMap;
 
 public class DiskBasedPerfTest {
 	private static final Logger logger = Logger.getLogger(DiskBasedPerfTest.class);
@@ -58,7 +58,7 @@ public class DiskBasedPerfTest {
 	// complete test
 
 	public static final String[] queryTypes = new String[] { "WEIGHTED", "AND", "OR" };
-	public static final int[] widths = new int[] {2, 8, 12, 24, 48,  48 * 7, 48 * 30 };
+	public static final int[] widths = new int[] { 2, 8, 12, 24, 48, 48 * 7, 48 * 30 };
 	public static final int[] ks = new int[] { 10, 20, 50, 100, 150, 200, 250, 300, 350, 400 };
 	public static final int[] offsets = new int[] { 0, 2, 12, 24, 48, 48 * 7, 48 * 30 };
 
@@ -82,20 +82,21 @@ public class DiskBasedPerfTest {
 		gen.resetCur();
 		while (gen.hasNext()) {
 			Pair<List<String>, Integer> query = gen.nextQuery();
-			List<String> keywords = query.arg0;
+			List<String> keywords = query.getKey();
 			logger.info(keywords.toString());
 			logger.info(offset + " " + width + " " + k);
-			int start = query.arg1 + offset;
+			int start = query.getValue() + offset;
 			try {
 				index.query(keywords, start, start + width, k, queryType);
 			} catch (Exception ex) {
 				logger.error(ex.toString() + "----" + k + " " + start + " " + (start + width) + " " + keywords.size());
 			}
 			JSONObject perf = Profile.instance.toJSON();
-			
+
 			updateProfile(map, perf);
 			Profile.instance.reset();
-			//Runtime.getRuntime().exec("sync && echo 1 > /proc/sys/vm/drop_caches");
+			// Runtime.getRuntime().exec("sync && echo 1 >
+			// /proc/sys/vm/drop_caches");
 		}
 		System.gc();
 		return counter;

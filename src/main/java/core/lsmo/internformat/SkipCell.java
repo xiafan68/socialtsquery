@@ -3,7 +3,6 @@ package core.lsmo.internformat;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 import util.Pair;
 
 /**

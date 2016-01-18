@@ -13,7 +13,7 @@ public class CommitLogTest {
 	@Test
 	public void test() throws IOException {
 		Configuration conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load("conf/index_twitter_intern.conf");
 		CommitLog.INSTANCE.init(conf);
 		CommitLog.INSTANCE.openNewLog(0);
 		for (int i = 0; i < 1000; i++) {
@@ -22,9 +22,9 @@ public class CommitLogTest {
 		CommitLog.INSTANCE.shutdown();
 
 		conf = new Configuration();
-		conf.load("conf/index.conf");
+		conf.load("conf/index_twitter_intern.conf");
 		// System.out.println(CommitLog.INSTANCE.dumpLog(0));
-		System.out.println(CommitLog.INSTANCE.dumpLog(57));
+		System.out.println(CommitLog.INSTANCE.dumpLog(0));
 	}
 
 	@Test

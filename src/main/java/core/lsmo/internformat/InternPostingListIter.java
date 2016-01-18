@@ -23,7 +23,7 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 import util.Pair;
 
 public class InternPostingListIter implements IOctreeIterator {

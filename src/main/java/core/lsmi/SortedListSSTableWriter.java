@@ -2,7 +2,6 @@ package core.lsmi;
 
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,24 +12,23 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
+import collection.CollectionUtils;
 import common.MidSegment;
 import core.io.Block;
 import core.io.Bucket;
-import core.lsmi.ListDiskSSTableReader.SegListKey;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
-import util.Configuration;
-import util.GroupByKeyIterator;
-import util.Pair;
-import util.PeekIterDecorate;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
-import xiafan.util.collection.CollectionUtils;
+import util.Configuration;
+import util.GroupByKeyIterator;
+import util.Pair;
+import util.PeekIterDecorate;
 
 /**
  * dirMeta, index, datafile

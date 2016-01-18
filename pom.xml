@@ -2,13 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>fanxia</groupId>
+		<groupId>dase</groupId>
 		<artifactId>weibostack</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 		<relativePath>../weibostack/pom.xml</relativePath>
 	</parent>
 	<artifactId>socialtsquery</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0</version>
 	<packaging>jar</packaging>
 
 	<name>socialtsquery</name>
@@ -145,13 +145,18 @@
 			<version>2.12</version>
 		</dependency>
 		<dependency>
-			<groupId>fanxia</groupId>
+			<groupId>dase</groupId>
 			<artifactId>socialtsquery-client</artifactId>
 			<version>0.0.1</version>
 		</dependency>
 		<dependency>
-			<groupId>fanxia</groupId>
+			<groupId>dase</groupId>
 			<artifactId>microblogdao</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>dase</groupId>
+			<artifactId>common</artifactId>
 			<version>0.0.1</version>
 		</dependency>
 	</dependencies>

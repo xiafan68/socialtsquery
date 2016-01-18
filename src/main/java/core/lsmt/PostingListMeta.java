@@ -4,7 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 
 public class PostingListMeta {
 	public int size = 0;

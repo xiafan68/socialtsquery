@@ -13,7 +13,7 @@ import java.util.List;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import core.io.Block.BLOCKTYPE;
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 
 /**
  * a bucket may correspond to multiple blocks and multiple coctant it is an

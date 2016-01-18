@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import fanxia.file.DirLineReader;
-import xiafan.util.Pair;
+import io.DirLineReader;
+import util.Pair;
 
 /**
  * 基于文件生成temporal keyword search

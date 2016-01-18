@@ -10,11 +10,9 @@ import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import segmentation.Segment;
-
 import common.MidSegment;
-
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
+import segmentation.Segment;
 
 /**
  * 

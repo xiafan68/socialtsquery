@@ -24,8 +24,8 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import segmentation.Interval;
 import util.Configuration;
+import util.DateUtil;
 import util.Profile;
-import xiafan.util.DateUtil;
 
 public class IndexConsoleClient {
 

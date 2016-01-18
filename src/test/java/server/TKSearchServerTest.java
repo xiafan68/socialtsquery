@@ -1,7 +1,5 @@
 package server;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -11,7 +9,7 @@ import searchapi.Tweets;
 
 public class TKSearchServerTest {
 	@Test
-	public void test() throws IOException, SQLException {
+	public void test() throws Exception {
 		TKSearchServer server = new TKSearchServer();
 		server.start("", "");
 		FetchTweetQuery query = new FetchTweetQuery();
@@ -23,6 +21,6 @@ public class TKSearchServerTest {
 			e.printStackTrace();
 		}
 
-		server.stop();
+		server.close();
 	}
 }

@@ -11,6 +11,7 @@ import org.apache.commons.collections.Factory;
 import org.junit.Assert;
 import org.junit.Test;
 
+import collection.DefaultedPutMap;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.lsmo.bdbformat.DiskSSTableReader;
@@ -26,7 +27,6 @@ import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Segment;
 import util.Configuration;
-import xiafan.util.collection.DefaultedPutMap;
 
 public class OctreeMergerTest {
 	@Test

@@ -9,7 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import core.lsmt.WritableComparableKey;
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 
 /**
  * encoding: 1. value of z 2. z value of x and y

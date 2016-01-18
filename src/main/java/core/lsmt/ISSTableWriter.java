@@ -69,7 +69,7 @@ public abstract class ISSTableWriter {
 	public static class DirEntry extends PostingListMeta {
 		final WritableComparableKeyFactory factory;
 		// runtime state
-		public WritableComparableKey curKey;
+		public WritableComparableKey curKey = null;
 		public BucketID startBucketID = new BucketID();
 		public BucketID endBucketID = new BucketID();
 		public long indexStartOffset;

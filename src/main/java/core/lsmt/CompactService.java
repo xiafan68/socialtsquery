@@ -20,7 +20,7 @@ import org.apache.log4j.Logger;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
-import fanxia.file.FileUtil;
+import io.FileUtil;
 import util.Configuration;
 
 /**

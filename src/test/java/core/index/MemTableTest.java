@@ -5,12 +5,11 @@ import java.io.IOException;
 import org.junit.Test;
 
 import common.MidSegment;
-import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.OctreeMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
-import fanxia.file.DirLineReader;
+import io.DirLineReader;
 import util.Configuration;
 
 public class MemTableTest {

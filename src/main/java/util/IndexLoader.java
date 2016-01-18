@@ -14,14 +14,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.bidimap.TreeBidiMap;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import common.MidSegment;
-import common.Tweet;
 import core.lsmt.LSMTInvertedIndex;
-import fanxia.file.DirLineReader;
+import io.DirLineReader;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import segmentation.ISegmentation.ISegSubscriber;
@@ -29,7 +27,7 @@ import segmentation.Interval;
 import segmentation.SWSegmentation;
 import segmentation.Segment;
 import shingle.TextShingle;
-import xiafan.util.Histogram;
+import weibo.Tweet;
 
 public class IndexLoader {
 	private static Logger logger = Logger.getLogger(IndexLoader.class);

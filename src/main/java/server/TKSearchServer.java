@@ -1,12 +1,17 @@
 package server;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -17,10 +22,14 @@ import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportException;
 
+import com.codahale.metrics.Timer.Context;
+
 import casdb.CassandraConn;
 import casdb.TweetDao;
 import common.MidSegment;
 import core.lsmt.LSMTInvertedIndex;
+import dase.perf.MetricBasedPerfProfile;
+import dase.perf.ServerController;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import searchapi.FetchTweetQuery;
@@ -35,20 +44,23 @@ import util.Configuration;
 import weibo4j.org.json.JSONException;
 import weibo4j.org.json.JSONObject;
 
-public class TKSearchServer implements TweetService.Iface {
+public class TKSearchServer implements TweetService.Iface, ServerController.IServerSubscriber {
 	private static final Logger logger = Logger.getLogger(TKSearchServer.class);
+	TServer masterTServer;
 	LSMTInvertedIndex indexReader;
 	// JDBC jdbc;
 	CassandraConn conn = new CassandraConn();
 	TweetDao tweetDao;
+	// 用于暂停或者停止服务器时使用的锁
+	ReadWriteLock susLock = new ReentrantReadWriteLock();
+	ServerController controler = new ServerController(this);
+	AtomicInteger runningOps = new AtomicInteger(0);
 
-	public void start(String casDB, String idxConf) throws IOException {
-		// Path dir = new Path("/Users/xiafan/temp/output/");
-		// dir = new Path("/home/xiafan/temp/invindex_parts");
+	private void init(String casDB, String indexConf) throws IOException {
 		conn.connect(casDB);
 		tweetDao = new TweetDao(conn);
 		Configuration conf = new Configuration();
-		conf.load(idxConf);
+		conf.load(indexConf);
 		indexReader = new LSMTInvertedIndex(conf);
 		try {
 			try {
@@ -64,59 +76,56 @@ public class TKSearchServer implements TweetService.Iface {
 			indexReader = null;
 		}
 		logger.info("index initialized");
-		// try {
-		// jdbc = new
-		// JDBC("jdbc:mysql://localhost:3306/tseries?useUnicode=true&characterEncoding=utf8",
-		// "root",
-		// "Hadoop123");
-		// } catch (Exception ex) {
-		// System.out.println(ex.getMessage());
-		// }
 	}
 
-	public void stop() throws IOException, SQLException {
-		if (indexReader != null) {
-			indexReader.close();
-			indexReader = null;
-		}
-		// jdbc.close();
+	private void startThriftServer(Properties props) throws NumberFormatException, TTransportException {
+		TServerTransport serverTransport = new TServerSocket(Short.parseShort(props.getProperty("thrift_port")));
+		TweetService.Processor<TweetService.Iface> processor = new TweetService.Processor<TweetService.Iface>(this);
+		masterTServer = new TThreadPoolServer(
+				new TThreadPoolServer.Args(serverTransport).processor(processor).maxWorkerThreads(40000));
+		logger.info("Starting the simple server...");
+		controler.running();
+		masterTServer.serve();
+	}
+
+	public void start(String confFile, String indexConf) throws Exception {
+		MetricBasedPerfProfile.registerServer(controler);
+		Properties props = new Properties();
+		props.load(new FileInputStream(confFile));
+		init(props.getProperty("cassdb"), indexConf);
+		// now start the thrift server
+		startThriftServer(props);
 	}
 
 	@Override
 	public List<Long> search(TKeywordQuery query) throws TException {
-		List<Long> ret = new ArrayList<Long>();
+		boolean locked = susLock.readLock().tryLock();
 		try {
-			Iterator<Interval> res = indexReader.query(query.query, query.startTime, query.endTime, query.topk,
-					query.type.toString());
-			while (res.hasNext())
-				ret.add(res.next().getMid());
-		} catch (IOException e) {
-			e.printStackTrace();
+			if (locked) {
+				runningOps.incrementAndGet();
+				List<Long> ret = new ArrayList<Long>();
+				Context timer = MetricBasedPerfProfile.timer("tksearch").time();
+				try {
+					Iterator<Interval> res = indexReader.query(query.query, query.startTime, query.endTime, query.topk,
+							query.type.toString());
+					while (res.hasNext())
+						ret.add(res.next().getMid());
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					timer.stop();
+				}
+				return ret;
+			} else {
+				throw new TException("server is not ready to serve: ");
+			}
+		} finally {
+			if (locked) {
+				susLock.readLock().unlock();
+				runningOps.decrementAndGet();
+			}
 		}
-
-		return ret;
 	}
-
-	/*
-	 * private void readContent(Map<Long, TweetTuple> tweetMap, List<Long> tids)
-	 * { Map<Long, String> contents; try { contents = dao.readTweets(tids); for
-	 * (Entry<Long, String> entry : contents.entrySet()) { TweetTuple curTuple =
-	 * null; if (tweetMap.containsKey(entry.getKey())) { curTuple =
-	 * tweetMap.get(entry.getKey()); } else { curTuple = new TweetTuple();
-	 * tweetMap.put(entry.getKey(), curTuple); }
-	 * curTuple.setContent(entry.getValue()); } } catch (SQLException e) {
-	 * e.printStackTrace(); } }
-	 * 
-	 * public void readTimeSeries(Map<Long, TweetTuple> tweetMap, List<Long>
-	 * tids) throws SQLException { TimeSeriesDao seriesDao = new
-	 * TimeSeriesDao(jdbc); Map<Long, List<List<Integer>>> tsData =
-	 * seriesDao.getTimeSeries(tids); for (Entry<Long, List<List<Integer>>>
-	 * entry : tsData.entrySet()) { TweetTuple curTuple = null; if
-	 * (tweetMap.containsKey(entry.getKey())) { curTuple =
-	 * tweetMap.get(entry.getKey()); } else { curTuple = new TweetTuple();
-	 * tweetMap.put(entry.getKey(), curTuple); }
-	 * curTuple.setPoints(entry.getValue()); } }
-	 */
 
 	@Override
 	public Tweets fetchTweets(FetchTweetQuery query) throws InvalidJob, TException {
@@ -131,51 +140,98 @@ public class TKSearchServer implements TweetService.Iface {
 		return tweets;
 	}
 
-	public static void main(String[] args) throws TTransportException, IOException, SQLException {
-
-		// args = new String[] { "-c", "127.0.0.1", "-k", "localhost:9092" };
-		OptionParser parser = new OptionParser();
-		parser.accepts("c", "cassandra server address").withRequiredArg().ofType(String.class);
-		parser.accepts("p", "the port to provide thrift service").withRequiredArg().ofType(String.class);
-		parser.accepts("i", "index configuration file").withRequiredArg().ofType(String.class);
-		OptionSet set = parser.parse(args);
-		if (!(set.has("p") && set.has("c") && set.has("i"))) {
-			parser.printHelpOn(new PrintStream(System.out));
-			System.exit(1);
+	@Override
+	public void indexTweetSeg(TweetSeg seg) throws TException {
+		boolean locked = susLock.readLock().tryLock();
+		try {
+			if (locked) {
+				runningOps.incrementAndGet();
+				try {
+					logger.info(runningOps.get() + " indexing " + seg.toString());
+					Context dbTimer = MetricBasedPerfProfile.timer("tksearch_querycontent").time();
+					String status = tweetDao.getStatusByMid(seg.mid);
+					dbTimer.stop();
+					if (status == null) {
+						throw new TException("content of " + seg.mid + " is not found!!!!");
+					} else {
+						dbTimer = MetricBasedPerfProfile.timer("tksearch_index").time();
+						try {
+							JSONObject obj = new JSONObject(status);
+							indexReader.insert(obj.getString("text"), obj.getString("uname"),
+									new MidSegment(Long.parseLong(seg.mid),
+											new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
+						} finally {
+							dbTimer.stop();
+						}
+					}
+				} catch (NumberFormatException | IOException | JSONException e) {
+					logger.error(e.getMessage());
+					throw new TException(e.getMessage());
+				}
+			} else {
+				throw new TException("server is not ready to serve: ");
+			}
+		} finally {
+			if (locked) {
+				susLock.readLock().unlock();
+				runningOps.decrementAndGet();
+			}
 		}
-
-		PropertyConfigurator
-				.configure(new File(System.getProperty("basedir", "./"), "conf/log4j.properties").getAbsolutePath());
-
-		TServerTransport serverTransport = new TServerSocket(Short.parseShort(set.valueOf("p").toString()));
-		TKSearchServer tserver = new TKSearchServer();
-		tserver.start(set.valueOf("c").toString(), set.valueOf("i").toString());
-
-		TweetService.Processor processor = new TweetService.Processor(tserver);
-		TServer masterTServer = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
-		logger.info("Starting the simple server...");
-		masterTServer.serve();
-		logger.info("simple server stoped");
-		tserver.stop();
 	}
 
 	@Override
-	public void indexTweetSeg(TweetSeg seg) throws TException {
-		logger.info("indexing " + seg.toString());
-		try {
-			String status = tweetDao.getStatusByMid(seg.mid);
-			if (status == null) {
-				throw new TException("content of " + seg.mid + " is not found!!!!");
-			} else {
-				JSONObject obj = new JSONObject(status);
-				indexReader.insert(obj.getString("text"), obj.getString("uname"),
-						new MidSegment(Long.parseLong(seg.mid),
-								new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
-			}
-		} catch (NumberFormatException | IOException | JSONException e) {
-			logger.error(e.getMessage());
-			throw new TException(e.getMessage());
-		}
+	public void finalize() {
+		close();
 	}
 
+	public void close() {
+		logger.info("closing index");
+		if (indexReader != null) {
+			try {
+				indexReader.close();
+				indexReader = null;
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e);
+			}
+		}
+		logger.info("stoping simple server");
+		masterTServer.stop();
+		logger.info("simple server stoped");
+	}
+
+	@Override
+	public void onStop() {
+		susLock.writeLock().lock();
+		close();
+	}
+
+	@Override
+	public void onSuspend() {
+		susLock.writeLock().lock();
+	}
+
+	@Override
+	public void onResume() {
+		susLock.writeLock().unlock();
+	}
+
+	public static void main(String[] args) throws Exception {
+		OptionParser parser = new OptionParser();
+		parser.accepts("c", "configuration file of server").withRequiredArg().ofType(String.class);
+		parser.accepts("i", "configuration file of index").withRequiredArg().ofType(String.class);
+		parser.printHelpOn(new DataOutputStream(new PrintStream(System.out)));
+		OptionSet set = parser.parse(args);
+
+		PropertyConfigurator
+				.configure(new File(System.getProperty("basedir", "./"), "conf/log4j.properties").getAbsolutePath());
+		Properties props = new Properties();
+		props.load(new FileInputStream(set.valueOf("c").toString()));
+
+		MetricBasedPerfProfile.reportForGanglia(props.getProperty("gangliaHost"),
+				Short.parseShort(props.getProperty("gangliaPort")));
+
+		TKSearchServer tserver = new TKSearchServer();
+		tserver.start(set.valueOf("c").toString(), set.valueOf("i").toString());
+	}
 }

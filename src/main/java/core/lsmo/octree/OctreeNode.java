@@ -7,10 +7,9 @@ import java.util.Arrays;
 import java.util.TreeSet;
 
 import common.MidSegment;
-
 import core.commom.Encoding;
 import core.commom.Point;
-import fanxia.file.ByteUtil;
+import io.ByteUtil;
 
 /**
  * 对于这个cube，它不包含最右侧，最内侧和最上侧的面上的点

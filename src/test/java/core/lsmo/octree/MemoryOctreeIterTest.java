@@ -7,13 +7,11 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
-import segmentation.Segment;
-
 import common.MidSegment;
-
 import core.commom.Encoding;
 import core.lsmt.PostingListMeta;
-import fanxia.file.DirLineReader;
+import io.DirLineReader;
+import segmentation.Segment;
 
 public class MemoryOctreeIterTest {
 	@Test
