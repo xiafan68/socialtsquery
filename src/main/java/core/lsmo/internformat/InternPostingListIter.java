@@ -113,6 +113,8 @@ public class InternPostingListIter implements IOctreeIterator {
 			ret = true;
 			nextID.offset++;
 		} else if (newCode.getTopZ() != curMin.getTopZ() || newCode.compareTo(curMax) > 0) {
+			// newCode.getTopZ() != curMin.getTopZ()
+			// 应该也一定要能够推出newCode.compareTo(curMax) > 0
 			if (newCode.getTopZ() != curMin.getTopZ()) {
 				gotoNewLayer(newCode.getTopZ());
 			} else {
@@ -126,7 +128,7 @@ public class InternPostingListIter implements IOctreeIterator {
 			int commBit = ByteUtil.commonBitNum(newCode.getX(), te);
 			int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
 			int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
-			newY |= 1 << (31 - commBit);
+			newY |= 1 << (31 - commBit + 1); // 这里应该是找公共祖先的上面的那个节点
 			curMin.setPaddingBitNum(0);
 			curMin.setX(newX);
 			curMin.setY(newY);
