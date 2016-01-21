@@ -130,15 +130,18 @@ public class BDBBtree {
 		} else {
 
 		}
-
+		// 当前应用中bdb其实是只读类型的，不存在删除key的情况，因此需要讲clean和merge之类的代价降到最低
+		mutableConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "1000000000");
 		// myDbConfig.setCacheMode(CacheMode.DYNAMIC);
-		mutableConfig.setCacheSize(conf.getBTreeCacheSize());
+		// mutableConfig.setCacheSize(conf.getBTreeCacheSize());
+		mutableConfig.setCachePercent(5);
 
 		// myEnvConfig.setSortedDuplicates(true);
 
 		// Open the environment
 		env = new Environment(dir, myEnvConfig);
 		env.setMutableConfig(mutableConfig);
+
 		// Now open, or create and open, our databases
 		nodeDb = env.openDatabase(null, dir.getName(), myDbConfig);
 		// nodeDb.
@@ -152,9 +155,14 @@ public class BDBBtree {
 	}
 
 	public void close() {
-		nodeDb.close();
-		env.cleanLog();
-		env.close();
+		if (nodeDb != null) {
+			nodeDb.close();
+			env.cleanLog();
+			env.close();
+			nodeDb = null;
+			env = null;
+		}
+
 	}
 
 	/**
@@ -458,8 +466,10 @@ public class BDBBtree {
 
 		@Override
 		public void finalize() {
-			if (cursor != null)
+			if (cursor != null) {
 				cursor.close();
+				cursor = null;
+			}
 		}
 	}
 
