@@ -109,11 +109,10 @@ public class BDBBtree {
 		myEnvConfig.setAllowCreate(!readOnly);
 		myDbConfig.setAllowCreate(!readOnly);
 
-		// Allow transactions if we are writing to the database
-		/*
-		 * myEnvConfig.setTransactional(!readOnly);
-		 * myDbConfig.setTransactional(!readOnly);
-		 */
+		myEnvConfig.setSharedCache(true);
+		myEnvConfig.setCachePercent(10);
+		// 当前应用中bdb其实是只读类型的，不存在删除key的情况，因此需要讲clean和merge之类的代价降到最低
+		myEnvConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "1000000000");// 1gb
 
 		myEnvConfig.setTransactional(false);
 		myDbConfig.setTransactional(false);
@@ -124,19 +123,11 @@ public class BDBBtree {
 		myDbConfig.setBtreeComparator(keyComparator.INSTACE);
 
 		myDbConfig.setSortedDuplicates(duplicatesAllowed);
+
 		if (duplicatesAllowed) {
 			valueComparator.INSTACE.setConf(conf);
 			myDbConfig.setDuplicateComparator(valueComparator.INSTACE);
-		} else {
-
 		}
-		// 当前应用中bdb其实是只读类型的，不存在删除key的情况，因此需要讲clean和merge之类的代价降到最低
-		mutableConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "1000000000");
-		// myDbConfig.setCacheMode(CacheMode.DYNAMIC);
-		// mutableConfig.setCacheSize(conf.getBTreeCacheSize());
-		mutableConfig.setCachePercent(5);
-
-		// myEnvConfig.setSortedDuplicates(true);
 
 		// Open the environment
 		env = new Environment(dir, myEnvConfig);
