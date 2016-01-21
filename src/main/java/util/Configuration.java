@@ -34,7 +34,7 @@ public class Configuration {
 	 * @return
 	 */
 	public File getIndexDir() {
-		return new File(props.getProperty("indexdir", "/tmp"));
+		return new File(props.getProperty("datadir", "/tmp"), "datadir");
 	}
 
 	/**
@@ -47,7 +47,7 @@ public class Configuration {
 	}
 
 	public File getCommitLogDir() {
-		return new File(props.getProperty("oplogdir", "/tmp/oplog"));
+		return new File(props.getProperty("datadir", "/tmp/oplog"), "oplog");
 	}
 
 	public int getFlushLimit() {

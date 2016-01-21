@@ -47,13 +47,13 @@ public class IndexLoader {
 
 	public void init() throws IOException {
 		PropertyConfigurator.configure(log);
-		Configuration conf = new Configuration();
+		conf = new Configuration();
 		conf.load(confFile);
-		
+
 		try {
-		    //FileUtils.deleteDirectory(conf.getIndexDir());
+			// FileUtils.deleteDirectory(conf.getIndexDir());
 			conf.getIndexDir().mkdirs();
-			//FileUtils.deleteDirectory(conf.getCommitLogDir());
+			// FileUtils.deleteDirectory(conf.getCommitLogDir());
 			conf.getCommitLogDir().mkdirs();
 			System.out.println(conf.toString());
 		} catch (Exception exception) {
@@ -68,13 +68,14 @@ public class IndexLoader {
 		}
 	}
 
+	Configuration conf;
 	Thread producer;
 	AtomicInteger midGen = new AtomicInteger(-1);
 	long largestNum = -2;
 
 	private void startProducer() {
 		producer = new Thread("producer") {
-			int minTime = 695435;
+			int minTime = conf.queryStartTime();
 
 			@Override
 			public void run() {
@@ -262,7 +263,7 @@ public class IndexLoader {
 				}
 			}
 		}
-		//index.close();
+		// index.close();
 	}
 
 	public static void main(String[] args) throws IOException {

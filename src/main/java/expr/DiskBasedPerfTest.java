@@ -85,7 +85,7 @@ public class DiskBasedPerfTest {
 			List<String> keywords = query.getKey();
 			logger.info(keywords.toString());
 			logger.info(offset + " " + width + " " + k);
-			int start = query.getValue() + offset;
+			int start = query.getValue() - curConf.queryStartTime() + offset;
 			try {
 				index.query(keywords, start, start + width, k, queryType);
 			} catch (Exception ex) {
@@ -102,10 +102,13 @@ public class DiskBasedPerfTest {
 		return counter;
 	}
 
+	Configuration curConf = new Configuration();
+
 	public void test(String conf, File oFile) throws ParseException, IOException {
 		// File dirFile = new File(oDir);
 		// if (!dirFile.exists())
 		// dirFile.mkdirs();
+		curConf.load(conf);
 		index = load(conf);
 		testOneRound(0, 100, 100, queryTypes[0]);
 		File logFile = oFile;

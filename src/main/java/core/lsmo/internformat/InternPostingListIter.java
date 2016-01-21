@@ -342,7 +342,11 @@ public class InternPostingListIter implements IOctreeIterator {
 	private void readNextOctant(Encoding curCode) throws IOException {
 		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
 		curNode.read(input);
-
+		for(MidSegment seg : curNode.getSegs()){
+			if (seg.mid==3926106128553483l){
+				System.out.println();
+			}
+		}
 		/*
 		 * if (!traverseQueue.isEmpty() &&
 		 * curNode.getEncoding().compareTo(traverseQueue.peek().getEncoding()) >

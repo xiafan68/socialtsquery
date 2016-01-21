@@ -97,8 +97,12 @@ public class IndexConsoleClient {
 						int i = 1;
 						String type = args[i++];
 						int k = Integer.parseInt(args[i++]);
-						int start = DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
-						int end = DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
+						// int start =
+						// DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
+						// int end =
+						// DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
+						int start = (int) (Long.parseLong(args[i++]) / DateUtil.HOUR_GRANU - conf.queryStartTime());
+						int end = (int) (Long.parseLong(args[i++]) / DateUtil.HOUR_GRANU - conf.queryStartTime());
 						List<String> keywords = new ArrayList<String>();
 						for (int idx = i; idx < args.length; idx++) {
 							keywords.add(args[idx]);

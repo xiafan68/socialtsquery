@@ -110,7 +110,7 @@ public class BDBBtree {
 		myDbConfig.setAllowCreate(!readOnly);
 
 		myEnvConfig.setSharedCache(true);
-		myEnvConfig.setCachePercent(10);
+		myEnvConfig.setCachePercent(20);
 		// 当前应用中bdb其实是只读类型的，不存在删除key的情况，因此需要讲clean和merge之类的代价降到最低
 		myEnvConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "1000000000");// 1gb
 

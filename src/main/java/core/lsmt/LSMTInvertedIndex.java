@@ -305,8 +305,8 @@ public class LSMTInvertedIndex {
 		logger.info("querying keywords:" + StringUtils.join(keywords, ","));
 		Profile.instance.start(ProfileField.TOTAL_TIME.toString());
 		try {
-			start -= conf.queryStartTime();
-			end -= conf.queryStartTime();
+			// start -= conf.queryStartTime();
+			// end -= conf.queryStartTime();
 			IQueryExecutor exec = QueryExecutorFactory.createExecutor(this, execType);
 			String[] wordArr = new String[keywords.size()];
 			keywords.toArray(wordArr);
