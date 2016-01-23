@@ -142,7 +142,8 @@ def plotScale():
 def plotAll():
     inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part12"
-    outputDir = "/Users/kc/Documents/dataset/twitter/twitterfigure_20"
+    inputPath="/Users/kc/快盘/dataset/twitter_expr/twitteresult/part16"
+    outputDir = "/Users/kc/Documents/dataset/twitter/twitterfigure_16"
     
     ploter = ExprPloter(["width", "k"], ["type"], "offset", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
