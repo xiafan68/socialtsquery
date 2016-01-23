@@ -83,9 +83,11 @@ public class CompactService extends Thread {
 
 	@Override
 	public void run() {
-		while (!index.stop) {
+		boolean compacting = true;
+		while (!index.stop || (index.stopOnWait && compacting)) {
 			try {
-				if (!compactTrees()) {
+				compacting = compactTrees();
+				if (!compacting) {
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {

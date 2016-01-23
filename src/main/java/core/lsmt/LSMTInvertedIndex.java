@@ -50,7 +50,9 @@ public class LSMTInvertedIndex {
 	final ILSMTFactory implFactory;
 	File dataDir;
 	boolean bootstrap = true;
-	volatile boolean stop = false;
+	volatile boolean stop = false;// 停止索引
+	volatile boolean stopOnWait = false;// 等待所有操作结束之后停止
+
 	IMemTable curTable;
 	volatile VersionSet versionSet = new VersionSet();
 	int nextVersion = 0;
@@ -492,6 +494,16 @@ public class LSMTInvertedIndex {
 			lockManager.versionWriteUnLock();
 		}
 		lockManager.shutdown();
+	}
+
+	/**
+	 * 等待没有数据需要压缩之后退出
+	 * 
+	 * @throws IOException
+	 */
+	public void closeOnWait() throws IOException {
+		stopOnWait = true;
+		close();
 	}
 
 	// private boolean debug = false;

@@ -263,7 +263,7 @@ public class IndexLoader {
 				}
 			}
 		}
-		// index.close();
+		index.closeOnWait();
 	}
 
 	public static void main(String[] args) throws IOException {

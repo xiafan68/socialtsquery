@@ -104,10 +104,43 @@ public class DiskBasedPerfTest {
 
 	Configuration curConf = new Configuration();
 
+	public void testByDefault(String conf, File oFile) throws IOException {
+		index = load(conf);
+		testOneRound(0, 100, 100, queryTypes[0]);
+		File logFile = oFile;
+		if (logFile.exists())
+			logFile.delete();
+		OutputStream os = StreamUtils.outputStream(logFile);
+		int offset = 0;
+		int width = 24;
+		int k = 50;
+		List<String> logs = new ArrayList<String>();
+		for (int i = 0; i < 5; i++) {
+			for (String queryType : queryTypes) {
+				HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
+				HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
+				profile.put("width", width);
+				profile.put("words", 2);
+				profile.put("k", k);
+				profile.put("offset", offset);
+				profile.put("type", queryType);
+				logger.info(JSONObject.fromObject(profile));
+				logs.add(JSONObject.fromObject(profile).toString());
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		for (String log : logs)
+			StreamLogUtils.log(os, log);
+		os.flush();
+		os.close();
+		index.close();
+
+	}
+
 	public void test(String conf, File oFile) throws ParseException, IOException {
-		// File dirFile = new File(oDir);
-		// if (!dirFile.exists())
-		// dirFile.mkdirs();
 		curConf.load(conf);
 		index = load(conf);
 		testOneRound(0, 100, 100, queryTypes[0]);
@@ -253,7 +286,6 @@ public class DiskBasedPerfTest {
 			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
 			test.test(conf, oFile);
 		}
-
 	}
 
 }
