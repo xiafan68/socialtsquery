@@ -83,11 +83,13 @@ public class CompactService extends Thread {
 
 	@Override
 	public void run() {
-		boolean compacting = true;
-		while (!index.stop || (index.stopOnWait && compacting)) {
+		while (!index.stop || index.stopOnWait) {
 			try {
-				compacting = compactTrees();
-				if (!compacting) {
+				List<SSTableMeta> toCompact = fileToCompact();
+				if (index.stop && (!index.stopOnWait || toCompact.size() < 2)) {
+					break;
+				}
+				if (!compactTrees(toCompact)) {
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -105,12 +107,11 @@ public class CompactService extends Thread {
 		}
 	}
 
-	public boolean compactTrees() {
+	public boolean compactTrees(List<SSTableMeta> toCompact) {
 		// find out trees needing compaction
 		// TODO 1. 确定需要压缩的文件。2. 获取相关的SSTableReader， 3. 使用SSTableWriter写出数据 4.
 		// 使用Index更新版本集合。
 		boolean ret = false;
-		List<SSTableMeta> toCompact = fileToCompact();
 		if (toCompact.size() >= 2) {
 			StringBuffer buf = new StringBuffer("compacting versions ");
 			toCompact = toCompact.subList(0, 2);
