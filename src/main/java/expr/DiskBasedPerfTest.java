@@ -105,6 +105,7 @@ public class DiskBasedPerfTest {
 	Configuration curConf = new Configuration();
 
 	public void testByDefault(String conf, File oFile) throws IOException {
+		curConf.load(conf);
 		index = load(conf);
 		testOneRound(0, 100, 100, queryTypes[0]);
 		File logFile = oFile;
@@ -285,11 +286,23 @@ public class DiskBasedPerfTest {
 		boolean allTest = (boolean) opts.valueOf("s");
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
-			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
-			if (allTest) {
-				test.test(conf, oFile);
-			} else {
-				test.testByDefault(conf, oFile);
+			File file = new File(conf);
+			if (file.isDirectory())
+				for (File curConf : file.listFiles()) {
+					File oFile = new File(oDir, curConf.getName().replace("conf", "txt"));
+					if (allTest) {
+						test.test(curConf.getAbsolutePath(), oFile);
+					} else {
+						test.testByDefault(curConf.getAbsolutePath(), oFile);
+					}
+				}
+			else {
+				File oFile = new File(oDir, file.getName().replace("conf", "txt"));
+				if (allTest) {
+					test.test(conf, oFile);
+				} else {
+					test.testByDefault(conf, oFile);
+				}
 			}
 		}
 	}
