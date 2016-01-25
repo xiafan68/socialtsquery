@@ -72,7 +72,7 @@ class ExprPloter(object):
                 groups = self.pattern.match(os.path.basename(dir))
                 if groups == None:
                     return
-                size = long(groups.group(1))
+                size = long(groups.group(1)) * 5
                 fd = open(os.path.join(dir, fileName), "r")
                 curMethod = ""
                 if "lsmi" in fileName:
@@ -84,7 +84,9 @@ class ExprPloter(object):
                     rec = json.loads(line)
                     # if rec['width'] != 24:
                     #    continue
-                    rec["size"] = size
+                    rec["size(%)"] = size
+                    if not(rec["k"] == 50 and rec["offset"] == 0 and rec["width"] == 24):
+                        continue
                     factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
                     fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
                     lineFactors = [rec[factor] for factor in self.lineFactors]
@@ -134,15 +136,17 @@ class ExprPloter(object):
 
 def plotScale():
     inputPath = "/Users/kc/Documents/dataset/weibo/expr/rawdata/"
+    inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult"
     outputDir = "/Users/kc/Documents/dataset/weibo/expr/weibofigure_ubuntu/weibofigure_scale"
-    ploter = ExprPloter(["offset", "width", "k"], ["type"], "size", "TOTAL_TIME")
+    outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitterscale"
+    ploter = ExprPloter(["offset", "width", "k"], ["type"], "size(%)", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
     ploter.plotFigures(os.path.join(outputDir, "size"), False)
     
 def plotAll():
     inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part12"
-    inputPath="/Users/kc/快盘/dataset/twitter_expr/twitteresult/part16"
+    inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part16"
     outputDir = "/Users/kc/Documents/dataset/twitter/twitterfigure_16"
     
     ploter = ExprPloter(["width", "k"], ["type"], "offset", "TOTAL_TIME")
@@ -158,6 +162,6 @@ def plotAll():
     ploter.plotFigures(os.path.join(outputDir, "width"), True)
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
-    plotAll()
-    # plotScale()
+    # plotAll()
+    plotScale()
     

@@ -257,6 +257,7 @@ public class DiskBasedPerfTest {
 		parser.accepts("e", "experiment directory").withRequiredArg().ofType(String.class);
 		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
 		parser.accepts("q", "data file location").withRequiredArg().ofType(String.class);
+		parser.accepts("s", "single test").withRequiredArg().ofType(Boolean.class);
 
 		OptionSet opts = null;
 		try {
@@ -281,10 +282,15 @@ public class DiskBasedPerfTest {
 		// new String[] { "./conf/index_weibo_intern.conf",
 		// "./conf/index_weibo_lsmi.conf" };
 		opts.valuesOf("c").toArray(confDirs);
+		boolean allTest = (boolean) opts.valueOf("s");
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
 			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
-			test.test(conf, oFile);
+			if (allTest) {
+				test.test(conf, oFile);
+			} else {
+				test.testByDefault(conf, oFile);
+			}
 		}
 	}
 

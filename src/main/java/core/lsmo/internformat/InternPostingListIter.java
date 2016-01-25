@@ -62,7 +62,7 @@ public class InternPostingListIter implements IOctreeIterator {
 	 * @param te
 	 */
 	public InternPostingListIter(DirEntry entry, BlockBasedSSTableReader reader, int ts, int te) {
-		if (entry.curKey != null) {
+		if (entry != null && entry.curKey != null && entry.minTime <= te && entry.maxTime >= ts) {
 			this.entry = entry;
 			this.reader = reader;
 			this.ts = ts;
@@ -74,7 +74,6 @@ public class InternPostingListIter implements IOctreeIterator {
 			// nextBlockID = entry.startBucketID.blockID;
 			curSkipBlockIdx = DirEntry.indexBlockIdx(entry.indexStartOffset);
 		}
-
 	}
 
 	@Override
@@ -89,7 +88,7 @@ public class InternPostingListIter implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		if (entry != null && curNode == null && diskHasMore()) {
+		if (entry != null && entry.curKey != null && curNode == null && diskHasMore()) {
 			advance();
 		}
 		return curNode != null;

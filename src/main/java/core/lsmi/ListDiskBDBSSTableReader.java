@@ -104,7 +104,7 @@ public class ListDiskBDBSSTableReader extends BucketBasedBDBSSTableReader {
 		int end;
 
 		public ListDiskPostingListIterator(DirEntry entry, int start, int end) {
-			if (entry != null) {
+			if (entry != null && entry.curKey != null && entry.minTime <= end && entry.maxTime >= start) {
 				this.dir = entry;
 				this.start = start;
 				this.end = end;
