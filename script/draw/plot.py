@@ -71,7 +71,7 @@ class ExprPloter(object):
                 self.loadFiles(os.path.join(dir, fileName))
             else:
                 groups = self.pattern.match(os.path.basename(dir))
-                size = 100
+                size = 80
                 if groups != None:
                     size = long(groups.group(1)) * 5
                 limit = 5
@@ -92,8 +92,8 @@ class ExprPloter(object):
                     #    continue
                     rec["limit"] = limit
                     rec["size(%)"] = size
-                    if not(rec["k"] == 50 and rec["offset"] == 0 and rec["width"] == 24):
-                        continue
+                    #if not(rec["k"] == 50 and rec["offset"] == 0 and rec["width"] == 24):
+                      #  continue
                     factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
                     fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
                     lineFactors = [rec[factor] for factor in self.lineFactors]
@@ -161,11 +161,13 @@ def plotAll():
     inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part12"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part16"
-    outputDir = "/Users/kc/Documents/dataset/twitter/twitterfigure_16"
+
+    inputPath = "/Users/kc/快盘/dataset/weiboexpr/weibofacts"
+    outputDir = "/Users/kc/快盘/dataset/weiboexpr/weibofacts_fig"
     
     ploter = ExprPloter(["width", "k"], ["type"], "offset", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "offset"), True)
+    ploter.plotFigures(os.path.join(outputDir, "offset"), False)
     
     ploter = ExprPloter(["width", "offset"], ["type"], "k", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
@@ -176,7 +178,7 @@ def plotAll():
     ploter.plotFigures(os.path.join(outputDir, "width"), True)
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
-    # plotAll()
+    plotAll()
     # plotScale()
-    plotLimit()
+    # plotLimit()
     
