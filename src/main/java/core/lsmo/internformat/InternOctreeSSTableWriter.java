@@ -20,7 +20,6 @@ import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmo.bdbformat.SSTableScanner;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
@@ -30,15 +29,16 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableReader;
+import core.lsmt.ISSTableWriter;
+import core.lsmt.IndexHelper;
+import core.lsmt.PostingListMeta;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
 import util.PeekIterDecorate;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
-import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
 
 /**
  * 把meta data写入到data文件中
@@ -141,6 +141,14 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		splitingRatio = conf.getSplitingRatio();
 	}
 
+	public InternOctreeSSTableWriter(SSTableMeta meta, Configuration conf) {
+		this.conf = conf;
+		this.meta = meta;
+		this.step = conf.getIndexStep();
+		indexHelper = new InternIndexHelper(conf);
+		splitingRatio = conf.getSplitingRatio();
+	}
+
 	/**
 	 * write the memtable into sstables stored in directory
 	 * 
@@ -169,6 +177,24 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			writeOctree(treeIter);
 			indexHelper.endPostingList(null);// end a new posting list
 		}
+	}
+
+	/**
+	 * 创建了一个新的direntry，但是用户需要设置direntry的内容
+	 * 
+	 * @param key
+	 * @throws IOException
+	 */
+	public void startNewPostingList(WritableComparableKey key) throws IOException {
+		indexHelper.startPostingList(key, null);
+	}
+
+	public void updateMeta(PostingListMeta meta) {
+		indexHelper.getDirEntry().merge(meta);
+	}
+
+	public void endPostingList() throws IOException {
+		indexHelper.endPostingList(null);// end a new posting list
 	}
 
 	/**
