@@ -104,6 +104,29 @@ public class DiskBasedPerfTest {
 
 	Configuration curConf = new Configuration();
 
+	private List<String> testSettings(int[] ks, int[] offsets, int[] widths) throws IOException {
+		List<String> logs = new ArrayList<String>();
+		for (int offset : offsets)
+			for (int k : ks)
+				for (int width : widths)
+					for (String queryType : queryTypes) {
+						HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
+						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
+						profile.put("width", width);
+						profile.put("words", 2);
+						profile.put("k", k);
+						profile.put("offset", offset);
+						profile.put("type", queryType);
+						logger.info(JSONObject.fromObject(profile));
+						logs.add(JSONObject.fromObject(profile).toString());
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+						}
+					}
+		return logs;
+	}
+
 	public void testByDefault(String conf, File oFile) throws IOException {
 		curConf.load(conf);
 		index = load(conf);
@@ -112,33 +135,44 @@ public class DiskBasedPerfTest {
 		if (logFile.exists())
 			logFile.delete();
 		OutputStream os = StreamUtils.outputStream(logFile);
-		int offset = 0;
-		int width = 24;
-		int k = 50;
-		List<String> logs = new ArrayList<String>();
+
 		for (int i = 0; i < 5; i++) {
-			for (String queryType : queryTypes) {
-				HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
-				HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
-				profile.put("width", width);
-				profile.put("words", 2);
-				profile.put("k", k);
-				profile.put("offset", offset);
-				profile.put("type", queryType);
-				logger.info(JSONObject.fromObject(profile));
-				logs.add(JSONObject.fromObject(profile).toString());
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-				}
+			for (String log : testSettings(ks, new int[] { 0 }, new int[] { 24 })) {
+				StreamLogUtils.log(os, log);
+			}
+
+			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, widths)) {
+				StreamLogUtils.log(os, log);
+			}
+
+			for (String log : testSettings(new int[] { 50 }, offsets, new int[] { 24 })) {
+				StreamLogUtils.log(os, log);
 			}
 		}
-		for (String log : logs)
-			StreamLogUtils.log(os, log);
+
 		os.flush();
 		os.close();
 		index.close();
+	}
 
+	public void testByAllFacts(String conf, File oFile) throws IOException {
+		curConf.load(conf);
+		index = load(conf);
+		testOneRound(0, 100, 100, queryTypes[0]);
+		File logFile = oFile;
+		if (logFile.exists())
+			logFile.delete();
+		OutputStream os = StreamUtils.outputStream(logFile);
+
+		for (int i = 0; i < 5; i++) {
+			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, new int[] { 24 })) {
+				StreamLogUtils.log(os, log);
+			}
+		}
+
+		os.flush();
+		os.close();
+		index.close();
 	}
 
 	public void test(String conf, File oFile) throws ParseException, IOException {
@@ -258,7 +292,7 @@ public class DiskBasedPerfTest {
 		parser.accepts("e", "experiment directory").withRequiredArg().ofType(String.class);
 		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
 		parser.accepts("q", "data file location").withRequiredArg().ofType(String.class);
-		parser.accepts("s", "single test").withRequiredArg().ofType(Boolean.class);
+		parser.accepts("s", "type:all, single, facts").withRequiredArg().ofType(String.class);
 
 		OptionSet opts = null;
 		try {
@@ -283,25 +317,29 @@ public class DiskBasedPerfTest {
 		// new String[] { "./conf/index_weibo_intern.conf",
 		// "./conf/index_weibo_lsmi.conf" };
 		opts.valuesOf("c").toArray(confDirs);
-		boolean allTest = (boolean) opts.valueOf("s");
+		String ttype = (String) opts.valueOf("s");
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
 			File file = new File(conf);
 			if (file.isDirectory())
 				for (File curConf : file.listFiles()) {
 					File oFile = new File(oDir, curConf.getName().replace("conf", "txt"));
-					if (allTest) {
+					if (ttype.equals("all")) {
 						test.test(curConf.getAbsolutePath(), oFile);
-					} else {
+					} else if (ttype.equals("single")) {
 						test.testByDefault(curConf.getAbsolutePath(), oFile);
+					} else if (ttype.equals("facts")) {
+						test.testByAllFacts(curConf.getAbsolutePath(), oFile);
 					}
 				}
 			else {
 				File oFile = new File(oDir, file.getName().replace("conf", "txt"));
-				if (allTest) {
+				if (ttype.equals("all")) {
 					test.test(conf, oFile);
-				} else {
+				} else if (ttype.equals("single")) {
 					test.testByDefault(conf, oFile);
+				} else if (ttype.equals("facts")) {
+					test.testByAllFacts(conf, oFile);
 				}
 			}
 		}

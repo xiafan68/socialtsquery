@@ -43,6 +43,7 @@ class ExprPloter(object):
         self.respondent = respondent
         self.dataMatrix = {}
         self.pattern = re.compile("part([0-9]+)(_([-0-9]+))*")
+        self.filePattern = re.compile("index_[^0-9]*([0-9]+).txt")
     
     @staticmethod
     def getFileFactors(curMap, factors):
@@ -70,9 +71,14 @@ class ExprPloter(object):
                 self.loadFiles(os.path.join(dir, fileName))
             else:
                 groups = self.pattern.match(os.path.basename(dir))
-                if groups == None:
-                    return
-                size = long(groups.group(1)) * 5
+                size = 100
+                if groups != None:
+                    size = long(groups.group(1)) * 5
+                limit = 5
+                limitGroup = self.filePattern.match(fileName)
+                if limitGroup:
+                    limit = int(limitGroup.group(1))
+                
                 fd = open(os.path.join(dir, fileName), "r")
                 curMethod = ""
                 if "lsmi" in fileName:
@@ -84,6 +90,7 @@ class ExprPloter(object):
                     rec = json.loads(line)
                     # if rec['width'] != 24:
                     #    continue
+                    rec["limit"] = limit
                     rec["size(%)"] = size
                     if not(rec["k"] == 50 and rec["offset"] == 0 and rec["width"] == 24):
                         continue
@@ -143,6 +150,13 @@ def plotScale():
     ploter.loadFiles(inputPath)
     ploter.plotFigures(os.path.join(outputDir, "size"), False)
     
+def plotLimit():
+    inputPath = "/Users/kc/快盘/dataset/weiboexpr/weibolimit"
+    outputDir = "/Users/kc/快盘/dataset/weiboexpr/weibolimit_fig"
+    ploter = ExprPloter(["offset", "width", "k", "size(%)"], ["type"], "limit", "TOTAL_TIME")
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "limit"), False)
+    
 def plotAll():
     inputPath = "/Users/kc/快盘/dataset/weiboexpr/expr/part20"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part12"
@@ -163,5 +177,6 @@ def plotAll():
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
     # plotAll()
-    plotScale()
+    # plotScale()
+    plotLimit()
     
