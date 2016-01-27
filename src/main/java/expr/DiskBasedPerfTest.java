@@ -128,6 +128,7 @@ public class DiskBasedPerfTest {
 	}
 
 	public void testByDefault(String conf, File oFile) throws IOException {
+		curConf.load(conf);
 		index = load(conf);
 		testOneRound(0, 100, 100, queryTypes[0]);
 		File logFile = oFile;
@@ -155,6 +156,7 @@ public class DiskBasedPerfTest {
 	}
 
 	public void testByAllFacts(String conf, File oFile) throws IOException {
+		curConf.load(conf);
 		index = load(conf);
 		testOneRound(0, 100, 100, queryTypes[0]);
 		File logFile = oFile;
@@ -318,13 +320,27 @@ public class DiskBasedPerfTest {
 		String ttype = (String) opts.valueOf("s");
 		for (String conf : confDirs) {
 			logger.info("load " + conf);
-			File oFile = new File(oDir, new File(conf).getName().replace("conf", "txt"));
-			if (ttype.equals("all")) {
-				test.test(conf, oFile);
-			} else if (ttype.equals("single")) {
-				test.testByDefault(conf, oFile);
-			} else if (ttype.equals("facts")) {
-				test.testByAllFacts(conf, oFile);
+			File file = new File(conf);
+			if (file.isDirectory())
+				for (File curConf : file.listFiles()) {
+					File oFile = new File(oDir, curConf.getName().replace("conf", "txt"));
+					if (ttype.equals("all")) {
+						test.test(curConf.getAbsolutePath(), oFile);
+					} else if (ttype.equals("single")) {
+						test.testByDefault(curConf.getAbsolutePath(), oFile);
+					} else if (ttype.equals("facts")) {
+						test.testByAllFacts(curConf.getAbsolutePath(), oFile);
+					}
+				}
+			else {
+				File oFile = new File(oDir, file.getName().replace("conf", "txt"));
+				if (ttype.equals("all")) {
+					test.test(conf, oFile);
+				} else if (ttype.equals("single")) {
+					test.testByDefault(conf, oFile);
+				} else if (ttype.equals("facts")) {
+					test.testByAllFacts(conf, oFile);
+				}
 			}
 		}
 	}

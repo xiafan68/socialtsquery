@@ -4,6 +4,7 @@
 *~
 script/expr
 script/expr/*
+conf/*/
 conf/log4j*.properties
 conf/log4j-server2.properties
 conf/index*.conf
