@@ -137,15 +137,7 @@ public class DiskBasedPerfTest {
 		OutputStream os = StreamUtils.outputStream(logFile);
 
 		for (int i = 0; i < 5; i++) {
-			for (String log : testSettings(ks, new int[] { 0 }, new int[] { 24 })) {
-				StreamLogUtils.log(os, log);
-			}
-
-			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, widths)) {
-				StreamLogUtils.log(os, log);
-			}
-
-			for (String log : testSettings(new int[] { 50 }, offsets, new int[] { 24 })) {
+			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, new int[] { 24 })) {
 				StreamLogUtils.log(os, log);
 			}
 		}
@@ -165,7 +157,15 @@ public class DiskBasedPerfTest {
 		OutputStream os = StreamUtils.outputStream(logFile);
 
 		for (int i = 0; i < 5; i++) {
-			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, new int[] { 24 })) {
+			for (String log : testSettings(ks, new int[] { 0 }, new int[] { 24 })) {
+				StreamLogUtils.log(os, log);
+			}
+
+			for (String log : testSettings(new int[] { 50 }, new int[] { 0 }, widths)) {
+				StreamLogUtils.log(os, log);
+			}
+
+			for (String log : testSettings(new int[] { 50 }, offsets, new int[] { 24 })) {
 				StreamLogUtils.log(os, log);
 			}
 		}
@@ -323,25 +323,23 @@ public class DiskBasedPerfTest {
 			File file = new File(conf);
 			if (file.isDirectory())
 				for (File curConf : file.listFiles()) {
-					File oFile = new File(oDir, curConf.getName().replace("conf", "txt"));
-					if (ttype.equals("all")) {
-						test.test(curConf.getAbsolutePath(), oFile);
-					} else if (ttype.equals("single")) {
-						test.testByDefault(curConf.getAbsolutePath(), oFile);
-					} else if (ttype.equals("facts")) {
-						test.testByAllFacts(curConf.getAbsolutePath(), oFile);
-					}
+					execTest(ttype, test, curConf, oDir);
 				}
 			else {
-				File oFile = new File(oDir, file.getName().replace("conf", "txt"));
-				if (ttype.equals("all")) {
-					test.test(conf, oFile);
-				} else if (ttype.equals("single")) {
-					test.testByDefault(conf, oFile);
-				} else if (ttype.equals("facts")) {
-					test.testByAllFacts(conf, oFile);
-				}
+				execTest(ttype, test, file, oDir);
 			}
+		}
+	}
+
+	private static void execTest(String ttype, DiskBasedPerfTest test, File curConf, File oDir)
+			throws ParseException, IOException {
+		File oFile = new File(oDir, curConf.getName().replace("conf", "txt"));
+		if (ttype.equals("all")) {
+			test.test(curConf.getAbsolutePath(), oFile);
+		} else if (ttype.equals("single")) {
+			test.testByDefault(curConf.getAbsolutePath(), oFile);
+		} else if (ttype.equals("facts")) {
+			test.testByAllFacts(curConf.getAbsolutePath(), oFile);
 		}
 	}
 
