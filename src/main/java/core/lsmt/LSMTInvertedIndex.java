@@ -69,6 +69,7 @@ public class LSMTInvertedIndex {
 	// DataOutputStream keyWriter;
 
 	public LSMTInvertedIndex(Configuration conf) {
+		logger.info("initialize with " + conf);
 		this.conf = conf;
 
 		try {
