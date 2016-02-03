@@ -1,5 +1,8 @@
 package util;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -8,10 +11,12 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.sf.json.JSONObject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.StreamLogUtils;
+import io.StreamUtils;
+import net.sf.json.JSONObject;
 
 public class Profile {
 	private static Logger logger = LoggerFactory.getLogger(Profile.class);
@@ -21,8 +26,35 @@ public class Profile {
 	private ConcurrentHashMap<String, EventProfileBean> eventProfiles = new ConcurrentHashMap<String, EventProfileBean>();
 	private ThreadLocal<Map<String, Long>> startTime = new ThreadLocal<Map<String, Long>>();
 	ConcurrentHashMap<String, AtomicInteger> eCounters = new ConcurrentHashMap<String, AtomicInteger>();
+	OutputStream os;
 
 	long invokeCount = 0;
+
+	public void open(String file) throws FileNotFoundException {
+		os = StreamUtils.outputStream(file);
+	}
+
+	public void close() throws IOException {
+		if (os != null) {
+			os.close();
+			os = null;
+		}
+	}
+
+	public void flushAndReset() {
+		try {
+			StreamLogUtils.log(os, toJSON().toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		eventProfiles.clear();
+		invokeCount = 0;
+		eCounters.clear();
+
+		lastActive = -1;
+		Arrays.fill(visitCounts, 0);
+		Arrays.fill(listCounts, 0);
+	}
 
 	public void reset() {
 		eventProfiles.clear();
@@ -72,9 +104,7 @@ public class Profile {
 		if (startTime.get() == null) {
 			startTime.set(new HashMap<String, Long>());
 		}
-		if (invokeCount++ % 1000000 == 0) {
-			// System.out.println(toJSON().toString());
-		}
+
 		startTime.get().put(event, System.currentTimeMillis());
 	}
 

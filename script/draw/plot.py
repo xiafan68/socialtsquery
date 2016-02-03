@@ -143,9 +143,9 @@ class ExprPloter(object):
 
 def plotScale():
     inputPath = "/Users/kc/Documents/dataset/weibo/expr/rawdata/"
-    inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult"
+    inputPath = "/Users/kc/快盘/dataset/weiboexpr/weiboscale"
     outputDir = "/Users/kc/Documents/dataset/weibo/expr/weibofigure_ubuntu/weibofigure_scale"
-    outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitterscale"
+    outputDir = "/Users/kc/快盘/dataset/weiboexpr/weiboscale_fig"
     ploter = ExprPloter(["offset", "width", "k"], ["type"], "size(%)", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
     ploter.plotFigures(os.path.join(outputDir, "size"), False)
@@ -178,7 +178,7 @@ def plotAll():
     ploter.plotFigures(os.path.join(outputDir, "width"), True)
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
-    plotAll()
-    # plotScale()
+    #plotAll()
+    plotScale()
     # plotLimit()
     

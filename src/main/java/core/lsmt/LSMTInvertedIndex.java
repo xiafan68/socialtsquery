@@ -33,7 +33,8 @@ import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
-import shingle.TextShingle;
+import shingle.ITextShingle;
+import shingle.ShingleFactory;
 import util.Configuration;
 import util.Profile;
 import util.ProfileField;
@@ -61,13 +62,14 @@ public class LSMTInvertedIndex {
 	FlushService flushService;
 	CompactService compactService;
 	Configuration conf;
-	TextShingle shingle = new TextShingle(null);
+	ITextShingle shingle = ShingleFactory.createShingle();
 
 	ISSTableWriter valWriter;
 
 	// DataOutputStream keyWriter;
 
 	public LSMTInvertedIndex(Configuration conf) {
+		logger.info("initialize with " + conf);
 		this.conf = conf;
 
 		try {
@@ -221,7 +223,7 @@ public class LSMTInvertedIndex {
 	}
 
 	public void insert(String keywords, String uname, MidSegment seg) throws IOException {
-		List<String> words = shingle.shingling(keywords);
+		List<String> words = shingle.shingling(keywords, false);
 		if (uname != null) {
 			words.add(String.format("&%s&", uname));
 		}

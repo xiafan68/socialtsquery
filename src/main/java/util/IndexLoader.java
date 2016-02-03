@@ -26,7 +26,8 @@ import segmentation.ISegmentation.ISegSubscriber;
 import segmentation.Interval;
 import segmentation.SWSegmentation;
 import segmentation.Segment;
-import shingle.TextShingle;
+import shingle.ITextShingle;
+import shingle.ShingleFactory;
 import weibo.Tweet;
 
 public class IndexLoader {
@@ -105,7 +106,7 @@ public class IndexLoader {
 				noMore = true;
 			}
 
-			TextShingle shingle = new TextShingle(null);
+			ITextShingle shingle = ShingleFactory.createShingle();
 			private BidiMap mapping = new TreeBidiMap();
 
 			private void parseSegs(String line) {
@@ -158,7 +159,7 @@ public class IndexLoader {
 				}
 
 				try {
-					final List<String> words = shingle.shingling(tweet.getContent());
+					final List<String> words = shingle.shingling(tweet.getContent(), false);
 					while (true) {
 						try {
 							queue.put(new Pair<List<String>, MidSegment>(words, new MidSegment(mid, seg)));
@@ -193,7 +194,7 @@ public class IndexLoader {
 				final long mid = midTmp;
 				final List<String> words = new ArrayList<String>();
 				try {
-					words.addAll(shingle.shingling(tweet.getContent()));
+					words.addAll(shingle.shingling(tweet.getContent(), false));
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
