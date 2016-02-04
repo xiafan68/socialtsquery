@@ -6,14 +6,15 @@ import java.util.Iterator;
 import java.util.List;
 
 import common.MidSegment;
+import core.commom.MemoryPostingListIterUtil;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.IMemTable.SSTableMeta;
-import util.Pair;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.PostingListMeta;
+import core.lsmt.WritableComparableKey;
+import util.Pair;
 
 public class SortedListMemTableReader implements ISSTableReader {
 	SortedListMemTable table;
@@ -34,7 +35,8 @@ public class SortedListMemTableReader implements ISSTableReader {
 
 	@Override
 	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
-		return new MemorySortedListIterator(table.get(key), start, end);
+		return MemoryPostingListIterUtil.getPostingListIter(new MemorySortedListIterator(table.get(key), start, end),
+				start, end);
 	}
 
 	private static class MemorySortedListIterator implements IPostingListIterator {

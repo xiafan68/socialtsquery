@@ -24,9 +24,14 @@ public abstract class InvertedMemtable<pType extends IPostingList>
 	// for the reason of multiple thread
 	protected volatile boolean frezen = false;
 	protected volatile int valueCount = 0;
+	private AtomicInteger docSeq = new AtomicInteger(0);
 
 	public InvertedMemtable(SSTableMeta meta) {
 		this.meta = meta;
+	}
+
+	public int increDocSeq() {
+		return docSeq.incrementAndGet();
 	}
 
 	protected void hitWord(WritableComparableKey word) {

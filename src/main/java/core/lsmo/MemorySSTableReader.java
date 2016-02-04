@@ -3,10 +3,12 @@ package core.lsmo;
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.commom.MemoryPostingListIterUtil;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
@@ -26,9 +28,10 @@ public class MemorySSTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) {
+	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) {
 		MemoryOctree tree = table.get(key);
-		return new MemoryOctreeIterator(tree, start, end);
+		MemoryOctreeIterator iter = new MemoryOctreeIterator(tree, start, end);
+		return MemoryPostingListIterUtil.getPostingListIter(iter, start, end);
 	}
 
 	@Override

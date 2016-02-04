@@ -24,6 +24,9 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
+import core.concurrent.ILockStrategy;
+import core.concurrent.LockManager;
+import core.concurrent.LockStrategyFactory;
 import core.executor.IQueryExecutor;
 import core.executor.QueryExecutorFactory;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -203,21 +206,24 @@ public class LSMTInvertedIndex {
 	 */
 
 	public void insert(List<String> keywords, MidSegment seg) throws IOException {
+		// Collections.sort(keywords);
+		ILockStrategy lock = LockStrategyFactory.INSTANCE.create(lockManager);
 		lockManager.versionReadLock();
 		try {
 			for (String keyword : keywords) {
 				if (!bootstrap)
 					CommitLog.INSTANCE.write(keyword, seg);
-				// int code = getKeywordCode(keyword);
-				lockManager.postWriteLock(keyword.hashCode());
+				lock.write(keyword);
+				// lockManager.postWriteLock(keyword.hashCode());
 				try {
 					curTable.insert(new StringKey(keyword), seg);
 				} finally {
-					lockManager.postWriteUnLock(keyword.hashCode());
+					lock.writeOver(keyword);
 				}
 			}
 		} finally {
 			lockManager.versionReadUnLock();
+			lock.cleanup();
 		}
 		maySwitchMemtable();
 	}
@@ -324,23 +330,43 @@ public class LSMTInvertedIndex {
 
 	public Map<String, IPostingListIterator> getPostingListIter(List<String> keywords, int start, int end)
 			throws IOException {
+		VersionSet curSet = null;
+		lockManager.versionReadLock();
+		curSet = versionSet;
+		lockManager.versionReadUnLock();
+		// Collections.sort(keywords);
+		ILockStrategy lock = LockStrategyFactory.INSTANCE.create(lockManager);
 		Map<String, IPostingListIterator> ret = new HashMap<String, IPostingListIterator>();
+		try {
+			for (String keyword : keywords) {
+				PostingListMergeView view = new PostingListMergeView();
+				lock.read(keyword);
+				try {
+					view.addIterator(
+							curSet.curTable.getReader().getPostingListIter(new StringKey(keyword), start, end));
+				} finally {
+					lock.readOver(keyword);
+				}
+				ret.put(keyword, view);
+			}
+		} finally {
+			lock.cleanup();
+		}
+
 		for (String keyword : keywords) {
-			PostingListMergeView view = new PostingListMergeView();
-			// int key = getKeywordCode(keyword);
-			// add iter for current memtable
-			view.addIterator(versionSet.curTable.getReader().getPostingListIter(new StringKey(keyword), start, end));
+			PostingListMergeView view = (PostingListMergeView) ret.get(keyword);
+
 			// add iter for flushing memtable
-			for (IMemTable table : versionSet.flushingTables) {
+			for (IMemTable table : curSet.flushingTables) {
 				view.addIterator(table.getReader().getPostingListIter(new StringKey(keyword), start, end));
 			}
-			for (SSTableMeta meta : versionSet.diskTreeMetas) {
-				ISSTableReader reader = getSSTableReader(versionSet, meta);
+			for (SSTableMeta meta : curSet.diskTreeMetas) {
+				ISSTableReader reader = getSSTableReader(curSet, meta);
 				view.addIterator(reader.getPostingListIter(new StringKey(keyword), start, end));
 			}
-			ret.put(keyword, view);
 		}
 		return ret;
+
 	}
 
 	public int getStep() {
