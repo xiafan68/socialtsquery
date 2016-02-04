@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.concurrent;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
