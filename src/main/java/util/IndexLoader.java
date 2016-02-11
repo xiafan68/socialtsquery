@@ -272,6 +272,7 @@ public class IndexLoader {
 		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
 		parser.accepts("l", "log4j configuration file").withRequiredArg().ofType(String.class);
 		parser.accepts("d", "data file location").withRequiredArg().ofType(String.class);
+		parser.accepts("e", "profile file location").withRequiredArg().ofType(String.class);
 		OptionSet opts = null;
 		try {
 			opts = parser.parse(args);
@@ -280,9 +281,15 @@ public class IndexLoader {
 			return;
 		}
 
+		Profile.instance.open(opts.valueOf("e").toString());
+		Profile.instance.addArg("data", opts.valueOf("d").toString());
+		Profile.instance.start("insert_total");
 		IndexLoader loader = new IndexLoader(opts.valueOf("c").toString(), opts.valueOf("l").toString(),
 				opts.valueOf("d").toString());
 		loader.init();
 		loader.dump();
+		Profile.instance.end("insert_total");
+		Profile.instance.flushAndReset();
+		Profile.instance.close();
 	}
 }

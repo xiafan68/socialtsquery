@@ -23,12 +23,17 @@ public class Profile {
 
 	public static Profile instance = new Profile();
 
+	private Map<String, String> args = new HashMap<String, String>();
 	private ConcurrentHashMap<String, EventProfileBean> eventProfiles = new ConcurrentHashMap<String, EventProfileBean>();
 	private ThreadLocal<Map<String, Long>> startTime = new ThreadLocal<Map<String, Long>>();
 	ConcurrentHashMap<String, AtomicInteger> eCounters = new ConcurrentHashMap<String, AtomicInteger>();
 	OutputStream os;
 
 	long invokeCount = 0;
+
+	public void addArg(String arg, String val) {
+		args.put(arg, val);
+	}
 
 	public void open(String file) throws FileNotFoundException {
 		os = StreamUtils.outputStream(file);
@@ -79,6 +84,7 @@ public class Profile {
 		ret.put("perf", obj);
 		obj = JSONObject.fromObject(eCounters);
 		ret.put("ecounters", obj);
+		ret.put("args", JSONObject.fromObject(args));
 		return ret;
 	}
 

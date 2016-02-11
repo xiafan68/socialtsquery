@@ -8,8 +8,8 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.lsmt.LSMTInvertedIndex;
-import expr.WorkLoadGen.TKQuery;
 import expr.WorkLoadGen.WorkLoad;
+import searchapi.TKeywordsQuery;
 import util.Configuration;
 import util.Pair;
 import util.Profile;
@@ -55,15 +55,15 @@ public class LocalTestRunner implements ITestRunner {
 		if (load.type == WorkLoad.INSERT_JOB) {
 			execUpdate((Pair<List<String>, MidSegment>) load.data);
 		} else {
-			execQuery((TKQuery) load.data);
+			execQuery((TKeywordsQuery) load.data);
 		}
 	}
 
 	@Override
-	public void execQuery(TKQuery query) {
+	public void execQuery(TKeywordsQuery query) {
 		Profile.instance.start("query");
 		try {
-			index.query(query.words, query.start, query.end, query.topk, query.type.toString());
+			index.query(query.query, query.startTime, query.endTime, query.topk, query.type.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -75,7 +75,7 @@ public class LocalTestRunner implements ITestRunner {
 	public void execUpdate(Pair<List<String>, MidSegment> update) {
 		Profile.instance.start("insert");
 		updateCount.incrementAndGet();
-		if (updateCount.get() % 10000 == 0) {
+		if (updateCount.get() % 100000 == 0) {
 			Profile.instance.flushAndReset();
 		}
 

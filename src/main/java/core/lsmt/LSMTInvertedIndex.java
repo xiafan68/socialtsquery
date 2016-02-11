@@ -207,25 +207,30 @@ public class LSMTInvertedIndex {
 
 	public void insert(List<String> keywords, MidSegment seg) throws IOException {
 		// Collections.sort(keywords);
-		ILockStrategy lock = LockStrategyFactory.INSTANCE.create(lockManager);
-		lockManager.versionReadLock();
+		Profile.instance.start("insert");
 		try {
-			for (String keyword : keywords) {
-				if (!bootstrap)
-					CommitLog.INSTANCE.write(keyword, seg);
-				lock.write(keyword);
-				// lockManager.postWriteLock(keyword.hashCode());
-				try {
-					curTable.insert(new StringKey(keyword), seg);
-				} finally {
-					lock.writeOver(keyword);
+			ILockStrategy lock = LockStrategyFactory.INSTANCE.create(lockManager);
+			lockManager.versionReadLock();
+			try {
+				for (String keyword : keywords) {
+					if (!bootstrap)
+						CommitLog.INSTANCE.write(keyword, seg);
+					lock.write(keyword);
+					// lockManager.postWriteLock(keyword.hashCode());
+					try {
+						curTable.insert(new StringKey(keyword), seg);
+					} finally {
+						lock.writeOver(keyword);
+					}
 				}
+			} finally {
+				lockManager.versionReadUnLock();
+				lock.cleanup();
 			}
+			maySwitchMemtable();
 		} finally {
-			lockManager.versionReadUnLock();
-			lock.cleanup();
+			Profile.instance.end("insert");
 		}
-		maySwitchMemtable();
 	}
 
 	public void insert(String keywords, String uname, MidSegment seg) throws IOException {
