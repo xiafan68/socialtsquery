@@ -75,7 +75,7 @@ public class LocalTestRunner implements ITestRunner {
 	public void execUpdate(Pair<List<String>, MidSegment> update) {
 		Profile.instance.start("insert");
 		updateCount.incrementAndGet();
-		if (updateCount.get() % 10000 == 0) {
+		if (updateCount.get() % 100000 == 0) {
 			Profile.instance.flushAndReset();
 		}
 
