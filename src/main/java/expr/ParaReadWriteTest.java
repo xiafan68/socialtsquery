@@ -118,7 +118,7 @@ public class ParaReadWriteTest {
 		OptionSet opt = parser.parse(args);
 		ParaReadWriteTest test = new ParaReadWriteTest();
 		test.init((String) opt.valueOf("c"), (String) opt.valueOf("s"), (String) opt.valueOf("d"));
-		Profile.instance.open((String) opt.valueOf("e"));
+		Profile.instance.startPeriodReport((String) opt.valueOf("e"), 1000 * 60 * 10);
 		test.startTestThread();
 		Profile.instance.close();
 	}

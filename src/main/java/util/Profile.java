@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,7 +31,8 @@ public class Profile {
 	ConcurrentHashMap<String, AtomicInteger> eCounters = new ConcurrentHashMap<String, AtomicInteger>();
 	OutputStream os;
 
-	long invokeCount = 0;
+	volatile long invokeCount = 0;
+	Timer timer = null;
 
 	public void addArg(String arg, String val) {
 		args.put(arg, val);
@@ -39,7 +42,21 @@ public class Profile {
 		os = StreamUtils.outputStream(file);
 	}
 
+	public void startPeriodReport(String file, int period) throws FileNotFoundException {
+		os = StreamUtils.outputStream(file);
+		timer = new Timer();
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				flushAndReset();
+			}
+		}, period, period);
+	}
+
 	public void close() throws IOException {
+		if (timer != null) {
+			timer.cancel();
+		}
 		if (os != null) {
 			os.close();
 			os = null;
@@ -93,13 +110,13 @@ public class Profile {
 	}
 
 	public void updateCounter(String counter, int count) {
-		if (eCounters.containsKey(counter)) {
-			eCounters.get(counter).addAndGet(count);
-		} else {
-			AtomicInteger ret = eCounters.putIfAbsent(counter, new AtomicInteger(count));
-			if (ret != null)
-				ret.addAndGet(count);
+		AtomicInteger ret = null;
+		if (!eCounters.containsKey(counter)) {
+			eCounters.putIfAbsent(counter, new AtomicInteger(0));
 		}
+		ret = eCounters.get(counter);
+		if (ret != null)
+			ret.addAndGet(count);
 	}
 
 	public static String toTimeTag(String tag) {
@@ -121,8 +138,9 @@ public class Profile {
 		if (!eventProfiles.containsKey(event)) {
 			eventProfiles.putIfAbsent(event, new EventProfileBean());
 		}
-
-		eventProfiles.get(event).increment(gap);
+		EventProfileBean profile = eventProfiles.get(event);
+		if (profile != null)
+			profile.increment(gap);
 
 		if (invokeCount++ % 50000 == 0) {
 			// print();
