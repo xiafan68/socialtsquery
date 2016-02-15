@@ -3,7 +3,6 @@ package util;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,9 +72,9 @@ public class Profile {
 		invokeCount = 0;
 		eCounters.clear();
 
-		lastActive = -1;
-		Arrays.fill(visitCounts, 0);
-		Arrays.fill(listCounts, 0);
+		// lastActive = -1;
+		// Arrays.fill(visitCounts, 0);
+		// Arrays.fill(listCounts, 0);
 	}
 
 	public void reset() {
@@ -85,9 +84,9 @@ public class Profile {
 		invokeCount = 0;
 		eCounters.clear();
 
-		lastActive = -1;
-		Arrays.fill(visitCounts, 0);
-		Arrays.fill(listCounts, 0);
+		// lastActive = -1;
+		// Arrays.fill(visitCounts, 0);
+		// Arrays.fill(listCounts, 0);
 	}
 
 	@Override
@@ -132,18 +131,17 @@ public class Profile {
 	}
 
 	public void end(String event) {
-		long gap = System.currentTimeMillis() - startTime.get().get(event);
-		startTime.get().remove(event);
+		Long start = startTime.get().get(event);
+		if (start != null) {
+			long gap = System.currentTimeMillis() - start;
+			startTime.get().remove(event);
 
-		if (!eventProfiles.containsKey(event)) {
-			eventProfiles.putIfAbsent(event, new EventProfileBean());
-		}
-		EventProfileBean profile = eventProfiles.get(event);
-		if (profile != null)
-			profile.increment(gap);
-
-		if (invokeCount++ % 50000 == 0) {
-			// print();
+			if (!eventProfiles.containsKey(event)) {
+				eventProfiles.putIfAbsent(event, new EventProfileBean());
+			}
+			EventProfileBean profile = eventProfiles.get(event);
+			if (profile != null)
+				profile.increment(gap);
 		}
 	}
 
@@ -163,24 +161,24 @@ public class Profile {
 
 	HashMap<Integer, List<Integer>> visitGaps = new HashMap<Integer, List<Integer>>();
 
-	public int newCursorID() {
-		int ret = cursorIDGen++;
-		curCursorID = ret;
-		// visitGaps.put(ret, new ArrayList<Integer>());
-		if (lastActive == -1)
-			lastActive = ret;
-		return ret;
-	}
+	// public int newCursorID() {
+	// int ret = cursorIDGen++;
+	// curCursorID = ret;
+	// // visitGaps.put(ret, new ArrayList<Integer>());
+	// if (lastActive == -1)
+	// lastActive = ret;
+	// return ret;
+	// }
 
-	public void active(int id) {
-		curCursorID = id;
-	}
+	// public void active(int id) {
+	// curCursorID = id;
+	// }
 
-	int cursorIDGen = 0;
-	int lastActive = -1;
-	int[] visitCounts = new int[50];
-	int[] listCounts = new int[50];
-	int curCursorID = -1;
+	// int cursorIDGen = 0;
+	// int lastActive = -1;
+	// int[] visitCounts = new int[50];
+	// int[] listCounts = new int[50];
+	// int curCursorID = -1;
 
 	public void cursorAdvance() {
 		// visitCounts[curCursorID - lastActive]++;
@@ -201,11 +199,12 @@ public class Profile {
 	public void printVisitPattern() {
 		for (Entry<Integer, List<Integer>> entry : visitGaps.entrySet()) {
 			System.out.println(entry);
-			System.out.println("list counts:" + listCounts[entry.getKey() - lastActive]);
+			// System.out.println("list counts:" + listCounts[entry.getKey() -
+			// lastActive]);
 		}
 
-		lastActive = -1;
-		Arrays.fill(visitCounts, 0);
-		Arrays.fill(listCounts, 0);
+		// lastActive = -1;
+		// Arrays.fill(visitCounts, 0);
+		// Arrays.fill(listCounts, 0);
 	}
 }

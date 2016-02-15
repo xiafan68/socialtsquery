@@ -29,7 +29,7 @@ import weibo.Tweet;
  *
  */
 public class InsertStreamGen {
-	private static final int SAMPLE_INTERVAL = 10000;
+	private static final int SAMPLE_INTERVAL = 100;
 
 	ITextShingle shingle = ShingleFactory.createShingle();
 	private Configuration conf;
@@ -131,8 +131,8 @@ public class InsertStreamGen {
 					return o1.getValue().compareTo(o2.getValue());
 				}
 			});
-			counters.clear();
 			entries = entries.subList(0, Math.min(100, counters.size()));
+			counters.clear();
 			if (sub != null) {
 				sub.onPopWordsChanged(entries, lastTimeStamp);
 			}

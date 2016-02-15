@@ -56,7 +56,6 @@ public class ParaReadWriteTest {
 						load = iGen.genNextJob();
 						runner.execWorkLoad(load);
 					}
-					stopped.set(true);
 				}
 			};
 			writeWorkers[i].start();
@@ -73,7 +72,8 @@ public class ParaReadWriteTest {
 					WorkLoad load;
 					while (!stopped.get()) {
 						load = rGen.genNextJob();
-						runner.execWorkLoad(load);
+						if (load != null)
+							runner.execWorkLoad(load);
 					}
 				}
 			};
@@ -95,6 +95,7 @@ public class ParaReadWriteTest {
 				}
 			}
 		}
+		stopped.set(true);
 
 		for (int i = 0; i < readWorkers.length; i++) {
 			while (true) {

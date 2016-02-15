@@ -48,27 +48,27 @@ public class ReadStreamGen implements Subscriber {
 	public WorkLoad genNextJob() {
 		float coin = toss.nextFloat();
 		WorkLoad ret = null;
-		while (ret != null) {
-			if (coin < fracs[0]) {
-				// realtime query
-				String word = null;
-				if (popWords != null) {
-					List<Entry<String, Integer>> tmpWords = popWords;
-					word = tmpWords.get(Math.abs(toss.nextInt() % tmpWords.size())).getKey();
-				}
-				if (word != null) {
-					int start = (int) lastTimeStamp;
-					ret = new WorkLoad(WorkLoad.QUEYR_JOB, new TKeywordsQuery(Arrays.asList(word), 50,
-							start - conf.queryStartTime(), start - conf.queryStartTime() + 12, QueryType.WEIGHTED));
-				}
-			} else {
-				// historical query
-				Pair<List<String>, Integer> seed = gen.nextQuery();
-				ret = new WorkLoad(WorkLoad.QUEYR_JOB,
-						new TKeywordsQuery(seed.getKey(), 50, seed.getValue() - conf.queryStartTime(),
-								seed.getValue() - conf.queryStartTime() + 24 * 2 * 30, QueryType.WEIGHTED));
+		if (coin < fracs[0]) {
+			// realtime query
+			String word = null;
+			List<Entry<String, Integer>> tmpWords = popWords;
+			if (tmpWords != null && !tmpWords.isEmpty()) {
+				word = tmpWords.get(Math.abs(toss.nextInt()) % tmpWords.size()).getKey();
+			}
+			if (word != null) {
+				int start = (int) lastTimeStamp;
+				ret = new WorkLoad(WorkLoad.QUEYR_JOB, new TKeywordsQuery(Arrays.asList(word), 50,
+						start - conf.queryStartTime(), start - conf.queryStartTime() + 12, QueryType.WEIGHTED));
 			}
 		}
+		if (ret == null) {
+			// historical query
+			Pair<List<String>, Integer> seed = gen.nextQuery();
+			ret = new WorkLoad(WorkLoad.QUEYR_JOB,
+					new TKeywordsQuery(seed.getKey(), 50, seed.getValue() - conf.queryStartTime(),
+							seed.getValue() - conf.queryStartTime() + 24 * 2 * 30, QueryType.WEIGHTED));
+		}
+
 		return ret;
 	}
 
