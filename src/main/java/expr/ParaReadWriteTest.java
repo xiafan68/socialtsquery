@@ -83,6 +83,10 @@ public class ParaReadWriteTest {
 
 	public void startTestThread() throws IOException {
 		startInsertJobs();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e1) {
+		}
 		startReadJobs();
 
 		for (int i = 0; i < writeWorkers.length; i++) {

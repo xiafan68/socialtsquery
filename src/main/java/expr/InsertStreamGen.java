@@ -29,7 +29,7 @@ import weibo.Tweet;
  *
  */
 public class InsertStreamGen {
-	private static final int SAMPLE_INTERVAL = 100;
+	private static final int SAMPLE_INTERVAL = 10000;
 
 	ITextShingle shingle = ShingleFactory.createShingle();
 	private Configuration conf;
