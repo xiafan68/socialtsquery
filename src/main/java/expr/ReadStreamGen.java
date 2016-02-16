@@ -58,7 +58,7 @@ public class ReadStreamGen implements Subscriber {
 			if (word != null) {
 				int start = (int) lastTimeStamp;
 				ret = new WorkLoad(WorkLoad.QUEYR_JOB, new TKeywordsQuery(Arrays.asList(word), 50,
-						start - conf.queryStartTime(), start - conf.queryStartTime() + 12, QueryType.WEIGHTED));
+						start - conf.queryStartTime(), start - conf.queryStartTime() + 4, QueryType.WEIGHTED));
 			}
 		}
 		if (ret == null) {
@@ -66,7 +66,7 @@ public class ReadStreamGen implements Subscriber {
 			Pair<List<String>, Integer> seed = gen.nextQuery();
 			ret = new WorkLoad(WorkLoad.QUEYR_JOB,
 					new TKeywordsQuery(seed.getKey(), 50, seed.getValue() - conf.queryStartTime(),
-							seed.getValue() - conf.queryStartTime() + 24 * 2 * 30, QueryType.WEIGHTED));
+							seed.getValue() - conf.queryStartTime() + 24, QueryType.WEIGHTED));
 		}
 
 		return ret;
