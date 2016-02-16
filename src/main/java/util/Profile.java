@@ -65,6 +65,7 @@ public class Profile {
 	public void flushAndReset() {
 		try {
 			StreamLogUtils.log(os, toJSON().toString());
+			os.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

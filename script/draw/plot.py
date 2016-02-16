@@ -35,16 +35,26 @@ def cleanDirs(dirOrFile):
 # line dimension
 # factor
 # repsondent
-class ExprPloter(object):
+class LineDef(object):
     def __init__(self, fileFactors, lineFactors, factor, respondent):
         self.fileFactors = fileFactors
         self.lineFactors = lineFactors
         self.factor = factor
         self.respondent = respondent
+        
+
+class ExprPloter(object):
+    def __init__(self, xLabel, yLabel):
+        self.xLabel = xLabel
+        self.yLabel = yLabel
+        self.lineDefs = []
         self.dataMatrix = {}
-        self.pattern = re.compile("part([0-9]+)(_([-0-9]+))*")
+        self.pattern = re.compile("part([0-9]+)(_.*)?")
         self.filePattern = re.compile("index_[^0-9]*([0-9]+).txt")
     
+    def addLines(self, lineDef):
+        self.lineDefs.append(lineDef)
+        
     @staticmethod
     def getFileFactors(curMap, factors):
         key = "_".join(factors)
@@ -58,7 +68,33 @@ class ExprPloter(object):
         if not(key in curMap):
             curMap[key] = []
         return curMap[key]
-        
+    
+    @staticmethod
+    def extractField(json, path, default):
+        fields = path.split(".")
+        curMap = json
+        for field in fields:
+            if not (field in curMap):
+                curMap = default
+                break
+            else:
+                curMap = curMap[field]
+        if isinstance(curMap, dict):
+           curMap = float(curMap['totalTime']) / float(curMap['count'])
+        return curMap
+     
+    @staticmethod
+    def extractMethod(data):
+        if "lsmi" in data:
+            curMethod = "lsmi"
+        elif "intern" in data or "lsmo" in data:
+            curMethod = "lsmo"
+        elif "hybrid" in data:
+            curMethod = "hybrid"
+        else:
+            raise  NameError("no hybrid name is found in %s" % (data))
+        return curMethod
+            
     """
     加载数据
     """
@@ -74,35 +110,41 @@ class ExprPloter(object):
                 size = 80
                 if groups != None:
                     size = long(groups.group(1)) * 5
+                else:
+                    groups = self.pattern.match(fileName)
+                    if groups != None:
+                        size = long(groups.group(1)) * 5
+                    
                 limit = 5
                 limitGroup = self.filePattern.match(fileName)
                 if limitGroup:
                     limit = int(limitGroup.group(1))
                 
                 fd = open(os.path.join(dir, fileName), "r")
-                curMethod = ""
-                if "lsmi" in fileName:
-                    curMethod = "lsmi"
-                else:
-                    curMethod = "lsmo"
+                curMethod = ExprPloter.extractMethod(fileName)
                 
+                i = 1
                 for line in fd.readlines():
                     rec = json.loads(line)
+                    rec["limit"] = limit
+                    rec["size"] = size
+                    rec["type"] = curMethod
                     # if rec['width'] != 24:
                     #    continue
-                    rec["limit"] = limit
-                    rec["size(%)"] = size
-                    #if not(rec["k"] == 50 and rec["offset"] == 0 and rec["width"] == 24):
-                      #  continue
-                    factors = [factor + "_" + str(rec[factor]) for factor in self.fileFactors]
-                    fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
-                    lineFactors = [rec[factor] for factor in self.lineFactors]
-                    lineFactors.insert(0, curMethod)
-                    lineArr = ExprPloter.setupLineFactor(fileMap, lineFactors)
-                    lineArr.append({'factor':rec[self.factor], 'respondent':rec[self.respondent]})
+                    self.extractLine(rec, i)
+                    i = i + 1
                 fd.close()
                 
-    def plotFigures(self, outDir, scalex):
+    def extractLine(self, rec, i):
+        for lineDef in self.lineDefs:
+            factors = [factor + "_" + str(ExprPloter.extractField(rec, factor, lineDef.fileFactors[factor])) for factor in lineDef.fileFactors.keys()]
+            fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors) 
+            lineFactors = [ExprPloter.extractField(rec, factor, lineDef.lineFactors[factor]) for factor in lineDef.lineFactors]
+            # lineFactors.insert(0, curMethod)
+            lineArr = ExprPloter.setupLineFactor(fileMap, lineFactors)
+            lineArr.append({'factor':ExprPloter.extractField(rec, lineDef.factor, str(i * 10)), 'respondent':ExprPloter.extractField(rec, lineDef.respondent, "")}) 
+       
+    def plotFigures(self, outDir, scalex, scaley):
         if os.path.exists(outDir):
             # os.rmdir(outDir)
             cleanDirs(outDir)   
@@ -115,14 +157,17 @@ class ExprPloter(object):
             ax = fig.add_subplot(111)
             if scalex:
                 ax.set_xscale('log')
-            for (line, ltype, mtype) in zip(v.keys(), itertools.cycle(lines), itertools.cycle(markers)):
+            if scaley:
+                ax.set_yscale('log')
+                
+            for (line, ltype, mtype) in zip(sorted(v.keys()), itertools.cycle(lines), itertools.cycle(markers)):
                 tmpMap = {}
                 for x in v[line]:
                     if (not x['factor'] in tmpMap):
                         tmpMap[x['factor']] = []
                     tmpMap[x['factor']].append(x['respondent'])  
                 points = []
-                for (factor, values) in sorted(tmpMap.items()):
+                for (factor, values) in sorted(tmpMap.items(), lambda x, y:cmp(int(x[0]), int(y[0]))):
                     sum = 0.0
                     for rec in values:
                         sum += rec
@@ -132,9 +177,9 @@ class ExprPloter(object):
                 
                 ax.plot(xline, yline, "k" + ltype + mtype,
                          label=line, markerfacecolor="none", markeredgewidth=1.5)
-                xlab = ax.set_xlabel(self.factor)
+                xlab = ax.set_xlabel(self.xLabel)
                 plt.setp(xlab, "fontsize", 18)
-                ylab = ax.set_ylabel(self.respondent)
+                ylab = ax.set_ylabel(self.yLabel)
                 plt.setp(ylab, "fontsize", 18)
 
             ax.legend(loc='best', framealpha=0.0, fontsize=22 * 0.7, numpoints=1)
@@ -176,9 +221,38 @@ def plotAll():
     ploter = ExprPloter(["k", "offset"], ["type"], "width", "TOTAL_TIME")
     ploter.loadFiles(inputPath)
     ploter.plotFigures(os.path.join(outputDir, "width"), True)
+    
+def plotThroughput():
+    inputPath = "/Users/kc/快盘/dataset/throughput/twitter_throughput"
+    outputDir = "/Users/kc/快盘/dataset/throughput/twitter_throughput_fig"
+    
+    inputPath = "/Users/kc/快盘/dataset/throughput/weibo_throughput"
+    outputDir = "/Users/kc/快盘/dataset/throughput/weibo_throughput_fig"
+    
+    ploter = ExprPloter("Time Elapsed(mins)", "#query")
+    ploter.addLines(LineDef({"":"line"}, {"type":"type", "query":"query"}, "time", "perf.query.count"))
+    ploter.addLines(LineDef({"":"line"}, {"type":"type", "insert":"insert"}, "time", "perf.insert.count"))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "throughput"), False, True)
+
+def plotUpdateScale():
+    inputPath = "/Users/kc/快盘/dataset/scale/twitter"
+    outputDir = "/Users/kc/快盘/dataset/scale/twitter_fig"
+    
+    # inputPath = "/Users/kc/快盘/dataset/scale/weibo"
+    # outputDir = "/Users/kc/快盘/dataset/scale/weibo_fig"
+    
+    ploter = ExprPloter("size(%s)", "Time Elapse(ms)")
+    ploter.addLines(LineDef({"":"line"}, {"type":"type", "insert total":"insert total"}, "size", "perf.insert_total.totalTime"))
+    ploter.addLines(LineDef({"":"line"}, {"type":"type", "insert average":"insert average"}, "size", "perf.insert"))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "scale"), False, True)
+    
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
-    #plotAll()
-    plotScale()
+    # plotAll()
+    # plotScale()
     # plotLimit()
+    plotThroughput()
+    # plotUpdateScale()
     
