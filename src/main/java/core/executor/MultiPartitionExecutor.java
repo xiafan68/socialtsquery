@@ -85,4 +85,10 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 		return executors.isEmpty();
 	}
 
+	@Override
+	public void setupQueryContext(KeyedTopKQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
 }
