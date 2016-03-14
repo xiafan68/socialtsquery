@@ -232,20 +232,4 @@ public class OrQueryExecutor extends IQueryExecutor {
 		}
 		return ret;
 	}
-
-	@Override
-	public Iterator<Interval> getAnswer() throws IOException {
-		setupQueryContext(null, new HashMap<Long, MergedMidSeg>());
-
-		while (!isTerminated())
-			advance();
-
-		List<Interval> ret = new ArrayList<Interval>();
-		Iterator<MergedMidSeg> iter = topk.iterator();
-		while (iter.hasNext()) {
-			OrMergedMidSeg cur = (OrMergedMidSeg) iter.next();
-			ret.add(new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
-		}
-		return ret.iterator();
-	}
 }
