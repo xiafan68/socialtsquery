@@ -1,8 +1,10 @@
 package core.executor;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import core.commom.TempKeywordQuery;
@@ -50,13 +52,32 @@ public abstract class IQueryExecutor {
 	 */
 	public abstract void query(TempKeywordQuery query) throws IOException;
 
+	public abstract void setupQueryContext(KeyedTopKQueue topk, Map<Long, MergedMidSeg> map) throws IOException;
+
 	/**
 	 * 返回查询相应的结果
 	 * 
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract Iterator<Interval> getAnswer() throws IOException;
+	public Iterator<Interval> getAnswer() throws IOException {
+		setupQueryContext(null, new HashMap<Long, MergedMidSeg>());
+
+		while (!isTerminated())
+			advance();
+
+		List<Interval> ret = new ArrayList<Interval>(topk.size());
+		for (int i = 0; i < topk.size(); i++) {
+			ret.add(null);
+		}
+		Iterator<MergedMidSeg> iter = topk.iterator();
+		int i = topk.size() - 1;
+		while (iter.hasNext()) {
+			MergedMidSeg cur = iter.next();
+			ret.set(i--, new Interval(cur.getMid(), cur.getStartTime(), cur.getEndTime(), cur.getWorstscore()));
+		}
+		return ret.iterator();
+	}
 
 	/**
 	 * 设置当前分区内元素的最大生命周期

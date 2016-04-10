@@ -101,8 +101,13 @@ public class IndexConsoleClient {
 						// DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
 						// int end =
 						// DateUtil.diffByWeiboStartTime(Long.parseLong(args[i++]));
-						int start = (int) (Long.parseLong(args[i++]) / DateUtil.HOUR_GRANU - conf.queryStartTime());
-						int end = (int) (Long.parseLong(args[i++]) / DateUtil.HOUR_GRANU - conf.queryStartTime());
+						// int start = (int) (Long.parseLong(args[i++]) /
+						// DateUtil.HOUR_GRANU - conf.queryStartTime());
+						// int end = (int) (Long.parseLong(args[i++]) /
+						// DateUtil.HOUR_GRANU - conf.queryStartTime());
+						int start = (int) (Long.parseLong(args[i++]) - conf.queryStartTime());
+						int end = (int) (Long.parseLong(args[i++]) - conf.queryStartTime());
+						// query weighted 10 680480 10000000 to
 						List<String> keywords = new ArrayList<String>();
 						for (int idx = i; idx < args.length; idx++) {
 							keywords.add(args[idx]);

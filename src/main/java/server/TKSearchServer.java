@@ -41,6 +41,7 @@ import searchapi.Tweets;
 import segmentation.Interval;
 import segmentation.Segment;
 import util.Configuration;
+import weibo4j.StatusSerDer;
 import weibo4j.org.json.JSONException;
 import weibo4j.org.json.JSONObject;
 
@@ -156,10 +157,19 @@ public class TKSearchServer implements TweetService.Iface, ServerController.ISer
 					} else {
 						dbTimer = MetricBasedPerfProfile.timer("tksearch_index").time();
 						try {
+
 							JSONObject obj = new JSONObject(status);
-							indexReader.insert(obj.getString("text"), obj.getString("uname"),
-									new MidSegment(Long.parseLong(seg.mid),
-											new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
+							String text = obj.getString("text");
+							if (!obj.getString("omid").equals("-1")) {
+								String oStatus = tweetDao.getStatusByMid(obj.getString("omid"));
+								if (oStatus != null) {
+									JSONObject oS = new JSONObject(oStatus);
+									text = String.format("%s//%s@:%s", text, oS.getString("uname"),
+											oS.getString("text"));
+								}
+							}
+							indexReader.insert(text, obj.getString("uname"), new MidSegment(Long.parseLong(seg.mid),
+									new Segment(seg.starttime, seg.startcount, seg.endtime, seg.endcount)));
 						} finally {
 							dbTimer.stop();
 						}
