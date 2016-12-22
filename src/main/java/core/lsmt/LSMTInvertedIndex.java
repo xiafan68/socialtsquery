@@ -35,6 +35,7 @@ import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.compact.CompactService;
 import segmentation.Interval;
 import shingle.ITextShingle;
 import shingle.ShingleFactory;
@@ -54,8 +55,8 @@ public class LSMTInvertedIndex {
 	final ILSMTFactory implFactory;
 	File dataDir;
 	boolean bootstrap = true;
-	volatile boolean stop = false;// 停止索引
-	volatile boolean stopOnWait = false;// 等待所有操作结束之后停止
+	public volatile boolean stop = false;// 停止索引
+	public volatile boolean stopOnWait = false;// 等待所有操作结束之后停止
 
 	IMemTable curTable;
 	volatile VersionSet versionSet = new VersionSet();

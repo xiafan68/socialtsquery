@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.compact;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +19,9 @@ import org.apache.log4j.Logger;
 
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.ISSTableReader;
+import core.lsmt.ISSTableWriter;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
 import io.FileUtil;
 import util.Configuration;
@@ -36,10 +39,12 @@ public class CompactService extends Thread {
 	LSMTInvertedIndex index;
 	ConcurrentSkipListSet<String> compactingWords = new ConcurrentSkipListSet<String>();
 	VersionSet snapshot;
+	ICompactStrategy iCompactStrategy;
 
 	public CompactService(LSMTInvertedIndex index) {
 		super("compaction thread");
 		this.index = index;
+		iCompactStrategy = index.getConf().getCompactStragety();
 	}
 
 	/**
@@ -85,7 +90,8 @@ public class CompactService extends Thread {
 	public void run() {
 		while (!index.stop || index.stopOnWait) {
 			try {
-				List<SSTableMeta> toCompact = fileToCompact();
+				snapshot = index.getVersion();
+				List<SSTableMeta> toCompact = iCompactStrategy.compactFiles(snapshot.diskTreeMetas);
 				if (index.stop && (!index.stopOnWait || toCompact.size() < 2)) {
 					break;
 				}
@@ -137,8 +143,9 @@ public class CompactService extends Thread {
 				}
 			}
 
-			SSTableMeta newMeta = new SSTableMeta(toCompact.get(toCompact.size() - 1).version,
-					toCompact.get(0).level + 1);
+			int newLevel = Math.max(toCompact.get(0).level, toCompact.get(1).level) + 1;
+			int newVersion = Math.max(toCompact.get(0).version, toCompact.get(1).version);
+			SSTableMeta newMeta = new SSTableMeta(newVersion, newLevel);
 			ISSTableWriter writer = index.getLSMTFactory().newSSTableWriterForCompaction(newMeta, readers,
 					index.getConf());
 			try {
