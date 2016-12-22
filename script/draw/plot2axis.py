@@ -11,6 +11,7 @@ import sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.special.basic import h2vp
+from matplotlib.pyplot import xticks
 
 
 lines = ["-"]
@@ -52,7 +53,7 @@ class ExprPloter(object):
         self.dataMatrix = {}
         self.pattern = re.compile("part([0-9]+)(_.*)?")
         self.filePattern = re.compile("index_[^0-9]*([0-9]+).txt")
-    
+        self.needFiles=set(["k_50_offset_0","width_12_k_50","width_12_offset_0","width_12_k_50_offset_0"])
     def addLines(self, lineDef):
         self.lineDefs.append(lineDef)
         
@@ -93,11 +94,13 @@ class ExprPloter(object):
     @staticmethod
     def extractMethod(data):
         if "lsmi" in data:
-            curMethod = "lsmi"
+            curMethod = "LSMI"
         elif "intern" in data or "lsmo" in data:
-            curMethod = "lsmo"
+            curMethod = "LSMO"
+        elif "tpii" in data or "TPII" in data:
+            curMethod="TPII"
         elif "hybrid" in data:
-            curMethod = "hybrid"
+            curMethod = "HYBRID"
         else:
             raise  NameError("no method name is found in %s" % (data))
         return curMethod
@@ -159,6 +162,8 @@ class ExprPloter(object):
         os.makedirs(outDir)
         
         for k in self.dataMatrix.keys():
+            if not(k in self.needFiles):
+                continue;
             v = self.dataMatrix[k]
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -172,7 +177,10 @@ class ExprPloter(object):
                     tax.set_ylim(ylim[0],ylim[1])
                 else:
                     ax.set_ylim(ylim[0],ylim[1])
+            #ax.set_xlim(0,1000)
+            xscale_bias=0
             if scalex:
+                xscale_bias=1
                 ax.set_xscale('log')
             if scaley:
                 ax.set_yscale('log')
@@ -194,7 +202,9 @@ class ExprPloter(object):
                     for rec in values:
                         sum += rec
                     points.append({'factor':factor, 'respondent':sum / len(values)})
-                xline = [rec['factor'] for rec in points ]
+                
+                
+                    xline = [rec['factor']+ xscale_bias for rec in points ] # for log scale
                 yline = [rec['respondent'] for rec in points ]
                 
                 curAx = None
@@ -204,20 +214,22 @@ class ExprPloter(object):
                     curAx = tax
                 
                 curAx.plot(xline, yline, "k" + ltype + mtype,
-                         label=line, markerfacecolor="none", markeredgewidth=1.5, markersize=15)
+                          label=line, markerfacecolor="none", markeredgewidth=1, markersize=10)
+                
+                print ",".join(str(x) for x in xline)
                 xlab = curAx.set_xlabel(self.xLabel)
                 plt.setp(xlab, "fontsize", 22)
                 ylab = curAx.set_ylabel(self.yLabels[lIdx])
                 plt.setp(ylab, "fontsize", 22)
             #ax.set_ylim(0,1.1)
+            ax.set(xticks=xline,xticklabels=[str(x-xscale_bias) for x in xline])
             #, ncol=2
             h1, l1 = ax.get_legend_handles_labels()
             if len(self.yLabels) > 1: 
                 h2, l2 = tax.get_legend_handles_labels()
                 h1 = h1 + h2
                 l1 = l1 + l2
-            
-            ax.legend(h1, l1, loc=leg[0], framealpha=0.0, fontsize=18, ncol=leg[1],numpoints=1)
+            ax.legend(h1, l1, loc=leg[0], framealpha=0.0, fontsize=12, ncol=leg[1],numpoints=1)
             
             #tax.legend(loc=[20,20], framealpha=0.0, fontsize=18, numpoints=1)
             fig.tight_layout()
@@ -225,12 +237,12 @@ class ExprPloter(object):
             
 
 def plotScale(): 
-    # inputPath = "/Users/kc/快盘/dataset/weiboexpr/weibo_scale"
+    inputPath = "/Users/kc/快盘/dataset/weiboexpr/weibo_scale"
     outputDir = "/Users/kc/快盘/dataset/weiboexpr/weibo_scale_fig"
     
-    inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale"
-    outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale_fig"
-    yrange=[0,100]
+    #inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale"
+    #outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale_fig"
+    yrange=[0,450]
     #inputPath = "/Users/kc/快盘/dataset/weiboexpr/scale_2"
     #outputDir = "/Users/kc/快盘/dataset/weiboexpr/scale_2_fig"
     #yrange=[0,450]
@@ -251,25 +263,32 @@ def plotLimit():
     ploter.plotFigures(os.path.join(outputDir, "limit"), False, False,[15,85])
 
 def plotAll():   
-    inputPath = "/Users/kc/快盘/dataset/twitter_expr/result1/part20"
-    outputDir = "/Users/kc/快盘/dataset/twitter_expr/result1/part20_fig"
+    inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitteresult/part16"
+    outputDir = "/Users/kc/快盘/dataset/twitter_expr/part16_fig"
+    
+    #inputPath = "/Users/kc/快盘/dataset/twitter_expr/result1/part20"
+    #outputDir = "/Users/kc/快盘/dataset/twitter_expr/result1/part20_fig"
     
     #inputPath = "/Users/kc/快盘/dataset/weiboexpr/scale_2/part16"
     #outputDir = "/Users/kc/快盘/dataset/weiboexpr/scale_2/part16_fig"
     ploter = ExprPloter("Offset(hour)", ["Latency(ms)"])
     ploter.addLines(LineDef({"width":"width", "k":"k"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "offset"), False, False,[0,110],('upper left',2))
+    #[0,110]
+    #weibo [0,550]
+    ploter.plotFigures(os.path.join(outputDir, "offset"), True, True,[10,130],('upper left',3))
     
     ploter = ExprPloter("k", ["Latency(ms)"])
     ploter.addLines(LineDef({"width":"width", "offset":"offset"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "k"), True, False,[10,110],('upper left',2))
+    #[0,650]
+    ploter.plotFigures(os.path.join(outputDir, "k"), False, False,[10,120],('upper left',2))
     
-    ploter = ExprPloter("Width(hour)", ["Latency(ms)"])
+    ploter = ExprPloter("Query interval length(hour)", ["Latency(ms)"])
     ploter.addLines(LineDef({"k":"k", "offset":"offset"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "width"), True, False,[0,600],('upper left',1))
+    #[0,1500]
+    ploter.plotFigures(os.path.join(outputDir, "width"), True, True,[10,600],('upper left',1))
     
 def plotThroughput():
     #需要人为设置一下ncol=2
