@@ -8,6 +8,7 @@ import java.util.Properties;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.compact.ICompactStrategy;
 
 public class Configuration {
 	Properties props = new Properties();
@@ -125,5 +126,14 @@ public class Configuration {
 
 	public int queryStartTime() {
 		return Integer.parseInt(props.getProperty("starttime", "0"));
+	}
+
+	public ICompactStrategy getCompactStragety() {
+		try {
+			return (ICompactStrategy) Class.forName(props.getProperty("compactStragety", "core.lsmt.compact.LSMCompactStrategy"))
+					.newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
