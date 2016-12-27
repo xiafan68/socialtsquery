@@ -40,6 +40,11 @@ public class IndexLoader {
 	LSMTInvertedIndex index;
 	volatile boolean noMore = false;
 
+	Configuration conf;
+	Thread producer;
+	AtomicInteger midGen = new AtomicInteger(-1);
+	long largestNum = -2;
+	
 	public IndexLoader(String conf, String log, String inputFile) {
 		this.inputFile = inputFile;
 		this.confFile = conf;
@@ -68,11 +73,6 @@ public class IndexLoader {
 			index = null;
 		}
 	}
-
-	Configuration conf;
-	Thread producer;
-	AtomicInteger midGen = new AtomicInteger(-1);
-	long largestNum = -2;
 
 	private void startProducer() {
 		producer = new Thread("producer") {
@@ -263,6 +263,16 @@ public class IndexLoader {
 					e.printStackTrace();
 				}
 			}
+		}
+		index.closeOnWait();
+	
+		//再次加载索引，清空待删除的数据
+		index = new LSMTInvertedIndex(conf);
+		try {
+			index.init();
+		} catch (IOException e) {
+			e.printStackTrace();
+			index = null;
 		}
 		index.closeOnWait();
 	}
