@@ -84,6 +84,7 @@ public class IndexLoader {
 				try {
 					reader = new DirLineReader(inputFile);
 				} catch (IOException e) {
+					noMore=true;
 					return;
 				}
 				String line = null;
