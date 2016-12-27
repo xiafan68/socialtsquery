@@ -25,6 +25,8 @@ import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import io.ByteUtil;
 import util.Pair;
+import util.Profile;
+import util.ProfileField;
 
 public class InternPostingListIter implements IOctreeIterator {
 	private static final Logger logger = Logger.getLogger(InternPostingListIter.class);
@@ -63,6 +65,8 @@ public class InternPostingListIter implements IOctreeIterator {
 	 */
 	public InternPostingListIter(DirEntry entry, BlockBasedSSTableReader reader, int ts, int te) {
 		if (entry != null && entry.curKey != null && entry.minTime <= te && entry.maxTime >= ts) {
+			Profile.instance.updateCounter(ProfileField.HITTED_LEVEL_NUM.toString(), 1);
+			Profile.instance.updateCounter(ProfileField.HITTED_LEVELS.toString(), reader.getMeta().level);
 			this.entry = entry;
 			this.reader = reader;
 			this.ts = ts;

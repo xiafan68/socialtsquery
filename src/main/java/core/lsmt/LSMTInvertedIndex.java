@@ -330,6 +330,7 @@ public class LSMTInvertedIndex {
 			exec.query(new TempKeywordQuery(wordArr, new Interval(-1, start, end, 0), k));
 			return exec.getAnswer();
 		} finally {
+			Profile.instance.updateCounter(ProfileField.LEVELS.toString(), this.getVersion().diskTreeMetas.size());
 			Profile.instance.end(ProfileField.TOTAL_TIME.toString());
 		}
 	}
