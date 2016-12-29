@@ -4,8 +4,8 @@ parts=(4 8 12 16 20)
 prefix="/home/xiafan/expr/index/weibo/lsmo"
 dataDir="/home/xiafan/data/weibo/sortedsegs"
 #for test
-prefix="/Users/kc/Documents/temp/test/data"
-dataDir="/Users/kc/Documents/temp/test/sample"
+#prefix="/Users/kc/Documents/temp/test/data"
+#dataDir="/Users/kc/Documents/temp/test/sample"
 for i in "${parts[@]}"
 do
     to=`expr $i + 4`
