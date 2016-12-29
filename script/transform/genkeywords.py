@@ -7,7 +7,55 @@ import json
 from optparse import OptionParser
 from operator import itemgetter
 from itertools import izip, count, izip_longest
+from timeit import itertools
 
+
+class TripleKeywordGen(object):
+    def __init__(self, iDir):
+        self.iDir = iDir.decode("utf8")
+
+    def loadRecs(self):
+        input = open(self.iDir, "r")
+        edges = []
+        vertexToEdge = {}
+        for index, line in izip(count(), input.readlines()):
+            fields = line.rstrip().split("\t")
+            edge = (index, fields[-2], fields[-1], set(fields[0:-3]))
+            edges.append(edge)
+            if not(edge[1] in vertexToEdge):
+                vertexToEdge[edge[1]] = []
+            vertexToEdge[edge[1]].append(edge)
+            if not(edge[2] in vertexToEdge):
+                vertexToEdge[edge[2]] = []
+            vertexToEdge[edge[2]].append(edge)   
+        
+        output = open(join(dirname(self.iDir), "triplewords.txt"), 'w')
+        timePointMapping={}
+        tripleEdgeList=[]
+        for i in range(len(edges)):
+            edge = edges[i]
+            vertices = [edge[1], edge[2]]
+            for vertex in vertices:
+                for adjEdge in vertexToEdge.get(vertex, []):
+                    if adjEdge.index > edge.index:
+                        timePoints = edge[3].intersection(adjEdge[3])
+                        if len(timePoints) > 0:
+                            oVertex = adjEdge[1]
+                            if oVertex == vertex:
+                                oVertex = adjEdge[2]
+                            tripleEdge = (edge[1], edge[2], oVertex)
+                            if not(tripleEdge in timePointMapping):
+                                timePointMapping[tripleEdge]=timePoints
+                                tripleEdgeList.append(tripleEdge)
+        for edge in tripleEdgeList:
+            output.write("\t".join([str(timePoint) for timePoint in timePointMapping[edge]]))
+            output.write("\t")
+            output.write("\t".join(edge))
+            output.write("\n")
+        output.close()
+                    
+            
+            
 def put(dict, value):
     rDict[dim]
     curDict[dims[-1]] = value
@@ -57,7 +105,9 @@ class Transformer(object):
     def __init__(self, iDir, oDir):
         self.iDir = iDir.decode("utf8")
         self.oDir = oDir
-                
+        self.edge = []
+        self.startAdj = {}
+        self.endAdj = {}
     def loadRecs(self):
         input = open(self.iDir, "r")
         wordTimeList = {}
@@ -95,9 +145,12 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-i", "--idir", dest="inputs", help="input directory")
     parser.add_option("-o", "--odir", dest="odir", help="output directory")
+    parser.add_option("-t", "--triple", action="store_true", dest="isTriple", help="generate triple keywords")
     
     sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr/keywordsbycount"]
     sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr"]
+    sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed_swap.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr", "-t"]
+    #sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed_swap.txt", "-o", "/Users/kc/快盘/dataset/timeseries", "-t"]
     
     (options, args) = parser.parse_args(sys.argv)
 
@@ -106,9 +159,12 @@ if __name__ == "__main__":
         parser.print_help()
         exit
     
-    t = Transformer(options.inputs, options.odir)
-    t.loadRecs()
-
+    if options.isTriple:
+        gen = TripleKeywordGen(options.inputs)
+        gen.loadRecs()
+    else:
+        t = Transformer(options.inputs, options.odir)
+        t.loadRecs()
 # python etoffset.py -p hpl_ns hpl_s ipl_s ipl_ns -i $idir  -f total_time -x width -y k -i /Users/xiafan/快盘/dataset/exprresult/merge/raw -o /Users/xiafan/快盘/dataset/exprresult/merge/transform/ -s 0 2 12 24
 
 # python etoffset.py -i /Users/xiafan/快盘/dataset/exprresult/merge/raw -o /Users/xiafan/快盘/dataset/exprresult/merge/transform/ -k -t io -f basetree atomic segstore LIST_IO -s 0 2 12 24  -p hpl_ns hpl_s ipl_s ipl_ns -x width -y k
