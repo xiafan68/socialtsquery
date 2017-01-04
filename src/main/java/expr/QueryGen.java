@@ -2,7 +2,6 @@ package expr;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 import io.DirLineReader;
@@ -35,7 +34,6 @@ public class QueryGen {
 		DirLineReader reader = new DirLineReader(seedFile);
 		String line = null;
 		int count = 0;
-		HashSet<String> visited = new HashSet<String>();
 
 		while (null != (line = reader.readLine())) {
 			// if (count++ < 4)
@@ -43,21 +41,11 @@ public class QueryGen {
 
 			String[] fields = line.split("\t");
 			List<String> keywords = new ArrayList<String>();
-			boolean cont = false;
-			keywords.add(fields[0]);
-			keywords.add(fields[1]);
-			/*
-			 * for (int i = 0; i < fields.length - 1; i++) {
-			 * keywords.add(fields[0]);
-			 * 
-			 * if (visited.contains(fields[i])) { cont = true; break; }
-			 * 
-			 * visited.add(fields[i]); }
-			 */
-			if (cont)
-				continue;
+			int keywordNum = Integer.parseInt(fields[0]);
+			for (int i = 1; i < keywordNum+1; i++)
+				keywords.add(fields[i]);
 			lists.add(keywords);
-			starts.add(Integer.parseInt(fields[2]));
+			starts.add(Integer.parseInt(fields[keywordNum + 1]));
 			if (count++ > limit)
 				break;
 			if (count % 1000 == 0)

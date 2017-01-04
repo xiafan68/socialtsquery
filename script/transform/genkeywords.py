@@ -1,61 +1,13 @@
 # encoding:utf8
 import sys
 import os
-from os.path import dirname
-from os.path import join
+from os.path import dirname, join, basename
 import json
 from optparse import OptionParser
 from operator import itemgetter
 from itertools import izip, count, izip_longest
 from timeit import itertools
 
-
-class TripleKeywordGen(object):
-    def __init__(self, iDir):
-        self.iDir = iDir.decode("utf8")
-
-    def loadRecs(self):
-        input = open(self.iDir, "r")
-        edges = []
-        vertexToEdge = {}
-        for index, line in izip(count(), input.readlines()):
-            fields = line.rstrip().split("\t")
-            edge = (index, fields[-2], fields[-1], set(fields[0:-3]))
-            edges.append(edge)
-            if not(edge[1] in vertexToEdge):
-                vertexToEdge[edge[1]] = []
-            vertexToEdge[edge[1]].append(edge)
-            if not(edge[2] in vertexToEdge):
-                vertexToEdge[edge[2]] = []
-            vertexToEdge[edge[2]].append(edge)   
-        
-        output = open(join(dirname(self.iDir), "triplewords.txt"), 'w')
-        timePointMapping={}
-        tripleEdgeList=[]
-        for i in range(len(edges)):
-            edge = edges[i]
-            vertices = [edge[1], edge[2]]
-            for vertex in vertices:
-                for adjEdge in vertexToEdge.get(vertex, []):
-                    if adjEdge.index > edge.index:
-                        timePoints = edge[3].intersection(adjEdge[3])
-                        if len(timePoints) > 0:
-                            oVertex = adjEdge[1]
-                            if oVertex == vertex:
-                                oVertex = adjEdge[2]
-                            tripleEdge = (edge[1], edge[2], oVertex)
-                            if not(tripleEdge in timePointMapping):
-                                timePointMapping[tripleEdge]=timePoints
-                                tripleEdgeList.append(tripleEdge)
-        for edge in tripleEdgeList:
-            output.write("\t".join([str(timePoint) for timePoint in timePointMapping[edge]]))
-            output.write("\t")
-            output.write("\t".join(edge))
-            output.write("\n")
-        output.close()
-                    
-            
-            
 def put(dict, value):
     rDict[dim]
     curDict[dims[-1]] = value
@@ -101,14 +53,61 @@ def groupBy(pairs):
         counter[pair[0]] += pair[1]
     return counter.items()
 
-class Transformer(object):
-    def __init__(self, iDir, oDir):
+'''
+this class is used to generate keywords of length 3. It merges keywords of length 2 that have a common keyword and common time points.
+'''
+class KeywordTransform(object):
+    def __init__(self, iDir):
         self.iDir = iDir.decode("utf8")
-        self.oDir = oDir
+
+    '''
+    In essense, this function implements a graph algorithm that iterates through each edge to generate triplets.
+    '''
+    def generateTriple(self):
+        input = open(self.iDir, "r")
+        edges = []
+        vertexToEdge = {}
+        for index, line in izip(count(), input.readlines()):
+            fields = line.rstrip().split("\t")
+            edge = (index, fields[0], fields[1], set(fields[2:]))
+            edges.append(edge)
+            if not(edge[1] in vertexToEdge):
+                vertexToEdge[edge[1]] = []
+            vertexToEdge[edge[1]].append(edge)
+            if not(edge[2] in vertexToEdge):
+                vertexToEdge[edge[2]] = []
+            vertexToEdge[edge[2]].append(edge)   
+        
+        output = open(join(dirname(self.iDir), "triplewords.txt"), 'w')
+        timePointMapping = {}
+        tripleEdgeList = []
+        for i in range(len(edges)):
+            edge = edges[i]
+            vertices = [edge[1], edge[2]]
+            for vertex in vertices:
+                for adjEdge in vertexToEdge.get(vertex, []):
+                    if adjEdge.index > edge.index:
+                        timePoints = edge[3].intersection(adjEdge[3])
+                        if len(timePoints) > 0:
+                            oVertex = adjEdge[1]
+                            if oVertex == vertex:
+                                oVertex = adjEdge[2]
+                            tripleEdge = (edge[1], edge[2], oVertex)
+                            if not(tripleEdge in timePointMapping):
+                                timePointMapping[tripleEdge] = timePoints
+                                tripleEdgeList.append(tripleEdge)
+        for edge in tripleEdgeList:
+            output.write("3\t")
+            output.write("\t".join(edge))
+            output.write("\t")
+            output.write("\t".join([str(timePoint) for timePoint in timePointMapping[edge]]))
+            output.write("\n")
+        output.close()
+    
+    def generateSingle(self):
         self.edge = []
         self.startAdj = {}
         self.endAdj = {}
-    def loadRecs(self):
         input = open(self.iDir, "r")
         wordTimeList = {}
         wordRankList = {}
@@ -135,38 +134,48 @@ class Transformer(object):
         
         output = open(join(dirname(self.iDir), "singleword.txt"), 'w')
         for item in  sorted(wordRankList.items(), cmpWordRank):
-            output.write(item[0] + "\t")
+            output.write("1\t" + item[0] + "\t")
             output.write("\t".join([str(timepoint[0]) for timepoint in wordTimeList[item[0]]]))
             output.write("\n")
         output.close()
         
+    def addKeywordCount(self):
+         input = open(self.iDir, "r")
+         output = open(join(dirname(self.iDir), "count" + basename(self.iDir)), "w")
+         for line in input.readlines():
+             output.write("2\t" + line)
+         output.close()
+         input.close
      
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-i", "--idir", dest="inputs", help="input directory")
     parser.add_option("-o", "--odir", dest="odir", help="output directory")
     parser.add_option("-t", "--triple", action="store_true", dest="isTriple", help="generate triple keywords")
-    
-    sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr/keywordsbycount"]
-    sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr"]
-    sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed_swap.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr", "-t"]
-    #sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed_swap.txt", "-o", "/Users/kc/快盘/dataset/timeseries", "-t"]
+    parser.add_option("-c", "--count", action="store_true", dest="count", help="add keywords counts")
+    # sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr/keywordsbycount"]
+    # sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr"]
+    # sys.argv = ["-i", "/Users/kc/快盘/dataset/twitter_expr/queryseed.txt", "-o", "/Users/kc/快盘/dataset/twitter_expr", "-t"]
+    # sys.argv = ["-i", "/Users/kc/快盘/dataset/time_series/nqueryseed.txt", "-o", "/Users/kc/快盘/dataset/timeseries", "-t"]
     
     (options, args) = parser.parse_args(sys.argv)
 
-    print args
+    print(args)
     if len(args) == 1:
         parser.print_help()
         exit
-    
-    if options.isTriple:
-        gen = TripleKeywordGen(options.inputs)
-        gen.loadRecs()
+    gen = KeywordTransform(options.inputs)
+    if options.count:
+        gen.addKeywordCount()
+    elif options.isTriple:
+        gen.generateTriple()
     else:
-        t = Transformer(options.inputs, options.odir)
-        t.loadRecs()
-# python etoffset.py -p hpl_ns hpl_s ipl_s ipl_ns -i $idir  -f total_time -x width -y k -i /Users/xiafan/快盘/dataset/exprresult/merge/raw -o /Users/xiafan/快盘/dataset/exprresult/merge/transform/ -s 0 2 12 24
+        gen.generateSingle()
 
-# python etoffset.py -i /Users/xiafan/快盘/dataset/exprresult/merge/raw -o /Users/xiafan/快盘/dataset/exprresult/merge/transform/ -k -t io -f basetree atomic segstore LIST_IO -s 0 2 12 24  -p hpl_ns hpl_s ipl_s ipl_ns -x width -y k
 
-# python etoffset.py -i /Users/xiafan/快盘/dataset/exprresult/merge/raw -o /Users/xiafan/快盘/dataset/exprresult/merge/transform/ -k -t time -f basetree_time atomic_time segstore_time compute_score LIST_IO_time de_sketch other_cost -s 0 2 12 24  -p hpl_ns hpl_s ipl_s ipl_ns -x width -y k
+# python genkeywords.py -i /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt -o /home/xiafan/KuaiPan/dataset/time_series/ -t
+# python genkeywords.py -i /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt -o /home/xiafan/KuaiPan/dataset/time_series/
+# python genkeywords.py -i /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt -o /home/xiafan/KuaiPan/dataset/time_series/ -c
+#python genkeywords.py -i /home/xiafan/Dropbox/数据/query/twitter/queryseed.txt -t
+#python genkeywords.py -i /home/xiafan/Dropbox/数据/query/twitter/queryseed.txt
+#python genkeywords.py -i /home/xiafan/Dropbox/数据/query/twitter/queryseed.txt -c

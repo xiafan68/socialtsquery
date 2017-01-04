@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -27,7 +28,7 @@ import util.ProfileField;
 
 public class DiskBasedPerfTest {
 	private static final Logger logger = Logger.getLogger(DiskBasedPerfTest.class);
-	QueryGen gen = new QueryGen(10);
+	QueryGen gen = new QueryGen(50);
 	LSMTInvertedIndex index;
 
 	public DiskBasedPerfTest() {
@@ -80,25 +81,36 @@ public class DiskBasedPerfTest {
 			}
 		});
 		gen.resetCur();
+		int hasResultCount = 0;
 		while (gen.hasNext()) {
 			Pair<List<String>, Integer> query = gen.nextQuery();
 			List<String> keywords = query.getKey();
 			logger.info(keywords.toString());
 			logger.info(offset + " " + width + " " + k);
 			int start = query.getValue() - curConf.queryStartTime() + offset;
+			boolean hit = false;
 			try {
-				index.query(keywords, start, start + width, k, queryType);
+				Iterator iter = index.query(keywords, start, start + width, k, queryType);
+				if (iter.hasNext()) {
+					hasResultCount++;
+					hit = true;
+				}
 			} catch (Exception ex) {
 				logger.error(ex.toString() + "----" + k + " " + start + " " + (start + width) + " " + keywords.size());
 			}
-			JSONObject perf = Profile.instance.toJSON();
-
-			updateProfile(map, perf);
+			if (hit) {
+				JSONObject perf = Profile.instance.toJSON();
+				updateProfile(map, perf);
+				map.put("words", map.get("words") + (double) keywords.size());
+			}
 			Profile.instance.reset();
 			// Runtime.getRuntime().exec("sync && echo 1 >
 			// /proc/sys/vm/drop_caches");
+
 		}
+		map.put("resultsCount", (double) hasResultCount);
 		System.gc();
+
 		return counter;
 	}
 
@@ -111,9 +123,12 @@ public class DiskBasedPerfTest {
 				for (int width : widths)
 					for (String queryType : queryTypes) {
 						HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
-						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
+						int count = counter.get("resultsCount").intValue();
+						if (count == 0)
+							count++;
+						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, count));
 						profile.put("width", width);
-						profile.put("words", 2);
+						// profile.put("words", 2);
 						profile.put("k", k);
 						profile.put("offset", offset);
 						profile.put("type", queryType);
@@ -189,9 +204,12 @@ public class DiskBasedPerfTest {
 				for (int width : widths) {
 					for (int k : ks) {
 						HashMap<String, Double> counter = testOneRound(offset, width, k, queryType);
-						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, gen.size()));
+						int count = counter.get("resultsCount").intValue();
+						if (count == 0)
+							count++;
+						HashMap<String, Object> profile = new HashMap<String, Object>(normalize(counter, count));
 						profile.put("width", width);
-						profile.put("words", 2);
+						// profile.put("words", 2);
 						profile.put("k", k);
 						profile.put("offset", offset);
 						profile.put("type", queryType);
