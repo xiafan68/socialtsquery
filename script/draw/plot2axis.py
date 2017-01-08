@@ -305,8 +305,8 @@ def plotLimit():
     ploter.plotFigures(os.path.join(outputDir, "limit"), False, False, [15, 85])
 
 def plotAllForWeibo():   
-    inputPath = "/Users/kc/Dropbox/数据/weibo_50_hasresult"
-    outputDir = "/Users/kc/Dropbox/数据/weibo_50_hasresult_fact_fig"
+    inputPath = "/Users/kc/Dropbox/数据/weibo_result/weibo_50_hasresult"
+    outputDir = "/Users/kc/Dropbox/数据/weibo_result/weibo_50_hasresult_fact_fig"
     # offset
     ploter = ExprPloter("Offset(hour)", ["Latency(ms)"])
     ploter.addLines(LineDef({"width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
