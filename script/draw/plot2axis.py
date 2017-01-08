@@ -11,6 +11,8 @@ import sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import xticks
+from matplotlib.font_manager import path
+from array import array
 
 
 lines = ["-"]
@@ -50,9 +52,12 @@ class ExprPloter(object):
         self.yLabels = yLabels
         self.lineDefs = []
         self.dataMatrix = {}
-        self.pattern = re.compile("part([0-9]+)(_.*)?")
-        self.filePattern = re.compile("index_[^0-9]*([0-9]+).txt")
-        self.needFiles = set(["k_50_offset_0", "width_12_k_50", "width_12_offset_0", "width_12_k_50_size_80_offset_0","width_12_k_50_size_100_offset_0"])
+        self.pattern = re.compile(".*part([0-9]+)(_.*)?")
+        self.filePattern = re.compile("index_.*(weibo|twitter)([0-9]+).txt")
+        self.needFiles = set(["k_50_size_80_offset_0",
+                              "width_12_k_50_size_80",
+                              "width_12_size_80_offset_0", "width_12_k_50_offset_0_size_80", "width_12_k_50_offset_0",
+                              "width_12_k_50_size_80_offset_0"])
     def addLines(self, lineDef):
         self.lineDefs.append(lineDef)
         
@@ -63,6 +68,9 @@ class ExprPloter(object):
             curMap[key] = {}
         return curMap[key]
     
+    """
+    计算每跟线的legend标题，例如lsmi, weighted
+    """
     @staticmethod
     def setupLineFactor(curMap, lineFactors):
         key = ",".join(lineFactors)
@@ -70,8 +78,11 @@ class ExprPloter(object):
             curMap[key] = []
         return curMap[key]
     
+    """
+    从json中抽取出path表示的路径对应的值，如果不存在就返回default
+    """
     @staticmethod
-    def extractField(json, path, default):
+    def extractSingleField(json, path, default):
         fields = path.split(".")
         curMap = json
         for field in fields:
@@ -89,7 +100,17 @@ class ExprPloter(object):
         elif 'offset' in path:
             curMap = curMap / 2
         return curMap
-     
+    
+    @staticmethod
+    def extractField(json, path, default):
+        if not(isinstance(path, list)):
+            return ExprPloter.extractSingleField(json, path, default)
+        else:
+            ret = 0.0
+            for aPath in path:
+                ret += float(ExprPloter.extractSingleField(json, aPath, default))
+            return ret
+        
     @staticmethod
     def extractMethod(data):
         if "lsmi" in data:
@@ -127,7 +148,7 @@ class ExprPloter(object):
                 limit = 5
                 limitGroup = self.filePattern.match(fileName)
                 if limitGroup:
-                    limit = int(limitGroup.group(1))
+                    limit = int(limitGroup.group(2))
                 
                 fd = open(os.path.join(dir, fileName), "r")
                 curMethod = ExprPloter.extractMethod(fileName)
@@ -159,7 +180,7 @@ class ExprPloter(object):
         ylim = config.get("ylim", None)
         leg = config.get("leg", None)
         figsize = config.get("figsize", None)
-        legSize=config.get("legsize", 22)
+        legsize = config.get("legsize", 20)
         
         if os.path.exists(outDir):
             # os.rmdir(outDir)
@@ -168,8 +189,17 @@ class ExprPloter(object):
         os.makedirs(outDir)
         
         for k in self.dataMatrix.keys():
-            if not(k in self.needFiles):
-                continue;
+            if not( k in self.needFiles):
+                continue
+            """
+            found = False;
+            for line in self.needFiles:
+                if line in k:
+                    found = True
+                    break
+            if not found:
+                continue
+            """
             v = self.dataMatrix[k]
             if figsize:
                 fig = plt.figure(figsize=figsize)
@@ -238,52 +268,31 @@ class ExprPloter(object):
                 h2, l2 = tax.get_legend_handles_labels()
                 h1 = h1 + h2
                 l1 = l1 + l2
-            ax.legend(h1, l1, loc=leg[0], framealpha=0.0, fontsize=legSize, ncol=leg[1], numpoints=1)
+            ax.legend(h1, l1, loc=leg[0], framealpha=0.0, fontsize=legsize, ncol=leg[1], numpoints=1)
             
             # tax.legend(loc=[20,20], framealpha=0.0, fontsize=18, numpoints=1)
             fig.tight_layout()
-            fig.savefig(os.path.join(outDir, str(k) + ".pdf"))
+            suffix = config.get("suffix", "")
+            fig.savefig(os.path.join(outDir, str(k) + suffix + ".pdf"))
             
-def plotKeywords(): 
-    inputPath = "/home/xiafan/Dropbox/数据/keywordnum_50/twitter/part20"
-    outputDir = "/home/xiafan/tmp/part20_fig"
-    
-    inputPath="/home/xiafan/Dropbox/数据/keywordnum_50/twitter/part16"
-    outputDir="/home/xiafan/tmp/twitter_part16_fig"
-    
-    inputPath="/home/xiafan/Dropbox/数据/keywordnum_3_50/weibo"
-    outputDir="/home/xiafan/Dropbox/数据/keywordnum_3_50/weibo_fig"
-    
-    inputPath="/home/xiafan/Dropbox/数据/keywordnum_3_50/twitter"
-    outputDir="/home/xiafan/Dropbox/数据/keywordnum_3_50/twitter_fig"
-    yrange = [1, 200]
-    # inputPath = "/Users/kc/快盘/dataset/weiboexpr/scale_2"
-    # outputDir = "/Users/kc/快盘/dataset/weiboexpr/scale_2_fig"
-    # yrange=[0,450]
-    
-    ploter = ExprPloter("Number of Keywords", ["Average Latency(ms)"])
-    ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "words", "TOTAL_TIME", 0))
-    ploter.loadFiles(inputPath)
-    config = {"scalex":False, "scaley":False, "ylim":yrange, "leg":('upper left', 2)}
-    ploter.plotFigures(os.path.join(outputDir, "words"), config)
 
-def plotScale(): 
-    #inputPath = "/Users/kc/快盘/dataset/weiboexpr/weibo_scale"
-    #outputDir = "/Users/kc/快盘/dataset/weiboexpr/weibo_scale_fig"
-    
-    #inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale"
-    #outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitter_scale_fig"
-    inputPath="/home/xiafan/Dropbox/数据/weibo_50"
-    outputDir="/home/xiafan/Dropbox/数据/weibo_50_scalability"
-    yrange = [1, 6000]
-    # inputPath = "/Users/kc/快盘/dataset/weiboexpr/scale_2"
-    # outputDir = "/Users/kc/快盘/dataset/weiboexpr/scale_2_fig"
-    # yrange=[0,450]
-    
+def plotScaleForWeibo(): 
+    inputPath = "/home/xiafan/Dropbox/数据/weibo_result/weibo_50_hasresult"
+    outputDir = "/home/xiafan/Dropbox/数据/weibo_result/weibo_50_hasresult_scala_fig"
+    yrange = [0, 500]
     ploter = ExprPloter("Percentage(%)", ["Average Latency(ms)"])
     ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k"}, {"app":"app", "type":"type"}, "size", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"scalex":False, "scaley":True, "ylim":yrange, "leg":('upper left', 2), "legsize":18}
+    config = {"scalex":False, "scaley":False, "ylim":yrange, "leg":('upper left', 2), "legsize":17}
+    ploter.plotFigures(os.path.join(outputDir, "size"), config)
+    
+def plotScaleForTwitter(): 
+    inputPath = "/home/xiafan/Dropbox/数据/twitter_result/twitter_50_hasresult"
+    outputDir = "/home/xiafan/Dropbox/数据/twitter_result/twitter_50_hasresult_scale_fig"
+    ploter = ExprPloter("Percentage(%)", ["Average Latency(ms)"])
+    ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k"}, {"app":"app", "type":"type"}, "size", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    config = {"scalex":False, "scaley":False, "ylim":[0, 150], "leg":('upper left', 2), "legsize":17}
     ploter.plotFigures(os.path.join(outputDir, "size"), config)
     
 def plotLimit():
@@ -291,63 +300,96 @@ def plotLimit():
     outputDir = "/Users/kc/快盘/dataset/weiboexpr/weibolimit_fig"
     inputPath = "/Users/kc/快盘/dataset/twitter_expr/twitterlimit_v3"
     outputDir = "/Users/kc/快盘/dataset/twitter_expr/twitterlimit_v3_fig"
+    inputPath="/home/xiafan/expr/limit_50/twitter"
+    outputDir="/home/xiafan/expr/limit_50/twitter_fig"
+    inputPath="/home/xiafan/expr/tao/weibo"
+    outputDir="/home/xiafan/expr/tao/weibo_fig"
+    inputPath="/home/xiafan/expr/limit_50/weibo"
+    outputDir="/home/xiafan/expr/limit_50/weibo_fig"
+    #inputPath="/home/xiafan/expr/limit_50/weibo"
+    #outputDir="/home/xiafan/expr/limit_50/weibo_fig"
     ploter = ExprPloter("Size Threshold($10^6$)", ["Latency(ms)"])
     ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "limit", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"scalex":True, "scaley":True, "ylim":[10, 100], "leg":('upper left', 3)}
-    ploter.plotFigures(os.path.join(outputDir, "limit"), False, False, [15, 85])
+    config = {"scalex":False, "scaley":False, "ylim":[1, 300], "leg":('upper left', 2), "legsize":18}
+    ploter.plotFigures(os.path.join(outputDir, "limit"),  config)
 
-def plotAllFigs(inputPath, outputDir, offsetConfig, kConfig, widthConfig):
+def plotAllForWeibo():   
+    inputPath = "/home/xiafan/Dropbox/数据/weibo_result/weibo_50_hasresult"
+    outputDir = "/home/xiafan/Dropbox/数据/weibo_result/weibo_50_hasresult_fact_fig"
+    # offset
     ploter = ExprPloter("Offset(hour)", ["Latency(ms)"])
-    ploter.addLines(LineDef({"width":"width", "k":"k"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
+    ploter.addLines(LineDef({"width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "offset"), offsetConfig)
+    config = {"scalex":True, "scaley":True, "ylim":[10, 4000], "leg":('upper left', 2), "legsize":18}
+    ploter.plotFigures(os.path.join(outputDir, "offset"), config)
     
+    # k
     ploter = ExprPloter("k", ["Latency(ms)"])
-    ploter.addLines(LineDef({"width":"width", "offset":"offset"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "k"), kConfig)
-    
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[10, 470], "leg":('upper left', 3), "legsize":25}
+    ploter.plotFigures(os.path.join(outputDir, "k"), config)
+
+    # query width
+    config = {"scalex":True, "scaley":True, "ylim":[10, 10000], "leg":('upper left', 2), "legsize":18}
     ploter = ExprPloter("Query interval length(hour)", ["Latency(ms)"])
-    ploter.addLines(LineDef({"k":"k", "offset":"offset"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
+    ploter.addLines(LineDef({"k":"k", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    ploter.plotFigures(os.path.join(outputDir, "width"), widthConfig)
-    
-def plotAll():
-    #weibo part 16
-    inputPath = "/home/xiafan/Dropbox/数据/weibo_50/part16"
-    outputDir = "/home/xiafan/Dropbox/数据/weibo_50_fig_noscale/part16_fig"
-    offsetConfig = {"scalex":True, "scaley":False, "ylim":[1, 550], "leg":('upper left', 2), "legsize":18}
-    kConfig = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1, 500], "leg":('upper left', 3), "legsize":22}
-    widthConfig={"scalex":True, "scaley":True, "ylim":[2, 80000], "leg":('upper left', 2), "legsize":18}
-    plotAllFigs(inputPath, outputDir, offsetConfig, kConfig, widthConfig)
-    
-    #weibo part 16 scale
-    inputPath = "/home/xiafan/Dropbox/数据/weibo_50/part16"
-    outputDir = "/home/xiafan/Dropbox/数据/weibo_50_fig_scale/part16_fig"
-    offsetConfig = {"scalex":True, "scaley":True, "ylim":[1, 30000], "leg":('upper left', 2), "legsize":18}
-    kConfig = {"figsize":(15, 10), "scalex":False, "scaley":True, "ylim":[1, 1500], "leg":('upper left', 3),"legsize":24}
-    widthConfig={"scalex":True, "scaley":True, "ylim":[2, 80000], "leg":('upper left', 2), "legsize":18}
-    plotAllFigs(inputPath, outputDir, offsetConfig, kConfig, widthConfig)
+    ploter.plotFigures(os.path.join(outputDir, "width"), config)
    
-   ##################part20################
-    #weibo noscale
-    inputPath = "/home/xiafan/Dropbox/数据/weibo_50/part20"
-    outputDir = "/home/xiafan/Dropbox/数据/weibo_50_fig_noscale/part20_fig"
-    offsetConfig = {"scalex":True, "scaley":False, "ylim":[1, 550], "leg":('upper left', 2), "legsize":18}
-    kConfig = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1,600], "leg":('upper left', 3)}
-    widthConfig={"scalex":True, "scaley":True, "ylim":[2, 80000], "leg":('upper left', 2), "legsize":18}
-    plotAllFigs(inputPath, outputDir, offsetConfig, kConfig, widthConfig)
+    #-----------disk io-------------
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1, 220], "leg":('upper left', 3), "suffix":"_io", "legsize":24}
+    ploter = ExprPloter("k", ["Disk blocks(4kb)"])
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "READ_BLOCK", 0))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "io"), config)
     
-    #weibo scale
-    inputPath = "/home/xiafan/Dropbox/数据/weibo_50/part20"
-    outputDir = "/home/xiafan/Dropbox/数据/weibo_50_fig_scale/part20_fig"
-    offsetConfig = {"scalex":True, "scaley":True, "ylim":[1, 30000], "leg":('upper left', 2), "legsize":18}
-    kConfig = {"figsize":(15, 10), "scalex":False, "scaley":True, "ylim":[1, 3100], "leg":('upper left', 3)}
-    widthConfig={"scalex":True, "scaley":True, "ylim":[2, 80000], "leg":('upper left', 2), "legsize":18}
-    plotAllFigs(inputPath, outputDir, offsetConfig, kConfig, widthConfig)
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1, 30000], "leg":('upper left', 3), "suffix":"_rec", "legsize":20}
+    ploter = ExprPloter("k", ["Number of useless segments"])
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", ["WASTED_REC", "CAND"], 0))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "recs"), config)
+
+def plotAllForTwitter():   
+    inputPath = "/home/xiafan/Dropbox/数据/twitter_result/twitter_50_hasresult"
+    outputDir = "/home/xiafan/Dropbox/数据/twitter_result/twitter_50_hasresult_fig"
+    # offset
+    ploter = ExprPloter("Offset(hour)", ["Latency(ms)"])
+    ploter.addLines(LineDef({"width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    config = {"scalex":True, "scaley":False, "ylim":[1, 140], "leg":('upper left', 2), "legsize":18}
+    ploter.plotFigures(os.path.join(outputDir, "offset"), config)
+    
+    # k
+    ploter = ExprPloter("k", ["Latency(ms)"])
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[10, 110], "leg":('upper left', 3), "legsize":25}
+    ploter.plotFigures(os.path.join(outputDir, "k"), config)
+
+    # query width
+    config = {"scalex":True, "scaley":False, "ylim":[1, 800], "leg":('upper left', 2), "legsize":18}
+    ploter = ExprPloter("Query interval length(hour)", ["Latency(ms)"])
+    ploter.addLines(LineDef({"k":"k", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "width"), config)
    
+    #-----------disk io-------------
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1, 55], "leg":('upper left', 3), "suffix":"_io", "legsize":24}
+    ploter = ExprPloter("k", ["Disk blocks(4kb)"])
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "READ_BLOCK", 0))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "io"), config)
     
+    config = {"figsize":(15, 10), "scalex":False, "scaley":False, "ylim":[1, 30000], "leg":('upper left', 3), "suffix":"_rec", "legsize":20}
+    ploter = ExprPloter("k", ["Number of useless segments"])
+    ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", ["WASTED_REC", "CAND"], 0))
+    ploter.loadFiles(inputPath)
+    ploter.plotFigures(os.path.join(outputDir, "recs"), config)
+        
+    
+
 def plotThroughput():
     # 需要人为设置一下ncol=2
     inputPath = "/Users/kc/快盘/dataset/throughput/test2/twitter_throughput"
@@ -374,16 +416,41 @@ def plotUpdateScale():
     ploter.addLines(LineDef({"":"line"}, {"app":"app", "insert total":"total"}, "size", "perf.insert_total.totalTime", 0))
     ploter.addLines(LineDef({"":"line"}, {"app":"app", "insert average":"average"}, "size", "perf.insert", 1))
     ploter.loadFiles(inputPath)
-    config = {"scalex":False, "scaley":True, "ylim":[60, 1000], "leg":('upper left', 1)}
+    config = {"scalex":False, "scaley":True, "ylim":[60, 150], "leg":('upper left', 1)}
     ploter.plotFigures(os.path.join(outputDir, "scale"), config)
-    
+
+def plotKeywordsForTwitter():    
+    inputPath = "/home/xiafan/Dropbox/数据/twitter_result/keywordnum"
+    outputDir = "/home/xiafan/Dropbox/数据/twitter_result/keywordnum_fig"
+    yrange = [1, 200]
+
+    ploter = ExprPloter("Number of Keywords", ["Average Latency(ms)"])
+    ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "words", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    config = {"scalex":False, "scaley":False, "ylim":yrange, "leg":('upper left', 2), "legsize":18,"suffix":"_words"}
+    ploter.plotFigures(os.path.join(outputDir, "words"), config)
+
+def plotKeywordsForWeibo():    
+    inputPath = "/home/xiafan/Dropbox/数据/weibo_result/keywordnum"
+    outputDir = "/home/xiafan/Dropbox/数据/weibo_result/keywordnum_fig"
+    yrange = [1, 750]
+
+    ploter = ExprPloter("Number of Keywords", ["Average Latency(ms)"])
+    ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "words", "TOTAL_TIME", 0))
+    ploter.loadFiles(inputPath)
+    config = {"scalex":False, "scaley":False, "ylim":yrange, "leg":('upper left', 2), "legsize":18,"suffix":"_words"}
+    ploter.plotFigures(os.path.join(outputDir, "words"), config)
+
 if __name__ == "__main__":
     # "/Users/kc/快盘/dataset/weiboexpr/2015_12_03/raw"
-    #plotAll()
-    plotKeywords()
-    # plotLimit()
-    #plotScale()
+    # plotAllForWeibo()
+    plotLimit()
+    # plotScaleForWeibo()
+    #plotKeywordsForWeibo()
     # plotUpdateScale()
     # plotThroughput()
+    #plotKeywordsForTwitter()
+    #plotScaleForTwitter()
+   # plotAllForTwitter()
    
     
