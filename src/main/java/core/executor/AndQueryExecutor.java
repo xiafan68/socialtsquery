@@ -1,10 +1,7 @@
 package core.executor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +14,6 @@ import core.executor.domain.MergedMidSeg;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PartitionMeta;
-import segmentation.Interval;
 import util.MyMath;
 import util.Pair;
 import util.Profile;
