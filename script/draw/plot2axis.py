@@ -21,7 +21,7 @@ dataDir="/Users/kc/快盘/"
 dataDir="/home/xiafan/Dropbox"
 dataDir="/Volumes/backupsd/Dropbox"
 
-outDir="/Users/kc/Documents/temp/pic1"
+outDir="/Users/kc/Documents/temp/pic_and"
 
 mpl.rcParams['lines.linewidth'] = 1
 mpl.rcParams['lines.markersize'] = 8
@@ -181,7 +181,7 @@ class ExprPloter(object):
             factors = [factor + "_" + str(ExprPloter.extractField(rec, factor, lineDef.fileFactors[factor])) for factor in lineDef.fileFactors.keys()]
             fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors)
             lineFactors = [ExprPloter.extractField(rec, factor, lineDef.lineFactors[factor]) for factor in lineDef.lineFactors]
-            if ("AND" in lineFactors) or "OR" in lineFactors:
+            if ("WEIGHTED" in lineFactors) or "OR" in lineFactors:
                 continue;
             # lineFactors.insert(0, curMethod)
             lineArr = ExprPloter.setupLineFactor(fileMap, lineFactors)
@@ -317,7 +317,7 @@ def plotScaleForTwitter():
     ploter = ExprPloter("Percentage (%)", ["Latency (ms)"])
     ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k"}, {"app":"app", "type":"type"}, "size", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"scalex":False, "scaley":False, "ylim":[0, 100], "leg":('upper left', 1), "legsize":22}
+    config = {"scalex":False, "scaley":False, "ylim":[0, 80], "leg":('upper left', 1), "legsize":22}
     ploter.plotFigures(os.path.join(outputDir, "size"), config)
 
 def plotLimitForWeibo():
@@ -352,7 +352,7 @@ def plotAllForWeibo():
     ploter = ExprPloter("Deviation (hour)", ["Latency (ms)"])
     ploter.addLines(LineDef({"width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"xscale_bias":1, "scalex":True, "scaley":False, "ylim":[0, 350], "leg":('center', 2), "legsize":22}
+    config = {"xscale_bias":1, "scalex":True, "scaley":False, "ylim":[-50, 350], "leg":('center', 2), "legsize":22}
     ploter.plotFigures(os.path.join(outputDir, "offset"), config)
 
     # k
@@ -360,11 +360,11 @@ def plotAllForWeibo():
     ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
     # "figsize":(15, 10), 
-    config = {"trun_start":True, "figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[10, 380], "leg":('center right', 2), "legsize":22}
+    config = {"trun_start":True, "figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[10, 320], "leg":('center right', 2), "legsize":22}
     ploter.plotFigures(os.path.join(outputDir, "k"), config)
 
     # query width
-    config = {"scalex":True, "scaley":False, "ylim":[10, 1200], "leg":('upper left', 1), "legsize":22}
+    config = {"scalex":True, "scaley":False, "ylim":[10, 850], "leg":('upper left', 1), "legsize":22}
     ploter = ExprPloter("|Q.I| (hour)", ["Latency (ms)"])
     ploter.addLines(LineDef({"k":"k", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
@@ -390,18 +390,18 @@ def plotAllForTwitter():
     ploter = ExprPloter("Deviation (hour)", ["Latency (ms)"])
     ploter.addLines(LineDef({"width":"width", "k":"k", "size":"size"}, {"app":"app", "type":"type"}, "offset", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"xscale_bias":1, "scalex":True, "scaley":False, "ylim":[10, 85], "leg":('center right', 2), "legsize":22}
+    config = {"xscale_bias":1, "scalex":True, "scaley":False, "ylim":[0, 70], "leg":('center right', 2), "legsize":22}
     ploter.plotFigures(os.path.join(outputDir, "offset"), config)
 
     # k
     ploter = ExprPloter("Q.k", ["Latency (ms)"])
     ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"trun_start":True, "figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[20, 90], "leg":('center right', 2), "legsize":22}
+    config = {"trun_start":True, "figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[0, 80], "leg":('center right', 2), "legsize":22}
     ploter.plotFigures(os.path.join(outputDir, "k"), config)
 
     # query width
-    config = {"scalex":True, "scaley":False, "ylim":[20, 610], "leg":('upper left', 1), "legsize":22}
+    config = {"scalex":True, "scaley":False, "ylim":[0, 250], "leg":('upper left', 1), "legsize":22}
     ploter = ExprPloter("|Q.I| (hour)", ["Latency (ms)"])
     ploter.addLines(LineDef({"k":"k", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
@@ -500,10 +500,10 @@ def plotKeywordsForWeibo():
 
 if __name__ == "__main__":
     # dataDir+"dataset/weiboexpr/2015_12_03/raw"
-    #plotAllForWeibo()
+    plotAllForWeibo()
     #plotLimitForWeibo()
-    #plotScaleForWeibo()
-    #plotKeywordsForWeibo()
+    plotScaleForWeibo()
+    plotKeywordsForWeibo()
     #plotUpdateScaleForWeibo()
     #plotThroughputForWeibo()
     
@@ -511,5 +511,5 @@ if __name__ == "__main__":
     #plotThroughputForTwitter()
     #plotKeywordsForTwitter()
     #plotScaleForTwitter()
-    plotAllForTwitter()
+    #plotAllForTwitter()
     #plotUpdateScaleForTwitter()
