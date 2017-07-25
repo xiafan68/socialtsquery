@@ -60,10 +60,16 @@ class KeywordTransform(object):
     def __init__(self, iDir):
         self.iDir = iDir.decode("utf8")
 
+    def generateAllTriple(self):
+        self.generateTriple(False)
+        
+    def generateIntersectTriple(self):
+        self.generateTriple(True)
+
     '''
     In essense, this function implements a graph algorithm that iterates through each edge to generate triplets.
     '''
-    def generateTriple(self):
+    def generateTriple(self, isIntersect):
         input = open(self.iDir, "r")
         edges = []
         vertexToEdge = {}
@@ -87,8 +93,13 @@ class KeywordTransform(object):
             for vertex in vertices:
                 for adjEdge in vertexToEdge.get(vertex, []):
                     if adjEdge.index > edge.index:
-                        timePoints = edge[3].intersection(adjEdge[3])
-                        if len(timePoints) > 0:
+                        timePoints=None
+                        if isIntersect:
+                            timePoints = edge[3].intersection(adjEdge[3])
+                        else:
+                            timePoints = edge[3].union(adjEdge[3])
+                        
+                        if not(isIntersect) or len(timePoints) > 0:
                             oVertex = adjEdge[1]
                             if oVertex == vertex:
                                 oVertex = adjEdge[2]
@@ -164,14 +175,15 @@ if __name__ == "__main__":
     if len(args) == 1:
         parser.print_help()
         exit
+    print "computing"
     gen = KeywordTransform(options.inputs)
     if options.count:
         gen.addKeywordCount()
     elif options.isTriple:
-        gen.generateTriple()
+        gen.generateAllTriple()
     else:
         gen.generateSingle()
-
+    print "completes!"
 
 # python genkeywords.py -i /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt -o /home/xiafan/KuaiPan/dataset/time_series/ -t
 # python genkeywords.py -i /home/xiafan/KuaiPan/dataset/time_series/nqueryseed.txt -o /home/xiafan/KuaiPan/dataset/time_series/
