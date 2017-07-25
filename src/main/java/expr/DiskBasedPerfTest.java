@@ -100,13 +100,13 @@ public class DiskBasedPerfTest {
 			}
 			if (hit) {
 				JSONObject perf = Profile.instance.toJSON();
+				System.out.println(perf.toString());
 				updateProfile(map, perf);
 				map.put("words", map.get("words") + (double) keywords.size());
 			}
 			Profile.instance.reset();
 			// Runtime.getRuntime().exec("sync && echo 1 >
 			// /proc/sys/vm/drop_caches");
-
 		}
 		map.put("resultsCount", (double) hasResultCount);
 		System.gc();
