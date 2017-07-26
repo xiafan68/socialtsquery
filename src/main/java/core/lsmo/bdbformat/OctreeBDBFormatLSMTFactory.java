@@ -11,8 +11,9 @@ import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 import util.Configuration;
 
-public class OctreeBDBFormatLSMTFactory implements ILSMTFactory {
-
+public enum OctreeBDBFormatLSMTFactory implements ILSMTFactory {
+	INSTANCE;
+	
 	@Override
 	public ISSTableWriter newSSTableWriterForFlushing(List<IMemTable> tables, Configuration conf) {
 		return new OctreeSSTableWriter(tables, conf);
