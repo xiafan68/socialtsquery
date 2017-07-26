@@ -42,8 +42,6 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	private BufferedOutputStream dataBuffer;
 
 	private int step;
-	Configuration conf;
-
 	Bucket buck = new Bucket(0);
 	IndexHelper indexHelper;
 
@@ -57,7 +55,8 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	 *            配置信息
 	 */
 	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
-		this.meta = meta;
+		super(meta, conf);
+		
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -67,7 +66,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
-		this.conf = conf;
+
 		this.step = conf.getIndexStep();
 		try {
 			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
@@ -78,7 +77,8 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public OctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
-		this.conf = conf;
+		super(null, conf);
+		
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -189,10 +189,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
-				int[] hist = octreeNode.histogram();
-				if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.5
-						&& ((float) hist[0] + 1) / (hist[1] + 1) > 2f) {
-					// 下半部分是上半部分的两倍
+				if (shouldSplitOctant(octreeNode)) {
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));

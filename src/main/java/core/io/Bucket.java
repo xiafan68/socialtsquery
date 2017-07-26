@@ -16,9 +16,9 @@ import core.io.Block.BLOCKTYPE;
 import io.ByteUtil;
 
 /**
- * a bucket may correspond to multiple blocks and multiple coctant it is an
- * outputstream like abstraction - total number of octants - octant - octant -
- * padding
+ * When storing octants into disk, they are first written into a bucket. A bucket may contain multiple octants and stored 
+ * in multiple blocks. The storage format of the bucket is: 
+ * [total number of octants] [octant] [octant] [padding bits]
  * 
  * @author xiafan
  *

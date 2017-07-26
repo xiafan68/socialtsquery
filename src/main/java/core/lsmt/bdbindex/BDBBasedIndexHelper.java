@@ -14,6 +14,11 @@ import util.Configuration;
 import core.lsmt.IndexHelper;
 import core.lsmt.WritableComparableKey;
 
+/**
+ * The IndexHelpler implementation based on Berkeley DB.
+ * @author xiafan
+ *
+ */
 public class BDBBasedIndexHelper extends IndexHelper {
 	private static final Logger logger = Logger.getLogger(BDBBasedIndexHelper.class);
 	protected BDBBtree dirMap = null;

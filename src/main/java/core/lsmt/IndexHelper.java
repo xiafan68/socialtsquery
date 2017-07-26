@@ -9,7 +9,8 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import util.Configuration;
 
 /**
- * 用于构建数据文件对应的索引文件
+ * define interfaces required to store (key, offset) pair. The <code>BucketID</code> class stores
+ * information required to seek the bucket whose data contains key.
  * 
  * @author xiafan
  *
@@ -66,6 +67,7 @@ public abstract class IndexHelper {
 	@Override
 	public void finalize() {
 		try {
+			//in case we forget to close the file handle
 			close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);

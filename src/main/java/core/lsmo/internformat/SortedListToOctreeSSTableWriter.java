@@ -23,12 +23,11 @@ public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
 	// private static final Logger logger =
 	// Logger.getLogger(SortedListSSTableWriter.class);
 
-	Configuration conf;
 	InternOctreeSSTableWriter octreeWriter;
 	Iterator<Entry<WritableComparableKey, SortedListPostinglist>> iter;
 
 	public SortedListToOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
-		this.conf = conf;
+		super(null, conf);
 		iter = tables.get(0).iterator();
 		SSTableMeta meta = tables.get(0).getMeta();
 		octreeWriter = new InternOctreeSSTableWriter(new SSTableMeta(meta.version, meta.level), conf);
@@ -42,6 +41,7 @@ public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
 	 * @param conf
 	 */
 	public SortedListToOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
+		super(meta, conf);
 		throw new RuntimeException(this.getClass().toString() + " doesn't support compact");
 	}
 

@@ -48,11 +48,10 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	DataOutputStream dataDos;
 	private int step;
 	Bucket buck = new Bucket(-1);
-	Configuration conf;
 	IndexHelper indexHelper;
 
 	public SortedListSSTableWriter(List<IMemTable> tables, Configuration conf) {
-		this.conf = conf;
+		super(null, conf);
 		int version = 0;
 
 		for (final IMemTable<SortedListPostinglist> table : tables) {
@@ -96,8 +95,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	}
 
 	public SortedListSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
-		this.conf = conf;
-		this.meta = meta;
+		super(meta, conf);
+
 		for (final ISSTableReader table : tables) {
 			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
 				ISSTableReader reader = table;
@@ -257,8 +256,9 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				helper.first = false;
 				indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 			}
-			//MidSegment cur = helper.list.get(0);
-			//indexHelper.buildIndex(new SegListKey(cur.getPoint().getZ(), cur.getStart(), cur.mid), buck.blockIdx());
+			// MidSegment cur = helper.list.get(0);
+			// indexHelper.buildIndex(new SegListKey(cur.getPoint().getZ(),
+			// cur.getStart(), cur.mid), buck.blockIdx());
 			helper.init();
 		}
 

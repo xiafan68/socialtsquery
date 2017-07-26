@@ -8,12 +8,22 @@ import java.util.Comparator;
 
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import util.Configuration;
 
 public abstract class ISSTableWriter {
 	protected SSTableMeta meta;
-
+	protected Configuration conf;
+	protected float splitRatio;
+	
+	public ISSTableWriter(SSTableMeta meta, Configuration conf){
+		this.meta = meta;
+		this.conf = conf;
+		this.splitRatio = conf.getSplitingRatio();
+	}
+	
 	public abstract SSTableMeta getMeta();
 
 	public abstract void open(File dir) throws IOException;
@@ -153,4 +163,11 @@ public abstract class ISSTableWriter {
 	}
 
 	public abstract void delete(File indexDir, SSTableMeta meta);
+	
+	public boolean shouldSplitOctant(OctreeNode octreeNode ){
+		int[] hist = octreeNode.histogram();
+		return octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.2
+		&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitRatio);
+	}
+	
 }

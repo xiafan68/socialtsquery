@@ -30,8 +30,7 @@ import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Pair;
 
 /**
- * 基于bucket的reader公共类，主要有三个文件： 1. index file:记录的是key-bucketid对 2. dir
- * file:记录当前对应的目录信息 3. data file:
+ * This implementation stores both directory data and (key, offset) index in a custom file format.
  * 
  * @author xiafan
  *

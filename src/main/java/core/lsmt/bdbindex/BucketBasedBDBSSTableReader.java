@@ -23,8 +23,7 @@ import util.Profile;
 import util.ProfileField;
 
 /**
- * 基于bucket的reader公共类，主要有三个文件： 1. index file:记录的是key-bucketid对 2. dir
- * file:记录当前对应的目录信息 3. data file:
+ *This implementation stores both directory data and offset index in Berkeley db
  * 
  * @author xiafan
  *
@@ -70,17 +69,6 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 			}
 		}
 	}
-
-	/*
-	 * private void loadStats() throws IOException { File dataDir =
-	 * index.getConf().getIndexDir(); FileInputStream fis = new FileInputStream(
-	 * OctreeSSTableWriter.dirMetaFile(dataDir, meta)); DataInputStream dirInput
-	 * = new DataInputStream(new BufferedInputStream( fis));
-	 * WritableComparableKeyFactory factory =
-	 * index.getConf().getIndexKeyFactory(); while (dirInput.available() > 0) {
-	 * WritableComparableKey key = factory.createIndexKey(); key.read(dirInput);
-	 * int count = dirInput.readInt(); wordFreq.put(key, count); } }
-	 */
 
 	private void loadDirMeta() throws IOException {
 		dirMap = new BDBBtree(BDBBasedIndexHelper.dirMetaFile(index.getConf().getIndexDir(), meta), index.getConf());

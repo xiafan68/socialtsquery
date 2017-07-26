@@ -69,9 +69,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	DataOutputStream markDos;
 
 	private int step;
-	Configuration conf;
 	InternIndexHelper indexHelper;
-	float splitingRatio = 2;
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -83,7 +81,8 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 *            配置信息
 	 */
 	public InternOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
-		this.meta = meta;
+		super(meta, conf);
+		
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -93,14 +92,14 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
-		this.conf = conf;
+		
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
-		splitingRatio = conf.getSplitingRatio();
 	}
 
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
-		this.conf = conf;
+		super(null, conf);
+		
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -138,15 +137,13 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
-		splitingRatio = conf.getSplitingRatio();
 	}
 
 	public InternOctreeSSTableWriter(SSTableMeta meta, Configuration conf) {
-		this.conf = conf;
-		this.meta = meta;
+		super(meta, conf);
+		
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
-		splitingRatio = conf.getSplitingRatio();
 	}
 
 	/**
@@ -210,11 +207,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
 				if (octreeNode.size() > 0) {
-					int[] hist = octreeNode.histogram();
-					// octreeNode.size() > MemoryOctree.size_threshold * 0.5
-					if (octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.2
-							&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitingRatio)) {
-						// 下半部分是上半部分的两倍
+					if (shouldSplitOctant(octreeNode)) {
 						octreeNode.split();
 						for (int i = 0; i < 8; i++)
 							iter.addNode(octreeNode.getChild(i));
@@ -316,8 +309,8 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		ByteArrayOutputStream tempDataBout = new ByteArrayOutputStream();
 		DataOutputStream tempDataDos = new DataOutputStream(tempDataBout);
 
-		Bucket markUpBuck;
-		Bucket dataBuck;
+		Bucket markUpBuck; //the bucket used to store (key, offset) pairs
+		Bucket dataBuck; // the bucket that stores octants
 		List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 		List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 		int curStep = 0;
@@ -351,7 +344,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			writeFirstBlock = true;
 			sampleFirstIndex = true;
 			writeFirstMark = true;
-
 		}
 
 		/**

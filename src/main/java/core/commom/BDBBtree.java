@@ -201,6 +201,12 @@ public class BDBBtree {
 		Profile.instance.end("readdir");
 	}
 
+	/**
+	 * used to retrieve directory metadata when bdb is used as the directory
+	 * @param curkey
+	 * @return
+	 * @throws IOException
+	 */
 	public DirEntry get(WritableComparableKey curkey) throws IOException {
 		Profile.instance.start("readdir");
 		DatabaseEntry key = getDBEntry(curkey);
@@ -222,7 +228,7 @@ public class BDBBtree {
 	}
 
 	/**
-	 * insert "hello", "10", 1 "hello", "12", 12 "9","13"
+	 * the key of bdb index is curkey, the value is the combination of value and id
 	 * 
 	 * @param curkey
 	 * @param value
@@ -245,6 +251,13 @@ public class BDBBtree {
 		}
 	}
 
+	/**
+	 * get the last pair whose key equals curKey
+	 * @param curKey
+	 * @param curCode
+	 * @return
+	 * @throws IOException
+	 */
 	private Pair<WritableComparableKey, BucketID> getKeyLast(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
@@ -269,7 +282,7 @@ public class BDBBtree {
 					return null;
 				}
 			} else {
-				return getKeyLast(curKey, curCode);
+				return null;
 			}
 		} finally {
 			cursor.close();
