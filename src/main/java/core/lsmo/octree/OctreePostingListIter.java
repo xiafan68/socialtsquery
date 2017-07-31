@@ -233,6 +233,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	public OctreeNode nextNode() throws IOException {
 		advance();
 		OctreeNode ret = curNode;
+		logger.debug(entry.toString() + ";"+ret.getEncoding().toString());
 		curNode = null;
 		return ret;
 	}

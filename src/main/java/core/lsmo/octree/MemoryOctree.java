@@ -44,9 +44,11 @@ public class MemoryOctree extends IPostingList {
 	}
 
 	private void genNewRootFromOrigin(Point point) {
-		int power = Math.max(IntegerUtil.firstNoneZero(point.getX()), IntegerUtil.firstNoneZero(point.getY()));
-		int len = 1 << (Math.max(power, IntegerUtil.firstNoneZero(point.getZ())) + 1);
-		root = new OctreeNode(new Point(0, 0, 0), len);
+		// int power = Math.max(IntegerUtil.firstNoneZero(point.getX()),
+		// IntegerUtil.firstNoneZero(point.getY()));
+		// int len = 1 << (Math.max(power,
+		// IntegerUtil.firstNoneZero(point.getZ())) + 1);
+		root = new OctreeNode(new Point(0, 0, 0), 1 << (IntegerUtil.firstNoneZero(point.getX() | point.getY() | point.getZ()) + 1));
 	}
 
 	/**
