@@ -8,6 +8,7 @@ import java.util.PriorityQueue;
 import common.MidSegment;
 import core.lsmt.WritableComparableKey;
 import util.Pair;
+import core.commom.Encoding;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -82,13 +83,13 @@ public class OctreeMerger implements IOctreeIterator {
 			} else if (lnode.contains(rnode)) {
 				lnode.split();
 				for (int i = 0; i < 8; i++)
-					if (OctreeNode.isMarkupNode(lnode.getChild(i).getEncoding()) || lnode.getChild(i).size() > 0)
+					if (Encoding.isMarkupNode(lnode.getChild(i).getEncoding()) || lnode.getChild(i).size() > 0)
 						lhs.addNode(lnode.getChild(i));
 				lnode = null;
 			} else if (rnode.contains(lnode)) {
 				rnode.split();
 				for (int i = 0; i < 8; i++) {
-					if (OctreeNode.isMarkupNode(rnode.getChild(i).getEncoding()) || rnode.getChild(i).size() > 0)
+					if (Encoding.isMarkupNode(rnode.getChild(i).getEncoding()) || rnode.getChild(i).size() > 0)
 						rhs.addNode(rnode.getChild(i));
 				}
 				rnode = null;

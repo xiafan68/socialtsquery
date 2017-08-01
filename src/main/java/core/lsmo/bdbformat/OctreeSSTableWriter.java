@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
+import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.lsmo.octree.IOctreeIterator;
@@ -188,7 +189,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		int count = 0;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
-			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+			if (octreeNode.size() > 0 || Encoding.isMarkupNode(octreeNode.getEncoding())) {
 				if (shouldSplitOctant(octreeNode)) {
 					octreeNode.split();
 					for (int i = 0; i < 8; i++)
@@ -202,10 +203,9 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 					byte[] data = baos.toByteArray();
 					if (!buck.canStore(data.length)) {
 						buck.write(getDataDos());
-						logger.debug(buck);
 						newDataBucket();
 					}
-					logger.debug(octreeNode);
+					logger.debug(octreeNode.getEncoding());
 					buck.storeOctant(data);
 					if (first) {
 						first = false;

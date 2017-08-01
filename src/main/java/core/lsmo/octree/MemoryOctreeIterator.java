@@ -9,6 +9,7 @@ import java.util.PriorityQueue;
 import common.MidSegment;
 import core.lsmt.WritableComparableKey;
 import util.Pair;
+import core.commom.Encoding;
 import core.lsmt.PostingListMeta;
 
 /**
@@ -83,7 +84,7 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 						if (!child.isLeaf()) {
 							traverseQueue.add(child);
 						} else if (child.isLeaf()
-								&& (child.size() > 0 || OctreeNode.isMarkupNode(child.getEncoding()))) {
+								&& (child.size() > 0 || Encoding.isMarkupNode(child.getEncoding()))) {
 							traverseQueue.add(child);
 						} else {
 							ret = child;

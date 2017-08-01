@@ -63,20 +63,6 @@ public class OctreeNode {
 	}
 
 	/**
-	 * 判断当前cube是否为其父节点的第一个子节点，第一个子叶节点无论是否为空，也要写出到磁盘中
-	 * 
-	 * @param code
-	 * @return
-	 */
-	public static boolean isMarkupNode(Encoding code) {
-		int mark = 1 << code.getPaddingBitNum();
-		boolean ret = (code.getZ() & mark) != 0;
-		ret = ret & ((code.getX() & mark) == 0);
-		ret = ret & ((code.getY() & mark) == 0);
-		return ret;
-	}
-
-	/**
 	 * 判断一个cube是否包含另一个point
 	 * 
 	 * @param point

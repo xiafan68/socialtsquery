@@ -17,6 +17,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
 import core.commom.BDBBtree;
+import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -205,7 +206,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		OctreeNode octreeNode = null;
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
-			if (octreeNode.size() > 0 || OctreeNode.isMarkupNode(octreeNode.getEncoding())) {
+			if (octreeNode.size() > 0 || Encoding.isMarkupNode(octreeNode.getEncoding())) {
 				if (octreeNode.size() > 0) {
 					if (shouldSplitOctant(octreeNode)) {
 						octreeNode.split();
@@ -416,10 +417,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream dos = new DataOutputStream(baos);
 			// first write the octant code, then write the octant
+			logger.debug(node.getEncoding());
 			node.getEncoding().write(dos);
 			node.write(dos);
 			byte[] data = baos.toByteArray();
-			// && OctreeNode.isMarkupNode(node.getEncoding())
 			if (node.size() == 0) {
 				if (!markUpBuck.canStore(data.length)) {
 					markUpBuck.write(markDos);

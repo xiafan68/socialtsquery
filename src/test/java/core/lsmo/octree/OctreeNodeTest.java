@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import segmentation.Segment;
@@ -32,8 +33,7 @@ public class OctreeNodeTest {
 		node.getEncoding().write(dos);
 		node.write(dos);
 
-		DataInputStream input = new DataInputStream(new ByteArrayInputStream(
-				out.toByteArray()));
+		DataInputStream input = new DataInputStream(new ByteArrayInputStream(out.toByteArray()));
 
 		Encoding code = new Encoding();
 		code.read(input);
@@ -41,6 +41,22 @@ public class OctreeNodeTest {
 		oNode.read(input);
 		System.out.println(node);
 		System.out.println(oNode);
-		
+	}
+
+	@Test
+	public void isMarkUpTest() {
+		OctreeNode node = new OctreeNode(new Point(4, 4, 0), 2);
+		node.split();
+		Assert.assertEquals(true, Encoding.isMarkupNodeOfParent(node.getChild(4).getEncoding(), node.getEncoding()));
+		for (int i = 0; i < 8; i++) {
+			System.out.println(i + "," + Encoding.isMarkupNode(node.getChild(i).getEncoding()));
+		}
+
+		for (int i = 0; i < 8; i++) {
+			if (i == 4)
+				Assert.assertEquals(true, Encoding.isMarkupNode(node.getChild(i).getEncoding()));
+			else
+				Assert.assertEquals(false, Encoding.isMarkupNode(node.getChild(i).getEncoding()));
+		}
 	}
 }
