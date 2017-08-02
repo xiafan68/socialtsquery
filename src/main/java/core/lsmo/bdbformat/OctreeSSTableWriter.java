@@ -142,6 +142,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	public void write() throws IOException {
 		while (iter.hasNext()) {
 			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
+			logger.debug(String.format("writing postinglist for key%s",entry.getKey()));
 			indexHelper.startPostingList(entry.getKey(), buck.blockIdx());
 			// setup meta values
 			for (IOctreeIterator iter : entry.getValue()) {
