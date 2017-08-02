@@ -49,14 +49,6 @@ public class InternPostingListIter implements IOctreeIterator {
 	TreeMap<Integer, SkipCell> skipMeta = new TreeMap<Integer, SkipCell>();
 	int curSkipBlockIdx;
 
-	/*
-	 * PriorityQueue<OctreeNode> traverseQueue = new
-	 * PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
-	 * 
-	 * @Override public int compare(OctreeNode o1, OctreeNode o2) { return
-	 * o1.getEncoding().compareTo(o2.getEncoding()); } });
-	 */
-
 	/**
 	 * 
 	 * @param reader
