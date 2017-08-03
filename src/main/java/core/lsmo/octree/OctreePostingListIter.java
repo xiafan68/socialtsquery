@@ -19,6 +19,8 @@ import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import io.ByteUtil;
 import util.Pair;
+import util.Profile;
+import util.ProfileField;
 
 /**
  * 用于访问disk上的octree
@@ -31,21 +33,21 @@ import util.Pair;
  */
 public class OctreePostingListIter implements IOctreeIterator {
 	private static final Logger logger = Logger.getLogger(OctreePostingListIter.class);
-	private DirEntry entry;
-	private IBucketBasedSSTableReader reader;
-	private int ts;
-	private int te;
+	protected DirEntry entry;
+	protected IBucketBasedSSTableReader reader;
+	protected int ts;
+	protected int te;
 
-	private Encoding curMin = null;
-	private Encoding curMax = null;
-	private Encoding max = null;
+	protected Encoding curMin = null;
+	protected Encoding curMax = null;
+	protected Encoding max = null;
 
-	BucketID nextID = new BucketID(0, (short) 0); // 下一个需要读取的octant
-	private Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
-	private int nextBlockID = 0; // 下一个bucket的blockid
+	protected BucketID nextID = new BucketID(0, (short) 0); // 下一个需要读取的octant
+	protected Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
+	protected int nextBlockID = 0; // 下一个bucket的blockid
 
-	private OctreeNode curNode = null;
-	DataInputStream input = null;
+	protected OctreeNode curNode = null;
+	protected DataInputStream input = null;
 
 	/**
 	 * 
@@ -54,7 +56,10 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @param te
 	 */
 	public OctreePostingListIter(DirEntry entry, IBucketBasedSSTableReader reader, int ts, int te) {
-		if (entry != null) {
+		if (entry != null && entry.curKey != null && entry.minTime <= te && entry.maxTime >= ts) {
+			Profile.instance.updateCounter(ProfileField.HITTED_LEVEL_NUM.toString(), 1);
+			Profile.instance.updateCounter(ProfileField.HITTED_LEVELS.toString(), reader.getMeta().level);
+
 			this.entry = entry;
 			this.reader = reader;
 			this.ts = ts;
@@ -64,7 +69,6 @@ public class OctreePostingListIter implements IOctreeIterator {
 			max = new Encoding(new Point(te, Integer.MAX_VALUE, 0), 0);
 			nextID.copy(entry.startBucketID);
 		}
-
 	}
 
 	@Override
@@ -84,13 +88,13 @@ public class OctreePostingListIter implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		if (entry != null && curNode == null && diskHasMore()) {
+		if (entry != null && entry.curKey != null && curNode == null && diskHasMore()) {
 			advance();
 		}
 		return curNode != null;
 	}
 
-	private void gotoNewLayer(int layer) {
+	protected void gotoNewLayer(int layer) {
 		curMin.setPaddingBitNum(0);
 		curMin.setX(0);
 		curMin.setY(ts);
@@ -102,12 +106,14 @@ public class OctreePostingListIter implements IOctreeIterator {
 		curMax.setTop(layer);
 	}
 
-	private boolean isCorrectCode(Encoding newCode) {
+	protected boolean isCorrectCode(Encoding newCode) {
 		boolean ret = false;
 		if (newCode.getX() <= te && newCode.getY() + newCode.getEdgeLen() > ts) {
 			ret = true;
 			nextID.offset++;
 		} else if (newCode.getTopZ() != curMin.getTopZ() || newCode.compareTo(curMax) > 0) {
+			// newCode.getTopZ() != curMin.getTopZ()
+			// 应该也一定要能够推出newCode.compareTo(curMax) > 0
 			if (newCode.getTopZ() != curMin.getTopZ()) {
 				gotoNewLayer(newCode.getTopZ());
 			} else {
@@ -121,7 +127,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 			int commBit = ByteUtil.commonBitNum(newCode.getX(), te);
 			int newX = ByteUtil.fetchHeadBits(newCode.getX(), commBit);
 			int newY = ByteUtil.fetchHeadBits(newCode.getY(), commBit);
-			newY |= 1 << (31 - commBit);
+			newY |= 1 << (31 - commBit + 1); // 这里应该是找公共祖先的上面的那个节点
 			curMin.setPaddingBitNum(0);
 			curMin.setX(newX);
 			curMin.setY(newY);
@@ -145,6 +151,15 @@ public class OctreePostingListIter implements IOctreeIterator {
 		return ret;
 	}
 
+	protected Pair<WritableComparableKey, BucketID> cellOffset() throws IOException {
+		Pair<WritableComparableKey, BucketID> pair = null;
+		pair = reader.cellOffset(entry.curKey, curMin);
+		if (pair == null) {
+			pair = reader.floorOffset(entry.curKey, curMin);
+		}
+		return pair;
+	}
+
 	/**
 	 * 开始的时候，用curMin去找到第一个bucket
 	 * 
@@ -157,26 +172,26 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * 
 	 * @throws IOException
 	 */
-	private void skipToOctant() throws IOException {
-		Pair<WritableComparableKey, BucketID> pair = null;
-		pair = reader.cellOffset(entry.curKey, curMin);
-		if (pair == null) {
-			pair = reader.floorOffset(entry.curKey, curMin);
-		}
-		assert pair != null;
-		// 利用pair跳转，nextID
-		if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
-			curBuck.reset();
-			nextID.copy(pair.getValue());
-		}
-
-		while (diskHasMore()) {
-			Encoding code = readNextOctantCode();
-			if (code.contains(curMin) || code.compareTo(curMin) >= 0) {
-				break;
-			} else {
-				nextID.offset++;
+	protected boolean skipToOctant() throws IOException {
+		Pair<WritableComparableKey, BucketID> pair = cellOffset();
+		if (pair.getKey() != null) {
+			// 利用pair跳转，nextID
+			if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
+				curBuck.reset();
+				nextID.copy(pair.getValue());
 			}
+
+			while (diskHasMore()) {
+				Encoding code = readNextOctantCode();
+				if (code.contains(curMin) || code.compareTo(curMin) >= 0) {
+					break;
+				} else {
+					nextID.offset++;
+				}
+			}
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -185,8 +200,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * 
 	 * @throws IOException
 	 */
-	private Encoding readNextOctantCode() throws IOException {
-		if (curBuck.blockIdx().blockID < 0) {
+	protected Encoding readNextOctantCode() throws IOException {
+		if (curBuck.blockIdx().blockID < 0 || nextID.blockID != curBuck.blockIdx().blockID) {
 			nextBlockID = reader.getBucket(nextID, curBuck);
 		} else if (nextID.offset >= curBuck.octNum()) {
 			curBuck.reset();
@@ -201,7 +216,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 		return curCode;
 	}
 
-	private void readNextOctant(Encoding curCode) throws IOException {
+	protected void readNextOctant(Encoding curCode) throws IOException {
 		curNode = new OctreeNode(curCode, curCode.getEdgeLen());
 		curNode.read(input);
 		input.close();
@@ -213,11 +228,17 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * 
 	 * @return
 	 */
-	private boolean diskHasMore() {
+	protected boolean diskHasMore() {
 		return curMin.compareTo(max) <= 0 && nextID.compareTo(entry.endBucketID) <= 0;
 	}
 
-	private void advance() throws IOException {
+	/**
+	 * 开始的时候，用curMin去找到第一个bucket
+	 * 
+	 * 一直往前跑， 如果当前跑到查询区间下面去了，生成新的code，跳转 如果当前跑到查询区间的外面去了，生成新的code，跳转
+	 * 
+	 */
+	protected void advance() throws IOException {
 		while (curNode == null && diskHasMore()) {
 			Encoding curCode = readNextOctantCode();
 			// 开始判断code是否在查询区间内
@@ -233,7 +254,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	public OctreeNode nextNode() throws IOException {
 		advance();
 		OctreeNode ret = curNode;
-		logger.debug(entry.toString() + ";"+ret.getEncoding().toString());
+		logger.debug(entry.toString() + ";" + ret.getEncoding().toString());
 		curNode = null;
 		return ret;
 	}

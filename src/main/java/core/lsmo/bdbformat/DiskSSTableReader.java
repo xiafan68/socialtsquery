@@ -3,7 +3,7 @@ package core.lsmo.bdbformat;
 import java.io.IOException;
 
 import core.commom.Encoding;
-import core.lsmo.octree.DiskOctreeIterator;
+import core.lsmo.octree.DiskOctreeScanner;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -34,7 +34,7 @@ public class DiskSSTableReader extends BucketBasedSSTableReader {
 	}
 
 	public IOctreeIterator getPostingListScanner(WritableComparableKey key) {
-		return new DiskOctreeIterator(dirMap.get(key), this);
+		return new DiskOctreeScanner(dirMap.get(key), this);
 	}
 
 	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {

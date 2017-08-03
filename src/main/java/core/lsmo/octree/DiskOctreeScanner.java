@@ -24,7 +24,7 @@ import core.lsmt.WritableComparableKey;
  * @author xiafan
  *
  */
-public class DiskOctreeIterator implements IOctreeIterator {
+public class DiskOctreeScanner implements IOctreeIterator {
 	DirEntry entry;
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
 		@Override
@@ -46,7 +46,7 @@ public class DiskOctreeIterator implements IOctreeIterator {
 	 * @param meta
 	 *            the meta data of the octree
 	 */
-	public DiskOctreeIterator(DirEntry entry, IBucketBasedSSTableReader reader) {
+	public DiskOctreeScanner(DirEntry entry, IBucketBasedSSTableReader reader) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
