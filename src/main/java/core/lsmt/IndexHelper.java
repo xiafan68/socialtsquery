@@ -19,7 +19,7 @@ public abstract class IndexHelper {
 	protected DirEntry curDir;
 	protected Configuration conf;
 
-	public IndexHelper(Configuration conf) {
+	public IndexHelper(ISSTableWriter writer, Configuration conf) {
 		curDir = new DirEntry(conf.getIndexKeyFactory());
 		this.conf = conf;
 	}
