@@ -206,6 +206,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 */
 	protected Encoding readNextOctantCode() throws IOException {
 		if (curBuck.blockIdx().blockID < 0 || nextID.blockID != curBuck.blockIdx().blockID) {
+			curBuck.reset();
+			nextBlockID = nextID.blockID;	
 			readNextBucket();
 		} else if (nextID.offset >= curBuck.octNum()) {
 			curBuck.reset();
