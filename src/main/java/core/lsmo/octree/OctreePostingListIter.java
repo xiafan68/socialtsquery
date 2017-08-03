@@ -195,6 +195,10 @@ public class OctreePostingListIter implements IOctreeIterator {
 		}
 	}
 
+	protected void readNextBucket() throws IOException {
+		nextBlockID = reader.getBucket(nextID, curBuck);
+	}
+
 	/**
 	 * 只负责顺序的读取下一个octant
 	 * 
@@ -202,12 +206,12 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 */
 	protected Encoding readNextOctantCode() throws IOException {
 		if (curBuck.blockIdx().blockID < 0 || nextID.blockID != curBuck.blockIdx().blockID) {
-			nextBlockID = reader.getBucket(nextID, curBuck);
+			readNextBucket();
 		} else if (nextID.offset >= curBuck.octNum()) {
 			curBuck.reset();
 			nextID.blockID = nextBlockID;
 			nextID.offset = 0;
-			nextBlockID = reader.getBucket(nextID, curBuck);
+			readNextBucket();
 		}
 		Encoding curCode = new Encoding();
 		byte[] data = curBuck.getOctree(nextID.offset);

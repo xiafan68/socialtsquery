@@ -146,6 +146,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * 
 	 * @throws IOException
 	 */
+	@Override
 	public void readNextBucket() throws IOException {
 		boolean lastBlock = false;
 		List<Block> blocks = new ArrayList<Block>();
