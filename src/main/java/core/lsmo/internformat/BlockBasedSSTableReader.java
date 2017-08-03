@@ -15,9 +15,9 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.io.SeekableDirectIO;
 import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
+import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
-import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
@@ -28,7 +28,7 @@ import util.Pair;
 import util.Profile;
 import util.ProfileField;
 
-public class BlockBasedSSTableReader implements ISSTableReader {
+public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	protected SeekableDirectIO dataInput;
 	protected SeekableDirectIO markInput;
 
@@ -170,5 +170,25 @@ public class BlockBasedSSTableReader implements ISSTableReader {
 		}
 		reader.close();
 
+	}
+
+	@Override
+	public int getBucket(BucketID id, Bucket bucket) throws IOException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
+			throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
+			WritableComparableKey curCode) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
