@@ -21,21 +21,21 @@ import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.bdbformat.SSTableScanner;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
+import core.lsmo.persistence.SSTableScanner;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
 import core.lsmt.IndexHelper;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter;
+import core.lsmt.postinglist.PostingListMeta;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
@@ -310,7 +310,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		ByteArrayOutputStream tempDataBout = new ByteArrayOutputStream();
 		DataOutputStream tempDataDos = new DataOutputStream(tempDataBout);
 
-		Bucket markUpBuck; //the bucket used to store (key, offset) pairs
+		Bucket markUpBuck; //the bucket used to store sentinel octant
 		Bucket dataBuck; // the bucket that stores octants
 		List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 		List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs

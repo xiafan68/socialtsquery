@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
-import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.ISSTableReader;
 import util.Configuration;
 
 public class DifferentIndexCompareTest {

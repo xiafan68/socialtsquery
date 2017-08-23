@@ -5,9 +5,9 @@ import java.util.List;
 import core.lsmt.ILSMTFactory;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 
 public enum SortedListBasedLSMTFactory implements ILSMTFactory {

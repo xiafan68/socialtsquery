@@ -19,10 +19,10 @@ import org.apache.log4j.Logger;
 
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter;
 import io.FileUtil;
 import util.Configuration;
 

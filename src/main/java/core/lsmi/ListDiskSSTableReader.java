@@ -12,14 +12,14 @@ import common.MidSegment;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.IPostingListIterator;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.bdbindex.BucketBasedSSTableReader;
+import core.lsmt.postinglist.IPostingListIterator;
+import core.lsmt.postinglist.PostingListMeta;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PostingListMeta;
 
 public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 

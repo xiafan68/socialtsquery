@@ -4,9 +4,9 @@ import java.util.List;
 
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter;
 import core.lsmo.bdbformat.DiskSSTableBDBReader;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.ILSMTFactory;

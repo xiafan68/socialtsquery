@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.postinglist;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -10,9 +10,16 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Configuration;
 
+/**
+ * This class defines the interfaces needed to write a posting list into disk
+ * @author xiafan
+ * @date 2017/08/23
+ *
+ */
 public abstract class ISSTableWriter {
 	protected SSTableMeta meta;
 	protected Configuration conf;
@@ -24,7 +31,9 @@ public abstract class ISSTableWriter {
 		this.splitRatio = conf.getSplitingRatio();
 	}
 	
-	public abstract SSTableMeta getMeta();
+	public SSTableMeta getMeta(){
+		return meta;
+	}
 
 	public abstract void open(File dir) throws IOException;
 

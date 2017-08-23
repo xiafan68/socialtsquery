@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.postinglist;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import common.MidSegment;
+import core.lsmt.WritableComparableKey;
 import util.Pair;
 
 /**

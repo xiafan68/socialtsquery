@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmt.postinglist.ISSTableReader;
 import util.Pair;
 
 public interface IBucketBasedSSTableReader extends ISSTableReader {

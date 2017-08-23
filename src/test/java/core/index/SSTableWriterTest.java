@@ -14,7 +14,7 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter;
+import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import io.DirLineReader;

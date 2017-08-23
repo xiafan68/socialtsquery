@@ -9,10 +9,10 @@ import common.MidSegment;
 import core.commom.MemoryPostingListIterUtil;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.IPostingListIterator;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.PostingListMeta;
+import core.lsmt.postinglist.IPostingListIterator;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.PostingListMeta;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
 import util.Pair;
 

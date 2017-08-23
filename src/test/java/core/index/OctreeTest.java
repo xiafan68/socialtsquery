@@ -10,7 +10,7 @@ import common.MidSegment;
 
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.OctreeTextWriter;
-import core.lsmt.PostingListMeta;
+import core.lsmt.postinglist.PostingListMeta;
 
 public class OctreeTest {
 	@Test

@@ -11,7 +11,7 @@ import core.io.Block.BLOCKTYPE;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.internformat.SkipCell;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import segmentation.Interval;

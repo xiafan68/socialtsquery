@@ -1,12 +1,12 @@
-package core.lsmo.bdbformat;
+package core.lsmo.persistence;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
 import core.lsmo.octree.IOctreeIterator;
-import core.lsmt.ISSTableReader;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.ISSTableReader;
 import util.Pair;
 
 public class SSTableScanner implements Iterator<Entry<WritableComparableKey, IOctreeIterator>> {

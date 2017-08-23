@@ -18,9 +18,9 @@ import core.io.Bucket.BucketID;
 import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
-import core.lsmt.ISSTableWriter.DirEntry;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.PostingListMeta;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
 
 /**

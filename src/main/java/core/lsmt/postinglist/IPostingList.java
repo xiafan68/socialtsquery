@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.postinglist;
 
 import common.MidSegment;
 

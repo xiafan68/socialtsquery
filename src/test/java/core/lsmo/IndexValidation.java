@@ -16,10 +16,10 @@ import core.executor.QueryExecutorFactory.ExecType;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.postinglist.ISSTableReader;
 import segmentation.Interval;
 import util.Configuration;
 

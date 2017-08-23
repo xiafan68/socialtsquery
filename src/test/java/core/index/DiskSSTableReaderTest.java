@@ -23,8 +23,8 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableReader;
 import util.Configuration;
-import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 

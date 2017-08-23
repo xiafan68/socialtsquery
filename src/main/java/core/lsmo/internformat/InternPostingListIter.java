@@ -13,8 +13,8 @@ import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreePostingListIter;
-import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
 
 public class InternPostingListIter extends OctreePostingListIter {

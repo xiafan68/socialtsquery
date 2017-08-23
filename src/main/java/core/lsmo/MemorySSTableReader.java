@@ -8,9 +8,9 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.IPostingListIterator;
-import core.lsmt.ISSTableReader;
-import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.postinglist.IPostingListIterator;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey;
 
 public class MemorySSTableReader implements ISSTableReader {

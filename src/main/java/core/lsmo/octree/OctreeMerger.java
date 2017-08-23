@@ -7,9 +7,9 @@ import java.util.PriorityQueue;
 
 import common.MidSegment;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 import core.commom.Encoding;
-import core.lsmt.PostingListMeta;
 
 /**
  * merge leaf nodes of two octrees

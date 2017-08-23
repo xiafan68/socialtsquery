@@ -9,6 +9,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
 
 /**

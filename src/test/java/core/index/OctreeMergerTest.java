@@ -22,9 +22,9 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.postinglist.PostingListMeta;
 import segmentation.Segment;
 import util.Configuration;
 

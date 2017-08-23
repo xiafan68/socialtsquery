@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.MidSegment;
+import core.lsmt.postinglist.IPostingList;
+import core.lsmt.postinglist.ISSTableReader;
 
 /**
  * 常驻内存中的memtable的抽象，这里对于postinglist的类型支持抽象，从而能够兼容各种实现

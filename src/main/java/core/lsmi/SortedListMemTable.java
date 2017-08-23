@@ -7,12 +7,12 @@ import java.util.List;
 
 import common.MidSegment;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
-import core.lsmt.IPostingList;
-import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.IPostingList;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.PostingListMeta;
 
 public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> {
 	// for the reason of multiple thread

@@ -5,7 +5,8 @@ import java.io.IOException;
 
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.postinglist.ISSTableWriter;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Configuration;
 
 /**

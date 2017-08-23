@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import common.IntegerUtil;
 import common.MidSegment;
 import core.commom.Point;
-import core.lsmt.IPostingList;
-import core.lsmt.PostingListMeta;
+import core.lsmt.postinglist.IPostingList;
+import core.lsmt.postinglist.PostingListMeta;
 
 /**
  * the in-memory implementation of octree: edges are power of 2

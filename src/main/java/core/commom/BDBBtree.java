@@ -22,11 +22,11 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.PreloadConfig;
 
 import core.io.Bucket.BucketID;
-import core.lsmt.ISSTableWriter.DirEntry;
 import util.Configuration;
 import util.Pair;
 import util.Profile;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 
 public class BDBBtree {
 	private Environment env;

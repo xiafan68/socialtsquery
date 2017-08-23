@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.MidSegment;
-import core.lsmt.IPostingListIterator;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.IPostingListIterator;
+import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 
 public class MemoryPostingListIterUtil {

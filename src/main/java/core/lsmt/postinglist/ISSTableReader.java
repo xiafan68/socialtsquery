@@ -1,10 +1,12 @@
-package core.lsmt;
+package core.lsmt.postinglist;
 
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.lsmt.IMemTable;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,

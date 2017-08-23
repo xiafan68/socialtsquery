@@ -23,10 +23,10 @@ import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.FileBasedIndexHelper;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.WritableComparableKey;
 import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
 
 /**

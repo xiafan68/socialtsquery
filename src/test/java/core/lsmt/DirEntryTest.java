@@ -8,9 +8,9 @@ import java.io.IOException;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.Test;
 
-import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparableKey.StringKey;
 import core.lsmt.WritableComparableKey.StringKeyFactory;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 
 public class DirEntryTest {
 	@Test

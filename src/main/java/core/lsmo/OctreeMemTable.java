@@ -2,11 +2,11 @@ package core.lsmo;
 
 import common.MidSegment;
 import core.lsmo.octree.MemoryOctree;
-import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.PostingListMeta;
 
 public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;

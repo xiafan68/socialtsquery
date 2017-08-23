@@ -16,9 +16,10 @@ import core.io.Block.BLOCKTYPE;
 import io.ByteUtil;
 
 /**
- * When storing octants into disk, they are first written into a bucket. A bucket may contain multiple octants and stored 
- * in multiple blocks. The storage format of the bucket is: 
- * [total number of octants] [octant] [octant] [padding bits]
+ * When storing octants into disk, they are first written into a bucket. A
+ * bucket may contain multiple octants and stored in multiple blocks. The
+ * storage format of the bucket is: [total number of octants] [octant] [octant]
+ * [padding bits]
  * 
  * @author xiafan
  *
@@ -29,6 +30,12 @@ public class Bucket {
 	List<byte[]> octants = new ArrayList<byte[]>();
 
 	int blockIdx = 0;
+	boolean isVarLength = true;
+
+	public Bucket(int blockIdx, boolean isVarLength) {
+		this.blockIdx = blockIdx;
+		this.isVarLength = isVarLength;
+	}
 
 	public Bucket(long offset) {
 		blockIdx = (int) (offset / Block.BLOCK_SIZE);
@@ -41,6 +48,14 @@ public class Bucket {
 		}
 		totalSize += 4;
 		totalSize += octant.length;
+	}
+
+	public boolean isVarLength() {
+		return isVarLength;
+	}
+
+	public int blockNum() {
+		return (totalSize + 4) / Block.availableSpace();
 	}
 
 	public List<Block> toBlocks() throws IOException {

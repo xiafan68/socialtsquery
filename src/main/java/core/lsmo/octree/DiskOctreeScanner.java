@@ -13,10 +13,10 @@ import core.commom.Encoding;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.IBucketBasedSSTableReader;
-import core.lsmt.ISSTableWriter.DirEntry;
 import util.Pair;
-import core.lsmt.PostingListMeta;
 import core.lsmt.WritableComparableKey;
+import core.lsmt.postinglist.PostingListMeta;
+import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 
 /**
  * 用于扫描一个sstable文件中的一个posting list

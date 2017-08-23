@@ -11,8 +11,8 @@ import core.commom.TempKeywordQuery;
 import core.executor.domain.KeyedCandQueue;
 import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
-import core.lsmt.IPostingListIterator;
 import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.postinglist.IPostingListIterator;
 import segmentation.Interval;
 
 /**

@@ -2,7 +2,7 @@ package core.lsmo.octree;
 
 import java.io.IOException;
 
-import core.lsmt.IPostingListIterator;
+import core.lsmt.postinglist.IPostingListIterator;
 
 public interface IOctreeIterator extends IPostingListIterator {
 

@@ -1,4 +1,4 @@
-package core.lsmo.bdbformat;
+package core.lsmo.persistence;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -6,14 +6,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
@@ -23,42 +25,72 @@ import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
-import core.lsmo.persistence.SSTableScanner;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
 import util.PeekIterDecorate;
-import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
 
-public class OctreeSSTableWriter extends ISSTableWriter {
-	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
+/**
+ * This class defines interfaces needed to write octree into disk in a linear
+ * manner.
+ * 
+ * @author xiafan
+ *
+ */
+public abstract class IOctreeSSTableWriter extends ISSTableWriter {
+	private static final Logger logger = Logger.getLogger(IOctreeSSTableWriter.class);
+
+	// stores the directory
+	BDBBtree dirMap = null;
+
 	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
 
+	// for data files
 	FileOutputStream dataFileOs;
 	DataOutputStream dataDos;
 	private BufferedOutputStream dataBuffer;
+	/*
+	 * the existing of waiting data bucket is caused by the fact that bucket may
+	 * not be written in a sequential manner. It happens when we try to write
+	 * skip index in data block. First, index blocks are chained by forward
+	 * link. Thus, the position of the next index block should be fixed when the
+	 * current index block is to be written into disk. Second, an index block
+	 * may be overflow after many data blocks have been written (as the index
+	 * block contains pointers to those data blocks). However, those data blocks
+	 * cann't be actually written to disk if the index block haven not been
+	 * written as it has already reserves a position in the disk.
+	 */
+	List<Bucket> waitingDataBucket = new ArrayList<Bucket>();
+	// num of data blocks that are waiting to be flushed
+	int unKnowSizeBucketNum = 0;
+	int waitingBlockNum = 0;
 
 	private int step;
-	Bucket buck = new Bucket(0);
-	IndexHelper indexHelper;
+
+	// state for writing a single octree
+	private int curStep;
+	int leafOctantNum = 0;
+	int sentinelOctantNum = 0;
 
 	/**
-	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
+	 * This constructor is used to create writers that merge multiple sstables
+	 * into a single one
 	 * 
-	 * @param meta新生成文件的元数据
+	 * @param meta
+	 *            stores metadata of the new sstable
 	 * @param tables
-	 *            需要压缩的表
+	 *            sstables that are to be compacted
 	 * @param conf
-	 *            配置信息
+	 *            configuration
 	 */
-	public OctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
+	public IOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		super(meta, conf);
-		
+
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -70,17 +102,18 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		}
 
 		this.step = conf.getIndexStep();
-		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
-					.newInstance(conf);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 	}
 
-	public OctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
+	/**
+	 * This constructor is used to create writers that flush in-memory octrees
+	 * into a disk one
+	 * 
+	 * @param tables
+	 * @param conf
+	 */
+	public IOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
-		
+
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -117,20 +150,6 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
-		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
-					.newInstance(conf);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public SSTableMeta getMeta() {
-		return meta;
-	}
-
-	public static File dataFile(File dir, SSTableMeta meta) {
-		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 
 	/**
@@ -143,8 +162,9 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	public void write() throws IOException {
 		while (iter.hasNext()) {
 			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
-			logger.debug(String.format("writing postinglist for key%s",entry.getKey()));
-			indexHelper.startPostingList(entry.getKey(), buck.blockIdx());
+			logger.debug(String.format("writing postinglist for key%s", entry.getKey()));
+			// start writing a new posting list
+			startNewPostingList();
 			// setup meta values
 			for (IOctreeIterator iter : entry.getValue()) {
 				indexHelper.getDirEntry().merge(iter.getMeta());
@@ -159,7 +179,7 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 				}
 			}
 			writeOctree(treeIter);
-			endPostingList();// end a new posting list
+			endNewPostingList();// end a new posting list
 		}
 	}
 
@@ -172,23 +192,65 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		dataBuffer = new BufferedOutputStream(dataFileOs);
 		dataDos = new DataOutputStream(dataBuffer);
 
-		try {
-			indexHelper.openIndexFile(dir, meta);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		dirMap = new BDBBtree(dirMetaFile(dir, meta), conf);
+		dirMap.open(false, false);
 	}
 
 	/**
-	 * the visiting of the parent controls the setup of bucket
+	 * start writing a new posting list into disk
+	 */
+	protected abstract void startNewPostingList();
+
+	/**
+	 * start writing a new posting list into disk
+	 */
+	protected abstract void endNewPostingList();
+
+	protected abstract void writeSentinelOctant(OctreeNode octreeNode) throws IOException;
+
+	protected abstract void writeLeafOctant(OctreeNode octreeNode) throws IOException;
+
+	protected abstract void addSkipOffset(WritableComparableKey code) throws IOException;
+
+	protected abstract void firstLeafOctantWritten();
+
+	protected abstract void firstSentinelOctantWritten();
+
+	public Bucket allocateVarLenDataBucket() throws IOException {
+		unKnowSizeBucketNum++;
+		return new Bucket(currentBlockIdx() + waitingBlockNum, true);
+	}
+
+	public Bucket allocateDataBucket() throws IOException {
+		return new Bucket(currentBlockIdx() + waitingBlockNum, false);
+	}
+
+	public void writeDataBucket(Bucket bucket) {
+		if (bucket.isVarLength())
+			unKnowSizeBucketNum--;
+		if (waitingDataBucket.get(0) == bucket) {
+			
+		}
+	}
+
+	public int currentBlockIdx() throws IOException {
+		dataDos.flush();
+		dataFileOs.flush();
+		return (int) (dataFileOs.getChannel().size() / Block.BLOCK_SIZE);
+	}
+
+	/**
+	 * write a single octree into disk
 	 * 
 	 * @param octreeNode
 	 * @throws IOException
 	 */
 	public void writeOctree(IOctreeIterator iter) throws IOException {
-		boolean first = true;
+		leafOctantNum = 0;
+		sentinelOctantNum = 0;
+		curStep = 0;
 		OctreeNode octreeNode = null;
-		int count = 0;
+
 		while (iter.hasNext()) {
 			octreeNode = iter.nextNode();
 			if (octreeNode.size() > 0 || Encoding.isMarkupNode(octreeNode.getEncoding())) {
@@ -197,47 +259,39 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 					for (int i = 0; i < 8; i++)
 						iter.addNode(octreeNode.getChild(i));
 				} else {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					DataOutputStream dos = new DataOutputStream(baos);
-					// first write the octant code, then write the octant
-					octreeNode.getEncoding().write(dos);
-					octreeNode.write(dos);
-					byte[] data = baos.toByteArray();
-					if (!buck.canStore(data.length)) {
-						buck.write(getDataDos());
-						newDataBucket();
+					if (octreeNode.size() > 0) {
+						writeLeafOctant(octreeNode);
+						if (++leafOctantNum == 1) {
+							firstLeafOctantWritten();
+						}
+					} else {
+						writeSentinelOctant(octreeNode);
+						if (++sentinelOctantNum == 1) {
+							firstSentinelOctantWritten();
+						}
 					}
-					logger.debug(octreeNode.getEncoding());
-					buck.storeOctant(data);
-					if (first) {
-						first = false;
-						indexHelper.setupDataStartBlockIdx(buck.blockIdx());
-					}
-					if (count++ % step == 0) {
-						indexHelper.buildIndex(octreeNode.getEncoding(), buck.blockIdx());
+
+					if (curStep++ % step == 0) {
+						addSkipOffset(octreeNode.getEncoding());
 					}
 				}
 			}
 		}
-		if (first) {
-			indexHelper.setupDataStartBlockIdx(buck.blockIdx());
+
+		// this should never happens!!!
+		if (leafOctantNum == 0) {
+			firstLeafOctantWritten();
 		}
 	}
 
 	public void close() throws IOException {
-		if (dataBuffer != null) {
-			if (buck != null) {
-				buck.write(getDataDos());
-				logger.debug("last bucket:" + buck.toString());
-			}
+		dataBuffer.close();
+		dataBuffer = null;
+		dataDos.close();
+		dataFileOs.close();
 
-			dataDos.close();
-			dataBuffer.close();
-			dataBuffer = null;
-			dataFileOs.close();
-
-			indexHelper.close();
-		}
+		dirMap.close();
+		dirMap = null;
 	}
 
 	@Override
@@ -247,10 +301,6 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private void endPostingList() throws IOException {
-		indexHelper.endPostingList(buck.blockIdx());
 	}
 
 	/**
@@ -269,41 +319,38 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public Bucket getDataBucket() {
-		return buck;
-	}
-
-	@Override
-	public Bucket newDataBucket() {
-		buck.reset();
+	public void moveToDir(File preDir, File dir) {
+		File tmpFile = IOctreeSSTableWriter.dataFile(preDir, getMeta());
+		tmpFile.renameTo(IOctreeSSTableWriter.dataFile(dir, getMeta()));
 		try {
-			if (dataBuffer != null)
-				dataBuffer.flush();
-			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Block.BLOCK_SIZE));
+			FileUtils.moveDirectory(dirMetaFile(preDir, meta), dirMetaFile(dir, meta));
 		} catch (IOException e) {
+			logger.error(e.getMessage());
 			throw new RuntimeException(e);
 		}
-		return buck;
-	}
-
-	@Override
-	public void moveToDir(File preDir, File dir) {
-		File tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
-		tmpFile.renameTo(OctreeSSTableWriter.dataFile(dir, getMeta()));
-		indexHelper.moveToDir(preDir, dir, meta);
 	}
 
 	@Override
 	public boolean validate(SSTableMeta meta) {
 		File dFile = dataFile(conf.getIndexDir(), meta);
-		if (!dFile.exists())
-			return false;
-		return indexHelper.validate(meta);
+		File dirFile = dirMetaFile(conf.getIndexDir(), meta);
+		return dFile.exists() && !dirFile.exists();
 	}
 
 	@Override
 	public void delete(File indexDir, SSTableMeta meta) {
 		dataFile(conf.getIndexDir(), meta).delete();
-		indexHelper.delete(conf.getIndexDir(), meta);
+		try {
+			FileUtils.deleteDirectory(dirMetaFile(indexDir, meta));
+		} catch (IOException e) {
+		}
+	}
+
+	public static File dirMetaFile(File dir, SSTableMeta meta) {
+		return new File(dir, String.format("%d_%d_dir", meta.version, meta.level));
+	}
+
+	public static File dataFile(File dir, SSTableMeta meta) {
+		return new File(dir, String.format("%d_%d.data", meta.version, meta.level));
 	}
 }

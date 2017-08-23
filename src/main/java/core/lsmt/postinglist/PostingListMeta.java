@@ -1,4 +1,4 @@
-package core.lsmt;
+package core.lsmt.postinglist;
 
 import java.io.DataInput;
 import java.io.DataOutput;

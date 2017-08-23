@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.Encoding;
-import core.lsmt.PostingListMeta;
+import core.lsmt.postinglist.PostingListMeta;
 import io.DirLineReader;
 import segmentation.Segment;
 

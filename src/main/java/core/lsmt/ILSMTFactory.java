@@ -3,6 +3,8 @@ package core.lsmt;
 import java.util.List;
 
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableReader;
+import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
 
 /**
