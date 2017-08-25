@@ -157,6 +157,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 		if (pair == null) {
 			pair = reader.floorOffset(entry.curKey, curMin);
 		}
+		logger.debug(String.format("celloffset for %s is %s", curMin.toString(), pair.getKey()));
 		return pair;
 	}
 
@@ -260,7 +261,6 @@ public class OctreePostingListIter implements IOctreeIterator {
 	public OctreeNode nextNode() throws IOException {
 		advance();
 		OctreeNode ret = curNode;
-		logger.debug(entry.toString() + ";" + ret.getEncoding().toString());
 		curNode = null;
 		return ret;
 	}

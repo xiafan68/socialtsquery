@@ -311,7 +311,8 @@ public class DiskBasedPerfTest {
 		parser.accepts("c", "index configuration file").withRequiredArg().ofType(String.class);
 		parser.accepts("q", "data file location").withRequiredArg().ofType(String.class);
 		parser.accepts("s", "type:all, single, facts").withRequiredArg().ofType(String.class);
-
+		parser.accepts("l", "log4j configuration file").withRequiredArg().ofType(String.class);
+		
 		OptionSet opts = null;
 		try {
 			opts = parser.parse(args);
@@ -324,6 +325,7 @@ public class DiskBasedPerfTest {
 			return;
 		}
 
+		PropertyConfigurator.configure(opts.valueOf("l").toString());
 		DiskBasedPerfTest test = new DiskBasedPerfTest();
 		test.loadQuery(opts.valueOf("q").toString());
 

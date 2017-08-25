@@ -138,6 +138,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 				}
 			}
 		} while (true);
+		logger.debug(String.format("celloffset for %s is %s", curMin.toString(), ret.getValue().toString()));
 		return ret;
 	}
 
