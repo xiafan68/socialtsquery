@@ -1,4 +1,4 @@
-package core.lsmo.bdbformat;
+package core.lsmo.common;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -6,12 +6,12 @@ import java.util.Map.Entry;
 
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.ISSTableReader;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Pair;
 
-public class SSTableScanner implements Iterator<Entry<WritableComparableKey, IOctreeIterator>> {
+public class SSTableScanner implements Iterator<Entry<WritableComparable, IOctreeIterator>> {
 	ISSTableReader reader;
-	Iterator<WritableComparableKey> iter;
+	Iterator<WritableComparable> iter;
 
 	public SSTableScanner(ISSTableReader reader) {
 		this.reader = reader;
@@ -24,11 +24,11 @@ public class SSTableScanner implements Iterator<Entry<WritableComparableKey, IOc
 	}
 
 	@Override
-	public Entry<WritableComparableKey, IOctreeIterator> next() {
-		WritableComparableKey entry = iter.next();
-		Pair<WritableComparableKey, IOctreeIterator> ret;
+	public Entry<WritableComparable, IOctreeIterator> next() {
+		WritableComparable entry = iter.next();
+		Pair<WritableComparable, IOctreeIterator> ret;
 		try {
-			ret = new Pair<WritableComparableKey, IOctreeIterator>(entry,
+			ret = new Pair<WritableComparable, IOctreeIterator>(entry,
 					(IOctreeIterator) reader.getPostingListScanner(entry));
 		} catch (IOException e) {
 			e.printStackTrace();

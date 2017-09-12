@@ -13,12 +13,14 @@ import java.util.List;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import core.io.Block.BLOCKTYPE;
+import core.lsmt.WritableComparable;
 import io.ByteUtil;
 
 /**
- * When storing octants into disk, they are first written into a bucket. A bucket may contain multiple octants and stored 
- * in multiple blocks. The storage format of the bucket is: 
- * [total number of octants] [octant] [octant] [padding bits]
+ * When storing octants into disk, they are first written into a bucket. A
+ * bucket may contain multiple octants and stored in multiple blocks. The
+ * storage format of the bucket is: [total number of octants] [octant] [octant]
+ * [padding bits]
  * 
  * @author xiafan
  *
@@ -29,6 +31,10 @@ public class Bucket {
 	List<byte[]> octants = new ArrayList<byte[]>();
 
 	int blockIdx = 0;
+
+	public Bucket(int blockIdx) {
+		this.blockIdx = blockIdx;
+	}
 
 	public Bucket(long offset) {
 		blockIdx = (int) (offset / Block.BLOCK_SIZE);
@@ -126,7 +132,7 @@ public class Bucket {
 		read(blocks);
 	}
 
-	public static class BucketID implements Comparable<BucketID> {
+	public static class BucketID implements WritableComparable {
 		public int blockID;
 		public short offset;
 
@@ -182,7 +188,8 @@ public class Bucket {
 		}
 
 		@Override
-		public int compareTo(BucketID o) {
+		public int compareTo(WritableComparable other) {
+			BucketID o = (BucketID) other;
 			int ret = Integer.compare(blockID, o.blockID);
 			if (ret == 0) {
 				ret = Integer.compare(offset, o.offset);

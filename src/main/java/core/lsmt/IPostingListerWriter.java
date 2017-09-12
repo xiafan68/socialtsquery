@@ -9,26 +9,29 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import util.Configuration;
 
 /**
- * define interfaces required to store (key, offset) pair. The <code>BucketID</code> class stores
- * information required to seek the bucket whose data contains key.
+ * define interfaces required to store (key, offset) pair. The
+ * <code>BucketID</code> class stores information required to seek the bucket
+ * whose data contains key.
  * 
  * @author xiafan
  *
  */
-public abstract class IndexHelper {
+public abstract class IPostingListerWriter {
 	protected DirEntry curDir;
 	protected Configuration conf;
+	protected int step;
 
-	public IndexHelper(Configuration conf) {
+	public IPostingListerWriter(Configuration conf) {
 		curDir = new DirEntry(conf.getIndexKeyFactory());
 		this.conf = conf;
+		this.step = conf.getIndexStep();
 	}
 
 	public void setupDataStartBlockIdx(BucketID newListStart) {
 		curDir.startBucketID.copy(newListStart);
 	}
 
-	public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
+	public void startPostingList(WritableComparable key, BucketID newListStart) throws IOException {
 		if (newListStart != null)
 			curDir.startBucketID.copy(newListStart);
 		curDir.curKey = key;
@@ -38,8 +41,9 @@ public abstract class IndexHelper {
 		curDir.maxTime = Integer.MIN_VALUE;
 	}
 
-	public void endPostingList(BucketID postingListEnd) throws IOException {
+	public DirEntry endPostingList(BucketID postingListEnd) throws IOException {
 		curDir.endBucketID.copy(postingListEnd);
+		return curDir;
 	}
 
 	public void process(int startTime, int endTime) {
@@ -50,7 +54,7 @@ public abstract class IndexHelper {
 
 	public abstract void openIndexFile(File dir, SSTableMeta meta) throws IOException;
 
-	public abstract void buildIndex(WritableComparableKey code, BucketID id) throws IOException;
+	public abstract void buildIndex(WritableComparable code, BucketID id) throws IOException;
 
 	public DirEntry getDirEntry() {
 		return curDir;
@@ -67,7 +71,7 @@ public abstract class IndexHelper {
 	@Override
 	public void finalize() {
 		try {
-			//in case we forget to close the file handle
+			// in case we forget to close the file handle
 			close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);

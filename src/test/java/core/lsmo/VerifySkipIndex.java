@@ -8,12 +8,12 @@ import org.junit.Test;
 import core.commom.BDBBtree;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
+import core.lsmo.common.SkipCell;
 import core.lsmo.internformat.BlockBasedSSTableReader;
-import core.lsmo.internformat.SkipCell;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import segmentation.Interval;
 
 public class VerifySkipIndex {
@@ -28,9 +28,9 @@ public class VerifySkipIndex {
 			for (SSTableMeta meta : internIndex.getVersion().diskTreeMetas) {
 				BlockBasedSSTableReader reader = (BlockBasedSSTableReader) internIndex
 						.getSSTableReader(internIndex.getVersion(), meta);
-				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				Iterator<WritableComparable> iter = reader.keySetIter();
 				while (iter.hasNext()) {
-					WritableComparableKey key = iter.next();
+					WritableComparable key = iter.next();
 					DirEntry entry = reader.getDirEntry(key);
 
 

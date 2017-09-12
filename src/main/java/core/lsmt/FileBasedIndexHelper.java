@@ -11,7 +11,7 @@ import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;
 
-public class FileBasedIndexHelper extends IndexHelper {
+public class FileBasedIndexHelper extends IPostingListerWriter {
 
 	protected FileOutputStream indexFileDos;
 	protected DataOutputStream indexDos; // write down the encoding of each
@@ -41,7 +41,7 @@ public class FileBasedIndexHelper extends IndexHelper {
 	}
 
 	@Override
-	public void startPostingList(WritableComparableKey key,
+	public void startPostingList(WritableComparable key,
 			BucketID newListStart) throws IOException {
 		super.startPostingList(key, newListStart);
 		if (indexBuffer != null)
@@ -63,7 +63,7 @@ public class FileBasedIndexHelper extends IndexHelper {
 		tmpFile.renameTo(dirMetaFile(dir, meta));
 	}
 
-	public void buildIndex(WritableComparableKey code, BucketID id)
+	public void buildIndex(WritableComparable code, BucketID id)
 			throws IOException {
 		curDir.sampleNum++;
 		code.write(indexDos);

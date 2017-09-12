@@ -1,4 +1,4 @@
-package core.lsmo.internformat;
+package core.lsmo.bdb;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,8 +18,8 @@ import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.WritableComparable;
 import util.Pair;
 
-public class InternPostingListIter extends OctreePostingListIter {
-	private static final Logger logger = Logger.getLogger(InternPostingListIter.class);
+public class BDBSkipListPostingListIter extends OctreePostingListIter {
+	private static final Logger logger = Logger.getLogger(BDBSkipListPostingListIter.class);
 
 	TreeMap<Integer, SkipCell> skipMeta = new TreeMap<Integer, SkipCell>();
 	int curSkipBlockIdx;
@@ -30,7 +30,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * @param ts
 	 * @param te
 	 */
-	public InternPostingListIter(DirEntry entry, BlockBasedSSTableReader reader, int ts, int te) {
+	public BDBSkipListPostingListIter(DirEntry entry, BDBSkipListSSTableReader reader, int ts, int te) {
 		super(entry, reader, ts, te);
 		if (entry != null && entry.curKey != null && entry.minTime <= te && entry.maxTime >= ts) {
 			curSkipBlockIdx = DirEntry.indexBlockIdx(entry.indexStartOffset);
@@ -44,7 +44,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * @throws IOException
 	 */
 	private void loadMetaBlock(Block block) throws IOException {
-		SkipCell cell = new SkipCell(block.getBlockIdx(), ((BlockBasedSSTableReader) reader).getFactory());
+		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getFactory());
 		cell.read(block);
 		skipMeta.put(block.getBlockIdx(), cell);
 	}

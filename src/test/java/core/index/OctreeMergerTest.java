@@ -23,8 +23,8 @@ import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.StringKey;
 import segmentation.Segment;
 import util.Configuration;
 
@@ -107,13 +107,13 @@ public class OctreeMergerTest {
 		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(1, level));
 		rhs.init();
 
-		Iterator<WritableComparableKey> keyIter = lhs.keySetIter();
+		Iterator<WritableComparable> keyIter = lhs.keySetIter();
 		int size = 0;
 
 		// System.setOut(new PrintStream(new
 		// FileOutputStream("/tmp/131_1.txt")));
 		while (keyIter.hasNext()) {
-			WritableComparableKey key = keyIter.next();
+			WritableComparable key = keyIter.next();
 			// key = 0;
 			System.out.println("merge for key:" + key);
 			OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(key), rhs.getPostingListScanner(key));

@@ -16,7 +16,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Configuration;
 
 public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
@@ -24,7 +24,7 @@ public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
 	// Logger.getLogger(SortedListSSTableWriter.class);
 
 	InternOctreeSSTableWriter octreeWriter;
-	Iterator<Entry<WritableComparableKey, SortedListPostinglist>> iter;
+	Iterator<Entry<WritableComparable, SortedListPostinglist>> iter;
 
 	public SortedListToOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
@@ -58,7 +58,7 @@ public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
 	@Override
 	public void write() throws IOException {
 		while (iter.hasNext()) {
-			Entry<WritableComparableKey, SortedListPostinglist> pair = iter.next();
+			Entry<WritableComparable, SortedListPostinglist> pair = iter.next();
 			Iterator<MidSegment> iter = pair.getValue().iterator();
 			// build the octree
 			MemoryOctree tree = new MemoryOctree(new PostingListMeta(), conf.getOctantSizeLimit());

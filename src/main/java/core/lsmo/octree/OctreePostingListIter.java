@@ -16,7 +16,7 @@ import core.io.Bucket.BucketID;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import io.ByteUtil;
 import util.Pair;
 import util.Profile;
@@ -151,8 +151,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 		return ret;
 	}
 
-	protected Pair<WritableComparableKey, BucketID> cellOffset() throws IOException {
-		Pair<WritableComparableKey, BucketID> pair = null;
+	protected BucketID cellOffset() throws IOException {
+		BucketID pair = null;
 		pair = reader.cellOffset(entry.curKey, curMin);
 		if (pair == null) {
 			pair = reader.floorOffset(entry.curKey, curMin);
@@ -173,12 +173,12 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @throws IOException
 	 */
 	protected boolean skipToOctant() throws IOException {
-		Pair<WritableComparableKey, BucketID> pair = cellOffset();
-		if (pair.getKey() != null) {
+		BucketID id = cellOffset();
+		if (id != null) {
 			// 利用pair跳转，nextID
-			if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
+			if (curBuck.octNum() == 0 || nextID.compareTo(id) < 0) {
 				curBuck.reset();
-				nextID.copy(pair.getValue());
+				nextID.copy(id);
 			}
 
 			while (diskHasMore()) {
@@ -207,7 +207,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	protected Encoding readNextOctantCode() throws IOException {
 		if (curBuck.blockIdx().blockID < 0 || nextID.blockID != curBuck.blockIdx().blockID) {
 			curBuck.reset();
-			nextBlockID = nextID.blockID;	
+			nextBlockID = nextID.blockID;
 			readNextBucket();
 		} else if (nextID.offset >= curBuck.octNum()) {
 			curBuck.reset();
@@ -277,7 +277,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

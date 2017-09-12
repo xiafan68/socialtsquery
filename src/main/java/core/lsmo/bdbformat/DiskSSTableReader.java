@@ -7,8 +7,8 @@ import core.lsmo.octree.DiskOctreeScanner;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import core.lsmt.bdbindex.BucketBasedSSTableReader;
 import core.lsmt.LSMTInvertedIndex;
 
@@ -24,7 +24,7 @@ public class DiskSSTableReader extends BucketBasedSSTableReader {
 	private static enum EncodingFactory implements WritableComparableKeyFactory {
 		INSTANCE;
 		@Override
-		public WritableComparableKey createIndexKey() {
+		public WritableComparable createIndexKey() {
 			return new Encoding();
 		}
 	}
@@ -33,11 +33,11 @@ public class DiskSSTableReader extends BucketBasedSSTableReader {
 		super(index, meta, EncodingFactory.INSTANCE);
 	}
 
-	public IOctreeIterator getPostingListScanner(WritableComparableKey key) {
+	public IOctreeIterator getPostingListScanner(WritableComparable key) {
 		return new DiskOctreeScanner(dirMap.get(key), this);
 	}
 
-	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IOctreeIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		IOctreeIterator iter = new OctreePostingListIter(dirMap.get(key), this, start, end);
 		iter.open();
 		return iter;

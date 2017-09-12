@@ -18,7 +18,7 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import io.DirLineReader;
 import util.Configuration;
 import util.Pair;
@@ -40,7 +40,7 @@ public class ReaderWriterTest {
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(new WritableComparableKey.StringKey(
+			tree.insert(new WritableComparable.StringKey(
 					Long.toString(Math.abs(Long.toString(seg.getMid()).hashCode()) % 10)), seg);
 			if (tree.size() == conf.getFlushLimit() + 1) {
 				break;
@@ -63,9 +63,9 @@ public class ReaderWriterTest {
 	public static void readerVerify(ISSTableReader reader, Configuration conf, int level) throws IOException {
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		int size = 0;
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 			System.out.println("scanning postinglist of " + key);
 			IPostingListIterator scanner = reader.getPostingListScanner(key);
 			Pair<Integer, List<MidSegment>> cur = null;

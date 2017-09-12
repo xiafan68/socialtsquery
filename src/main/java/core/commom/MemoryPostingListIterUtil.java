@@ -7,7 +7,7 @@ import java.util.List;
 import common.MidSegment;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Pair;
 
 public class MemoryPostingListIterUtil {
@@ -63,7 +63,7 @@ public class MemoryPostingListIterUtil {
 			}
 
 			@Override
-			public void skipTo(WritableComparableKey key) throws IOException {
+			public void skipTo(WritableComparable key) throws IOException {
 
 			}
 

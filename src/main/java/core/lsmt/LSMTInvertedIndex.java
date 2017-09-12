@@ -34,7 +34,7 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.WritableComparable.StringKey;
 import core.lsmt.compact.CompactService;
 import segmentation.Interval;
 import shingle.ITextShingle;

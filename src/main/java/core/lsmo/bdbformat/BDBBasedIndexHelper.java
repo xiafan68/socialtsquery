@@ -1,4 +1,4 @@
-package core.lsmt.bdbindex;
+package core.lsmo.bdbformat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,19 +11,21 @@ import core.commom.BDBBtree;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;
-import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.IPostingListerWriter;
+import core.lsmt.ISSTableWriter.DirEntry;
+import core.lsmt.WritableComparable;
 
 /**
  * The IndexHelpler implementation based on Berkeley DB.
+ * 
  * @author xiafan
  *
  */
-public class BDBBasedIndexHelper extends IndexHelper {
+public class BDBBasedIndexHelper extends IPostingListerWriter {
 	private static final Logger logger = Logger.getLogger(BDBBasedIndexHelper.class);
 	protected BDBBtree dirMap = null;
 	protected BDBBtree skipList = null;
-	WritableComparableKey curKey = null;
+	WritableComparable curKey = null;
 
 	public BDBBasedIndexHelper(Configuration conf) {
 		super(conf);
@@ -40,16 +42,17 @@ public class BDBBasedIndexHelper extends IndexHelper {
 	}
 
 	@Override
-	public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
+	public void startPostingList(WritableComparable key, BucketID newListStart) throws IOException {
 		super.startPostingList(key, newListStart);
 		curKey = key;
 		curDir.indexStartOffset = -1;// it is not used in this setup
 	}
 
 	@Override
-	public void endPostingList(BucketID postingListEnd) throws IOException {
+	public DirEntry endPostingList(BucketID postingListEnd) throws IOException {
 		super.endPostingList(postingListEnd);
 		dirMap.insert(curKey, curDir);
+		return curDir;
 	}
 
 	@Override
@@ -63,7 +66,7 @@ public class BDBBasedIndexHelper extends IndexHelper {
 
 	}
 
-	public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
+	public void buildIndex(WritableComparable code, BucketID id) throws IOException {
 		curDir.sampleNum++;
 		skipList.insert(curKey, code, id);
 	}

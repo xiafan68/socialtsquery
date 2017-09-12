@@ -18,8 +18,8 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.StringKey;
 import segmentation.Interval;
 import util.Configuration;
 
@@ -49,11 +49,11 @@ public class IndexValidation {
 		// System.setOut(new PrintStream(fos));
 		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
-			Iterator<WritableComparableKey> iter = reader.keySetIter();
+			Iterator<WritableComparable> iter = reader.keySetIter();
 			int start = 696000;
 			int end = 699100;
 			int k = 10;
-			WritableComparableKey key;
+			WritableComparable key;
 			while (iter.hasNext()) {
 				key = iter.next();
 				try {
@@ -86,11 +86,11 @@ public class IndexValidation {
 		System.setOut(new PrintStream(fos));
 		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
-			Iterator<WritableComparableKey> iter = reader.keySetIter();
+			Iterator<WritableComparable> iter = reader.keySetIter();
 			int start = 696000;
 			int end = 699100;
 			int k = 10;
-			WritableComparableKey key;
+			WritableComparable key;
 			while (iter.hasNext()) {
 				key = iter.next();
 				try {
@@ -113,8 +113,8 @@ public class IndexValidation {
 	private static void validatePostingListSize(LSMTInvertedIndex indexA, LSMTInvertedIndex indexB) throws IOException {
 		for (SSTableMeta meta : indexA.getVersion().diskTreeMetas) {
 			ISSTableReader reader = indexA.getSSTableReader(indexA.getVersion(), meta);
-			Iterator<WritableComparableKey> iter = reader.keySetIter();
-			WritableComparableKey key;
+			Iterator<WritableComparable> iter = reader.keySetIter();
+			WritableComparable key;
 			while (iter.hasNext()) {
 				key = iter.next();
 				try {
@@ -130,7 +130,7 @@ public class IndexValidation {
 		}
 	}
 
-	private static void validatePostingListSize(WritableComparableKey key, LSMTInvertedIndex indexA,
+	private static void validatePostingListSize(WritableComparable key, LSMTInvertedIndex indexA,
 			LSMTInvertedIndex indexB) throws IOException {
 		try {
 			int sizeA = indexA.getPostingListSize(key.toString());
@@ -141,7 +141,7 @@ public class IndexValidation {
 		}
 	}
 
-	private static void validatePostingListSizeByExec(WritableComparableKey key, LSMTInvertedIndex indexA,
+	private static void validatePostingListSizeByExec(WritableComparable key, LSMTInvertedIndex indexA,
 			LSMTInvertedIndex indexB) throws IOException {
 		try {
 			int sizeA = indexA.getPostingListSizeByExec(key.toString());

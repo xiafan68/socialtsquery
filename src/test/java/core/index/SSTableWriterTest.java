@@ -16,7 +16,7 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import io.DirLineReader;
 import util.Configuration;
 
@@ -36,7 +36,7 @@ public class SSTableWriterTest {
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(new WritableComparableKey.StringKey(Long.toString(seg.getMid())), seg);
+			tree.insert(new WritableComparable.StringKey(Long.toString(seg.getMid())), seg);
 			if (tree.size() == conf.getFlushLimit()) {
 				break;
 			}

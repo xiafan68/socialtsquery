@@ -1,4 +1,4 @@
-package core.lsmo.internformat;
+package core.lsmo.common;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -15,12 +15,14 @@ import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
+import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Pair;
 
 /**
@@ -47,7 +49,7 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	private OctreeNode[] curNodes = new OctreeNode[] { null, null };
 
 	DataInputStream input = null;
-	private BlockBasedSSTableReader reader;
+	private IBucketBasedSSTableReader reader;
 
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
 		@Override
@@ -63,7 +65,7 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	 * @param meta
 	 *            the meta data of the octree
 	 */
-	public InternDiskOctreeScanner(DirEntry entry, BlockBasedSSTableReader reader) {
+	public InternDiskOctreeScanner(DirEntry entry, IBucketBasedSSTableReader reader) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
@@ -249,7 +251,7 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

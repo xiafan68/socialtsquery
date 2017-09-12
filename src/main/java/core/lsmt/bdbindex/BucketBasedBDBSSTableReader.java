@@ -11,19 +11,22 @@ import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.io.SeekableDirectIO;
+import core.lsmo.bdbformat.BDBBasedIndexHelper;
 import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.lsmo.common.SkipCell;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import util.Pair;
 import util.Profile;
 import util.ProfileField;
 
 /**
- *This implementation stores both directory data and offset index in Berkeley db
+ * This implementation stores both directory data and offset index in Berkeley
+ * db
  * 
  * @author xiafan
  *
@@ -39,6 +42,14 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	protected SSTableMeta meta;
 	WritableComparableKeyFactory keyFactory;
 
+	/**
+	 * 
+	 * @param index
+	 * @param meta
+	 * @param keyFactory
+	 *            it is the key to identify each posting list item, i.e.
+	 *            encoding in our case
+	 */
 	public BucketBasedBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta,
 			WritableComparableKeyFactory keyFactory) {
 		this.index = index;
@@ -51,7 +62,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	}
 
 	@Override
-	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
+	public DirEntry getDirEntry(WritableComparable key) throws IOException {
 		return dirMap.get(key);
 	}
 
@@ -101,13 +112,30 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 		}
 	}
 
-	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {
+	Comparator<Pair<WritableComparable, BucketID>> comp = new Comparator<Pair<WritableComparable, BucketID>>() {
 		@Override
-		public int compare(Pair<WritableComparableKey, BucketID> o1, Pair<WritableComparableKey, BucketID> o2) {
+		public int compare(Pair<WritableComparable, BucketID> o1, Pair<WritableComparable, BucketID> o2) {
 			return o1.getKey().compareTo(o2.getKey());
 		}
 
 	};
+
+	/**
+	 * 找到第一个key相同，且SkipCell的第一个encode不大于curCode的最大的那个SkipCell
+	 * 
+	 * @param curKey
+	 * @param curCode
+	 * @return
+	 * @throws IOException
+	 */
+	public SkipCell floorSkipCell(WritableComparable curKey, WritableComparable curCode) throws IOException {
+		Profile.instance.start("celloffset");
+		try {
+			return skipList.floorSkipCell(curKey, curCode);
+		} finally {
+			Profile.instance.end("celloffset");
+		}
+	}
 
 	/**
 	 * 找到第一个key相同，不大于code的octant的offset,
@@ -117,8 +145,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
-			throws IOException {
+	public BucketID cellOffset(WritableComparable curKey, WritableComparable curCode) throws IOException {
 		Profile.instance.start("celloffset");
 		try {
 			return skipList.floorOffset(curKey, curCode);
@@ -127,8 +154,7 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 		}
 	}
 
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
+	public BucketID floorOffset(WritableComparable curKey, WritableComparable curCode) throws IOException {
 		Profile.instance.start("celloffset");
 		try {
 			return skipList.cellOffset(curKey, curCode);
@@ -138,12 +164,28 @@ public abstract class BucketBasedBDBSSTableReader implements IBucketBasedSSTable
 	}
 
 	@Override
+	public synchronized int getBlockFromDataFile(Block block) throws IOException {
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
+		try {
+			dataInput.seek(block.getFileOffset());
+			block.read(dataInput);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
+		}
+	}
+
+	public WritableComparableKeyFactory getKeyFactory() {
+		return keyFactory;
+	}
+
+	@Override
 	public SSTableMeta getMeta() {
 		return meta;
 	}
 
 	@Override
-	public Iterator<WritableComparableKey> keySetIter() {
+	public Iterator<WritableComparable> keySetIter() {
 		return dirMap.keyIterator();
 	}
 

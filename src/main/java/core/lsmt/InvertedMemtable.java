@@ -18,8 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <VType>
  */
 public abstract class InvertedMemtable<pType extends IPostingList>
-		extends ConcurrentSkipListMap<WritableComparableKey, pType> implements IMemTable<pType> {
-	private ConcurrentHashMap<WritableComparableKey, AtomicInteger> wordFreq = new ConcurrentHashMap<WritableComparableKey, AtomicInteger>();
+		extends ConcurrentSkipListMap<WritableComparable, pType> implements IMemTable<pType> {
+	private ConcurrentHashMap<WritableComparable, AtomicInteger> wordFreq = new ConcurrentHashMap<WritableComparable, AtomicInteger>();
 	protected SSTableMeta meta;
 	// for the reason of multiple thread
 	protected volatile boolean frezen = false;
@@ -34,7 +34,7 @@ public abstract class InvertedMemtable<pType extends IPostingList>
 		return docSeq.incrementAndGet();
 	}
 
-	protected void hitWord(WritableComparableKey word) {
+	protected void hitWord(WritableComparable word) {
 		if (!wordFreq.containsKey(word)) {
 			wordFreq.putIfAbsent(word, new AtomicInteger(0));
 		}
@@ -53,12 +53,12 @@ public abstract class InvertedMemtable<pType extends IPostingList>
 		return new File(dir, String.format("%d_%d.stats", meta.version, meta.level));
 	}
 
-	public Iterator<Entry<WritableComparableKey, pType>> iterator() {
+	public Iterator<Entry<WritableComparable, pType>> iterator() {
 		return entrySet().iterator();
 	}
 
 	@Override
-	public pType getPostingList(WritableComparableKey key) {
+	public pType getPostingList(WritableComparable key) {
 		return get(key);
 	}
 
@@ -67,7 +67,7 @@ public abstract class InvertedMemtable<pType extends IPostingList>
 		File statsFile = dirMetaFile(dir, meta);
 		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(statsFile));
 		DataOutputStream dos = new DataOutputStream(bos);
-		for (Entry<WritableComparableKey, AtomicInteger> entry : wordFreq.entrySet()) {
+		for (Entry<WritableComparable, AtomicInteger> entry : wordFreq.entrySet()) {
 			entry.getKey().write(dos);
 			dos.writeInt(entry.getValue().get());
 		}

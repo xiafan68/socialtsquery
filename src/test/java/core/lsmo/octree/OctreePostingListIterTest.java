@@ -15,14 +15,14 @@ import core.lsmo.bdbformat.DiskSSTableBDBReader;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.StringKey;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.StringKey;
 import segmentation.Interval;
 import util.Configuration;
 
 public class OctreePostingListIterTest {
 
-	public int[] ExpectedResult(WritableComparableKey key, DiskSSTableBDBReader reader, Interval window)
+	public int[] ExpectedResult(WritableComparable key, DiskSSTableBDBReader reader, Interval window)
 			throws IOException {
 		int[] ret = new int[] { 0, 0 };
 		System.out.println(key);
@@ -55,7 +55,7 @@ public class OctreePostingListIterTest {
 		return ret;
 	}
 
-	public int[] queryResult(WritableComparableKey key, DiskSSTableBDBReader reader, Interval window)
+	public int[] queryResult(WritableComparable key, DiskSSTableBDBReader reader, Interval window)
 			throws IOException {
 		int[] ret = new int[] { 0, 0 };
 		IOctreeIterator scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
@@ -97,7 +97,7 @@ public class OctreePostingListIterTest {
 		System.out.flush();
 		// 遍历所有的posting list
 		try {
-			WritableComparableKey key = new StringKey("#beatcancer");
+			WritableComparable key = new StringKey("#beatcancer");
 			int[] expect = ExpectedResult(key, reader, window);
 			int[] answer = queryResult(key, reader, window);
 			// fos.close();
@@ -129,9 +129,9 @@ public class OctreePostingListIterTest {
 		try {
 			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 				DiskSSTableBDBReader reader = (DiskSSTableBDBReader) index.getSSTableReader(index.getVersion(), meta);
-				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				Iterator<WritableComparable> iter = reader.keySetIter();
 				while (iter.hasNext()) {
-					WritableComparableKey key = iter.next();
+					WritableComparable key = iter.next();
 					int[] expect = ExpectedResult(key, reader, window);
 					int[] answer = queryResult(key, reader, window);
 					// fos.close();
@@ -164,10 +164,10 @@ public class OctreePostingListIterTest {
 			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 				BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(),
 						meta);
-				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				Iterator<WritableComparable> iter = reader.keySetIter();
 				HashSet<Encoding> mids = new HashSet<Encoding>();
 				while (iter.hasNext()) {
-					WritableComparableKey key = iter.next();
+					WritableComparable key = iter.next();
 					IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);
 					while (scanner.hasNext()) {
 						OctreeNode cur = scanner.nextNode();

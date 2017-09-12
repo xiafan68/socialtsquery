@@ -26,7 +26,7 @@ public interface IMemTable<pType extends IPostingList> {
 	 */
 	public ISSTableReader getReader();
 
-	public IPostingList getPostingList(WritableComparableKey key);
+	public IPostingList getPostingList(WritableComparable key);
 
 	/**
 	 * @return the meta
@@ -50,7 +50,7 @@ public interface IMemTable<pType extends IPostingList> {
 	 * @param key
 	 * @param seg
 	 */
-	public void insert(WritableComparableKey key, MidSegment seg);
+	public void insert(WritableComparable key, MidSegment seg);
 
 	public void writeStats(File dir) throws IOException;
 
@@ -59,7 +59,7 @@ public interface IMemTable<pType extends IPostingList> {
 	 * 
 	 * @return
 	 */
-	public Iterator<Entry<WritableComparableKey, pType>> iterator();
+	public Iterator<Entry<WritableComparable, pType>> iterator();
 
 	public static class SSTableMeta implements Serializable, Comparable<SSTableMeta> {
 		public int version;

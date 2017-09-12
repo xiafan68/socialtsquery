@@ -8,50 +8,46 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Comparator;
 
-public interface WritableComparableKey extends Comparable<WritableComparableKey> {
-	public void write(DataOutput output) throws IOException;
+public interface WritableComparable extends Comparable<WritableComparable>, Writable {
 
-	public void read(DataInput input) throws IOException;
-
-	public static enum WritableComparableKeyComp implements Comparator<WritableComparableKey> {
+	public static enum WritableComparableKeyComp implements Comparator<WritableComparable> {
 		INSTANCE;
 		@Override
-		public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+		public int compare(WritableComparable o1, WritableComparable o2) {
 			return o1.compareTo(o2);
 		}
 	}
 
 	public static interface WritableComparableKeyFactory {
-		WritableComparableKey createIndexKey();
+		WritableComparable createIndexKey();
 	}
-//
-//	public static enum SegKeyList  WritableComparableKeyFactory {
-//		WritableComparableKey createIndexKey();
-//	}
+	//
+	// public static enum SegKeyList WritableComparableKeyFactory {
+	// WritableComparableKey createIndexKey();
+	// }
 
 	public static enum StringKeyFactory implements WritableComparableKeyFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparable createIndexKey() {
 			return new StringKey();
 		}
 	}
 
 	public static enum EncodingFactory implements WritableComparableKeyFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparable createIndexKey() {
 			return new Encoding();
 		}
 	}
 
 	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparable createIndexKey() {
 			return new ListDiskSSTableReader.SegListKey();
 		}
 	}
 
-
-	public static class StringKey implements WritableComparableKey {
+	public static class StringKey implements WritableComparable {
 		String val;
 
 		public StringKey(String val) {
@@ -63,7 +59,7 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 		}
 
 		@Override
-		public int compareTo(WritableComparableKey o) {
+		public int compareTo(WritableComparable o) {
 			StringKey other = (StringKey) o;
 			return val.compareTo(other.val);
 		}
@@ -90,8 +86,9 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 			StringKey o = (StringKey) object;
 			return val.equals(o.val);
 		}
+
 		@Override
-		public String toString(){
+		public String toString() {
 			return val;
 		}
 	}

@@ -10,21 +10,23 @@ import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import util.Configuration;
 
 public abstract class ISSTableWriter {
 	protected SSTableMeta meta;
 	protected Configuration conf;
 	protected float splitRatio;
-	
-	public ISSTableWriter(SSTableMeta meta, Configuration conf){
+
+	public ISSTableWriter(SSTableMeta meta, Configuration conf) {
 		this.meta = meta;
 		this.conf = conf;
 		this.splitRatio = conf.getSplitingRatio();
 	}
-	
-	public abstract SSTableMeta getMeta();
+
+	public SSTableMeta getMeta() {
+		return meta;
+	}
 
 	public abstract void open(File dir) throws IOException;
 
@@ -79,7 +81,7 @@ public abstract class ISSTableWriter {
 	public static class DirEntry extends PostingListMeta {
 		final WritableComparableKeyFactory factory;
 		// runtime state
-		public WritableComparableKey curKey = null;
+		public WritableComparable curKey = null;
 		public BucketID startBucketID = new BucketID();
 		public BucketID endBucketID = new BucketID();
 		public long indexStartOffset;
@@ -162,12 +164,16 @@ public abstract class ISSTableWriter {
 		}
 	}
 
+	public Configuration getConf() {
+		return conf;
+	}
+
 	public abstract void delete(File indexDir, SSTableMeta meta);
-	
-	public boolean shouldSplitOctant(OctreeNode octreeNode ){
+
+	public boolean shouldSplitOctant(OctreeNode octreeNode) {
 		int[] hist = octreeNode.histogram();
 		return octreeNode.getEdgeLen() > 1 && octreeNode.size() > conf.getOctantSizeLimit() * 0.2
-		&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitRatio);
+				&& (hist[1] == 0 || ((float) hist[0] + 1) / (hist[1] + 1) > splitRatio);
 	}
-	
+
 }

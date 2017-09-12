@@ -16,7 +16,7 @@ import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import util.Pair;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 
 /**
  * 用于扫描一个sstable文件中的一个posting list
@@ -122,7 +122,7 @@ public class DiskOctreeScanner implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

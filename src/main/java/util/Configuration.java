@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import core.lsmt.compact.ICompactStrategy;
 
 public class Configuration {
@@ -73,7 +73,7 @@ public class Configuration {
 	}
 
 	public WritableComparableKeyFactory getIndexKeyFactory() {
-		return WritableComparableKey.StringKeyFactory.INSTANCE;
+		return WritableComparable.StringKeyFactory.INSTANCE;
 	}
 
 	WritableComparableKeyFactory factory = null;

@@ -11,7 +11,7 @@ import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Configuration;
 
 public class DifferentIndexCompareTest {
@@ -41,11 +41,11 @@ public class DifferentIndexCompareTest {
 				internIndex.getVersion().diskTreeMetas.get(index));
 
 		try {
-			Iterator<WritableComparableKey> bdbIter = bdbReader.keySetIter();
-			Iterator<WritableComparableKey> internIter = internReader.keySetIter();
+			Iterator<WritableComparable> bdbIter = bdbReader.keySetIter();
+			Iterator<WritableComparable> internIter = internReader.keySetIter();
 
-			WritableComparableKey bdbKey = null;
-			WritableComparableKey internKey = null;
+			WritableComparable bdbKey = null;
+			WritableComparable internKey = null;
 			while (bdbIter.hasNext()) {
 				bdbKey = bdbIter.next();
 				internKey = internIter.next();

@@ -25,12 +25,15 @@ import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import util.Pair;
+import util.Profile;
+import util.ProfileField;
 
 /**
- * This implementation stores both directory data and (key, offset) index in a custom file format.
+ * This implementation stores both directory data and (key, offset) index in a
+ * custom file format.
  * 
  * @author xiafan
  *
@@ -39,8 +42,8 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 	protected SeekableDirectIO dataInput;
 	protected SeekableDirectIO dirInput;
 
-	protected Map<WritableComparableKey, DirEntry> dirMap = new TreeMap<WritableComparableKey, DirEntry>();
-	protected Map<WritableComparableKey, List> skipList = new HashMap<WritableComparableKey, List>();
+	protected Map<WritableComparable, DirEntry> dirMap = new TreeMap<WritableComparable, DirEntry>();
+	protected Map<WritableComparable, List> skipList = new HashMap<WritableComparable, List>();
 	// private Map<WritableComparableKey, Integer> wordFreq = new
 	// HashMap<WritableComparableKey, Integer>();
 
@@ -48,7 +51,15 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 
 	protected LSMTInvertedIndex index;
 	protected SSTableMeta meta;
+	// the factory to create key of SkipList, which is our encoding
 	WritableComparableKeyFactory keyFactory;
+
+	Comparator<Pair<WritableComparable, BucketID>> comp = new Comparator<Pair<WritableComparable, BucketID>>() {
+		@Override
+		public int compare(Pair<WritableComparable, BucketID> o1, Pair<WritableComparable, BucketID> o2) {
+			return o1.getKey().compareTo(o2.getKey());
+		}
+	};
 
 	public BucketBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta,
 			WritableComparableKeyFactory keyFactory) {
@@ -57,7 +68,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		this.keyFactory = keyFactory;
 	}
 
-	public DirEntry getDirEntry(WritableComparableKey key) {
+	public DirEntry getDirEntry(WritableComparable key) {
 		return dirMap.get(key);
 	}
 
@@ -98,12 +109,12 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		FileInputStream fis = new FileInputStream(FileBasedIndexHelper.idxFile(dataDir, meta));
 		DataInputStream indexDis = new DataInputStream(fis);
 		try {
-			WritableComparableKey curCode = null;
+			WritableComparable curCode = null;
 			BucketID buck = null;
-			List<Pair<WritableComparableKey, BucketID>> curList = null;
-			for (Entry<WritableComparableKey, DirEntry> entry : dirMap.entrySet()) {
+			List<Pair<WritableComparable, BucketID>> curList = null;
+			for (Entry<WritableComparable, DirEntry> entry : dirMap.entrySet()) {
 				if (!skipList.containsKey(entry.getKey())) {
-					curList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
+					curList = new ArrayList<Pair<WritableComparable, BucketID>>();
 					skipList.put(entry.getKey(), curList);
 				} else {
 					curList = skipList.get(entry.getKey());
@@ -114,7 +125,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 					curCode.read(indexDis);
 					buck = new BucketID();
 					buck.read(indexDis);
-					curList.add(new Pair<WritableComparableKey, BucketID>(curCode, buck));
+					curList.add(new Pair<WritableComparable, BucketID>(curCode, buck));
 				}
 			}
 		} finally {
@@ -138,12 +149,17 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 		return (int) (dataInput.position() / Block.BLOCK_SIZE);
 	}
 
-	Comparator<Pair<WritableComparableKey, BucketID>> comp = new Comparator<Pair<WritableComparableKey, BucketID>>() {
-		@Override
-		public int compare(Pair<WritableComparableKey, BucketID> o1, Pair<WritableComparableKey, BucketID> o2) {
-			return o1.getKey().compareTo(o2.getKey());
+	@Override
+	public synchronized int getBlockFromDataFile(Block block) throws IOException {
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
+		try {
+			dataInput.seek(block.getFileOffset());
+			block.read(dataInput);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
 		}
-	};
+	}
 
 	/**
 	 * 找到第一个不大于key, code的octant的offset
@@ -153,34 +169,36 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey key, WritableComparableKey code)
-			throws IOException {
-		Pair<WritableComparableKey, BucketID> ret = null;
+	public BucketID cellOffset(WritableComparable key, WritableComparable code) throws IOException {
+		Pair<WritableComparable, BucketID> ret = null;
 		if (skipList.containsKey(key)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList.get(key);
-			int idx = Collections.binarySearch(list, new Pair<WritableComparableKey, BucketID>(code, null), comp);
+			List<Pair<WritableComparable, BucketID>> list = skipList.get(key);
+			int idx = Collections.binarySearch(list, new Pair<WritableComparable, BucketID>(code, null), comp);
 			if (idx < 0) {
 				idx = Math.abs(idx + 1);
 				idx = (idx > 0) ? idx - 1 : 0;
 			}
 			ret = list.get(idx);
 		}
-		return ret;
+		if (ret != null)
+			return ret.getValue();
+		return null;
 	}
 
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) {
-		Pair<WritableComparableKey, BucketID> ret = null;
+	public BucketID floorOffset(WritableComparable curKey, WritableComparable curCode) {
+		Pair<WritableComparable, BucketID> ret = null;
 		if (skipList.containsKey(curKey)) {
-			List<Pair<WritableComparableKey, BucketID>> list = skipList.get(curKey);
-			int idx = Collections.binarySearch(list, new Pair<WritableComparableKey, BucketID>(curCode, null), comp);
+			List<Pair<WritableComparable, BucketID>> list = skipList.get(curKey);
+			int idx = Collections.binarySearch(list, new Pair<WritableComparable, BucketID>(curCode, null), comp);
 			if (idx < 0) {
 				idx = Math.abs(idx + 1);
 			}
 			if (idx < list.size())
 				ret = list.get(idx);
 		}
-		return ret;
+		if (ret != null)
+			return ret.getValue();
+		return null;
 	}
 
 	@Override
@@ -189,7 +207,7 @@ public abstract class BucketBasedSSTableReader implements IBucketBasedSSTableRea
 	}
 
 	@Override
-	public Iterator<WritableComparableKey> keySetIter() {
+	public Iterator<WritableComparable> keySetIter() {
 		return dirMap.keySet().iterator();
 	}
 

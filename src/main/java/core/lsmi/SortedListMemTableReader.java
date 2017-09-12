@@ -13,7 +13,7 @@ import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 import util.Pair;
 
 public class SortedListMemTableReader implements ISSTableReader {
@@ -24,17 +24,17 @@ public class SortedListMemTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public Iterator<WritableComparableKey> keySetIter() {
+	public Iterator<WritableComparable> keySetIter() {
 		return table.keySet().iterator();
 	}
 
 	@Override
-	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+	public IPostingListIterator getPostingListScanner(WritableComparable key) throws IOException {
 		return new MemorySortedListIterator(table.get(key), 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		return MemoryPostingListIterUtil.getPostingListIter(new MemorySortedListIterator(table.get(key), start, end),
 				start, end);
 	}
@@ -101,7 +101,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 		}
 
 		@Override
-		public void skipTo(WritableComparableKey key) throws IOException {
+		public void skipTo(WritableComparable key) throws IOException {
 			// TODO Auto-generated method stub
 		}
 	}
@@ -125,7 +125,7 @@ public class SortedListMemTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
+	public DirEntry getDirEntry(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}

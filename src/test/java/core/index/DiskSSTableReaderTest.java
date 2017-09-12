@@ -26,7 +26,7 @@ import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;
 import core.lsmt.ISSTableReader;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 
 public class DiskSSTableReaderTest {
 	/**
@@ -82,10 +82,10 @@ public class DiskSSTableReaderTest {
 		reader.init();
 		readerTest(reader, conf, 1);
 
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		OctreeNode pre = null;
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 
 			System.out.println("scanning postinglist of " + key);
 			pre = null;
@@ -139,9 +139,9 @@ public class DiskSSTableReaderTest {
 	}
 
 	public static void readerTest(ISSTableReader reader, HashSet<MidSegment> segs) throws IOException {
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 			IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);
 			OctreeNode cur = null;
 			while (scanner.hasNext()) {
@@ -159,11 +159,11 @@ public class DiskSSTableReaderTest {
 	public static void readerTest(ISSTableReader reader, Configuration conf, int level) throws IOException {
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		int size = 0;
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		OctreeNode pre = null;
 		// HashSet<MidSegment> segs = new HashSet<MidSegment>();
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 			System.out.println("scanning postinglist of " + key);
 			pre = null;
 			IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);

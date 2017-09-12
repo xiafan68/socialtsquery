@@ -12,7 +12,7 @@ import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 
 public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> {
 	// for the reason of multiple thread
@@ -48,7 +48,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 	}
 
 	@Override
-	public void insert(WritableComparableKey key, MidSegment seg) {
+	public void insert(WritableComparable key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}

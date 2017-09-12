@@ -3,8 +3,11 @@ package core.lsmt;
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.io.Block;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
+import util.Profile;
+import util.ProfileField;
 
 /**
  * This class provides interfaces to locate a posting list given the keyword,
@@ -16,7 +19,9 @@ import core.lsmt.ISSTableWriter.DirEntry;
 public interface ISSTableReader {
 	public SSTableMeta getMeta();
 
-	public DirEntry getDirEntry(WritableComparableKey key) throws IOException;
+	public DirEntry getDirEntry(WritableComparable key) throws IOException;
+
+	public int getBlockFromDataFile(Block block) throws IOException;
 
 	/**
 	 * whether this reader has been initialized
@@ -27,11 +32,11 @@ public interface ISSTableReader {
 
 	public void init() throws IOException;
 
-	public abstract Iterator<WritableComparableKey> keySetIter();
+	public abstract Iterator<WritableComparable> keySetIter();
 
-	public abstract IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException;
+	public abstract IPostingListIterator getPostingListScanner(WritableComparable key) throws IOException;
 
-	public abstract IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end)
+	public abstract IPostingListIterator getPostingListIter(WritableComparable key, int start, int end)
 			throws IOException;
 
 	public abstract void close() throws IOException;

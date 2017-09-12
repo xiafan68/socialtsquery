@@ -14,8 +14,8 @@ import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableWriter.DirEntry;
 import core.lsmt.IPostingListIterator;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import core.lsmt.bdbindex.BucketBasedSSTableReader;
 import util.Pair;
 import core.lsmt.LSMTInvertedIndex;
@@ -23,7 +23,7 @@ import core.lsmt.PostingListMeta;
 
 public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 
-	public static class SegListKey implements WritableComparableKey {
+	public static class SegListKey implements WritableComparable {
 		int top;
 		int start;
 		long mid;
@@ -39,7 +39,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 
 		@Override
-		public int compareTo(WritableComparableKey o) {
+		public int compareTo(WritableComparable o) {
 			SegListKey obj = (SegListKey) o;
 			int ret = Integer.compare(top, obj.top);
 			if (ret == 0) {
@@ -69,7 +69,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
 		INSTANCE;
 		@Override
-		public WritableComparableKey createIndexKey() {
+		public WritableComparable createIndexKey() {
 			return new SegListKey();
 		}
 
@@ -80,12 +80,12 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 	}
 
 	@Override
-	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+	public IPostingListIterator getPostingListScanner(WritableComparable key) throws IOException {
 		return new ListDiskPostingListIterator(dirMap.get(key), 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		return new ListDiskPostingListIterator(dirMap.get(key), start, end);
 	}
 
@@ -170,7 +170,7 @@ public class ListDiskSSTableReader extends BucketBasedSSTableReader {
 		}
 
 		@Override
-		public void skipTo(WritableComparableKey key) throws IOException {
+		public void skipTo(WritableComparable key) throws IOException {
 			// TODO Auto-generated method stub
 
 		}

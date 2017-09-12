@@ -21,7 +21,8 @@ import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.bdbformat.SSTableScanner;
+import core.lsmo.common.SSTableScanner;
+import core.lsmo.common.SkipCell;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -32,10 +33,10 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
-import core.lsmt.IndexHelper;
+import core.lsmt.IPostingListerWriter;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
+import core.lsmt.WritableComparable;
+import core.lsmt.WritableComparable.WritableComparableKeyFactory;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
@@ -60,7 +61,7 @@ import util.PeekIterDecorate;
  */
 public class InternOctreeSSTableWriter extends ISSTableWriter {
 	private static final Logger logger = Logger.getLogger(InternOctreeSSTableWriter.class);
-	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
+	GroupByKeyIterator<WritableComparable, IOctreeIterator> iter;
 
 	FileOutputStream dataFileOs;
 	DataOutputStream dataDos;
@@ -84,9 +85,9 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	public InternOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		super(meta, conf);
 		
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+		iter = new GroupByKeyIterator<WritableComparable, IOctreeIterator>(new Comparator<WritableComparable>() {
 			@Override
-			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+			public int compare(WritableComparable o1, WritableComparable o2) {
 				return o1.compareTo(o2);
 			}
 		});
@@ -101,17 +102,17 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
 		
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+		iter = new GroupByKeyIterator<WritableComparable, IOctreeIterator>(new Comparator<WritableComparable>() {
 			@Override
-			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+			public int compare(WritableComparable o1, WritableComparable o2) {
 				return o1.compareTo(o2);
 			}
 		});
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IOctreeIterator>>() {
-				Iterator<Entry<WritableComparableKey, MemoryOctree>> iter = table.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IOctreeIterator>>() {
+				Iterator<Entry<WritableComparable, MemoryOctree>> iter = table.iterator();
 
 				@Override
 				public boolean hasNext() {
@@ -119,11 +120,11 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 				}
 
 				@Override
-				public Entry<WritableComparableKey, IOctreeIterator> next() {
-					Entry<WritableComparableKey, MemoryOctree> entry = iter.next();
+				public Entry<WritableComparable, IOctreeIterator> next() {
+					Entry<WritableComparable, MemoryOctree> entry = iter.next();
 					// an optimization
 					entry.getValue().visit(OctreePrepareForWriteVisitor.INSTANCE);
-					Entry<WritableComparableKey, IOctreeIterator> ret = new Pair<WritableComparableKey, IOctreeIterator>(
+					Entry<WritableComparable, IOctreeIterator> ret = new Pair<WritableComparable, IOctreeIterator>(
 							entry.getKey(), new MemoryOctreeIterator(entry.getValue()));
 					return ret;
 				}
@@ -156,7 +157,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 */
 	public void write() throws IOException {
 		while (iter.hasNext()) {
-			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
+			Entry<WritableComparable, List<IOctreeIterator>> entry = iter.next();
 			logger.debug(String.format("writing postinglist for key%s",entry.getKey()));
 			// setup meta values
 			indexHelper.startPostingList(entry.getKey(), null);
@@ -183,7 +184,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 * @param key
 	 * @throws IOException
 	 */
-	public void startNewPostingList(WritableComparableKey key) throws IOException {
+	public void startNewPostingList(WritableComparable key) throws IOException {
 		indexHelper.startPostingList(key, null);
 	}
 
@@ -301,7 +302,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 * @author xiafan
 	 *
 	 */
-	private class InternIndexHelper extends IndexHelper {
+	private class InternIndexHelper extends IPostingListerWriter {
 
 		BDBBtree dirMap = null;
 
@@ -339,7 +340,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 
 		@Override
-		public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
+		public void startPostingList(WritableComparable key, BucketID newListStart) throws IOException {
 			curDir = new MarkDirEntry(conf.getIndexKeyFactory());
 			curDir.curKey = key;
 			writeFirstBlock = true;
@@ -371,7 +372,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		}
 
 		@Override
-		public void buildIndex(WritableComparableKey code, BucketID id) throws IOException {
+		public void buildIndex(WritableComparable code, BucketID id) throws IOException {
 			if (!cell.addIndex(code, dataBuck.blockIdx())) {
 				// 创建新的skip cell
 				// first write the meta data

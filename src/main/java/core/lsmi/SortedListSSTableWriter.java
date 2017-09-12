@@ -23,8 +23,8 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IPostingListIterator;
 import core.lsmt.ISSTableReader;
 import core.lsmt.ISSTableWriter;
-import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.IPostingListerWriter;
+import core.lsmt.WritableComparable;
 import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
@@ -41,14 +41,14 @@ import util.PeekIterDecorate;
 public class SortedListSSTableWriter extends ISSTableWriter {
 	private static final Logger logger = Logger.getLogger(SortedListSSTableWriter.class);
 
-	GroupByKeyIterator<WritableComparableKey, IPostingListIterator> view = new GroupByKeyIterator<WritableComparableKey, IPostingListIterator>(
-			WritableComparableKey.WritableComparableKeyComp.INSTANCE);;
+	GroupByKeyIterator<WritableComparable, IPostingListIterator> view = new GroupByKeyIterator<WritableComparable, IPostingListIterator>(
+			WritableComparable.WritableComparableKeyComp.INSTANCE);;
 
 	FileOutputStream dataFileOs;
 	DataOutputStream dataDos;
 	private int step;
 	Bucket buck = new Bucket(-1);
-	IndexHelper indexHelper;
+	IPostingListerWriter indexHelper;
 
 	public SortedListSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
@@ -56,8 +56,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 		for (final IMemTable<SortedListPostinglist> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
-				Iterator<WritableComparableKey> keyIter = table.getReader().keySetIter();
+			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
+				Iterator<WritableComparable> keyIter = table.getReader().keySetIter();
 
 				@Override
 				public boolean hasNext() {
@@ -65,11 +65,11 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				}
 
 				@Override
-				public Entry<WritableComparableKey, IPostingListIterator> next() {
-					WritableComparableKey key = keyIter.next();
-					Entry<WritableComparableKey, IPostingListIterator> ret = null;
+				public Entry<WritableComparable, IPostingListIterator> next() {
+					WritableComparable key = keyIter.next();
+					Entry<WritableComparable, IPostingListIterator> ret = null;
 					try {
-						ret = new Pair<WritableComparableKey, IPostingListIterator>(key,
+						ret = new Pair<WritableComparable, IPostingListIterator>(key,
 								table.getReader().getPostingListScanner(key));
 					} catch (IOException e) {
 						throw new RuntimeException(e);
@@ -87,7 +87,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
 		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
+			indexHelper = (IPostingListerWriter) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
 					.newInstance(conf);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -98,9 +98,9 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		super(meta, conf);
 
 		for (final ISSTableReader table : tables) {
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IPostingListIterator>>() {
+			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
 				ISSTableReader reader = table;
-				Iterator<WritableComparableKey> iter = table.keySetIter();
+				Iterator<WritableComparable> iter = table.keySetIter();
 
 				@Override
 				public boolean hasNext() {
@@ -108,11 +108,11 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				}
 
 				@Override
-				public Entry<WritableComparableKey, IPostingListIterator> next() {
-					WritableComparableKey entry = iter.next();
-					Pair<WritableComparableKey, IPostingListIterator> ret;
+				public Entry<WritableComparable, IPostingListIterator> next() {
+					WritableComparable entry = iter.next();
+					Pair<WritableComparable, IPostingListIterator> ret;
 					try {
-						ret = new Pair<WritableComparableKey, IPostingListIterator>(entry,
+						ret = new Pair<WritableComparable, IPostingListIterator>(entry,
 								reader.getPostingListScanner(entry));
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -130,7 +130,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		}
 		this.step = conf.getIndexStep();
 		try {
-			indexHelper = (IndexHelper) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
+			indexHelper = (IPostingListerWriter) Class.forName(conf.getIndexHelper()).getConstructor(Configuration.class)
 					.newInstance(conf);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -189,7 +189,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	@Override
 	public void write() throws IOException {
 		while (view.hasNext()) {
-			Entry<WritableComparableKey, List<IPostingListIterator>> pair = view.next();
+			Entry<WritableComparable, List<IPostingListIterator>> pair = view.next();
 			List<Iterator<MidSegment>> list = new ArrayList<Iterator<MidSegment>>();
 			for (IPostingListIterator iter : pair.getValue()) {
 				list.add(new PostingListDecorator(iter));
@@ -219,7 +219,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		}
 	}
 
-	private void writePostingList(WriterHelper helper, WritableComparableKey key, Iterator<MidSegment> iter)
+	private void writePostingList(WriterHelper helper, WritableComparable key, Iterator<MidSegment> iter)
 			throws IOException {
 		indexHelper.startPostingList(key, null);
 		MidSegment seg = null;

@@ -8,7 +8,8 @@ import org.junit.Test;
 import core.commom.Encoding;
 import core.io.Block;
 import core.io.Bucket.BucketID;
-import core.lsmt.WritableComparableKey.EncodingFactory;
+import core.lsmo.common.SkipCell;
+import core.lsmt.WritableComparable.EncodingFactory;
 
 public class SkipCellTest {
 	@Test

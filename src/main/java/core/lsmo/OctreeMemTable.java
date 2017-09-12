@@ -6,7 +6,7 @@ import core.lsmt.ISSTableReader;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.PostingListMeta;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.WritableComparable;
 
 public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 	private static final long serialVersionUID = 1L;
@@ -35,7 +35,7 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 		return meta;
 	}
 
-	public void insert(WritableComparableKey key, MidSegment seg) {
+	public void insert(WritableComparable key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}
