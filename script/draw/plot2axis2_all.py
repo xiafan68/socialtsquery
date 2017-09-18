@@ -19,9 +19,10 @@ lines = ["-"]
 markers = ["s", "o", "d", "p", "h", "x", "^", "v", "8"]
 dataDir="/Users/kc/快盘/"
 dataDir="/home/xiafan/Dropbox"
-dataDir="/Volumes/backupsd/Dropbox"
+#dataDir="/Volumes/backupsd/Dropbox"
 
 outDir="/Users/kc/Documents/temp/pic"
+outDir="/home/xiafan/figures"
 
 mpl.rcParams['lines.linewidth'] = 1
 mpl.rcParams['lines.markersize'] = 8
@@ -124,12 +125,16 @@ class ExprPloter(object):
     def extractMethod(data):
         if "lsmi" in data:
             curMethod = "LSMI"
-        elif "intern" in data or "lsmo" in data:
+        elif "intern" in data or ("lsmo" in data and not "bdb" in data):
             curMethod = "LSMO"
         elif "tpii" in data or "TPII" in data:
             curMethod = "TPII"
         elif "hybrid" in data:
             curMethod = "HYBRID"
+        elif "octree" in data:
+            curMethod = "Octree"
+        elif "bdb" in data:
+            curMethod = "LSMO_Btree"
         else:
             raise  NameError("no method name is found in %s" % (data))
         return curMethod
@@ -181,6 +186,9 @@ class ExprPloter(object):
             factors = [factor + "_" + str(ExprPloter.extractField(rec, factor, lineDef.fileFactors[factor])) for factor in lineDef.fileFactors.keys()]
             fileMap = ExprPloter.getFileFactors(self.dataMatrix, factors)
             lineFactors = [ExprPloter.extractField(rec, factor, lineDef.lineFactors[factor]) for factor in lineDef.lineFactors]
+            
+            if not("WEIGHTED" in lineFactors): # or "OR" in lineFactors)
+                continue;
             # lineFactors.insert(0, curMethod)
             lineArr = ExprPloter.setupLineFactor(fileMap, lineFactors)
             lineArr.append({'factor':ExprPloter.extractField(rec, lineDef.factor, str(i * 10)), 'respondent':ExprPloter.extractField(rec, lineDef.respondent, ""), "lIdx":lineDef.idx})
@@ -296,9 +304,9 @@ class ExprPloter(object):
 
 def plotScaleForWeibo():
     inputPath = dataDir+"/数据/weibo_result/weibo_50_hasresult"
-    outputDir = dataDir+"/数据/weibo_result/weibo_50_hasresult_scala_fig"
+    outputDir = outDir+"/weibo_result/weibo_50_hasresult_scale_fig"
     
-    yrange = [0, 500]
+    yrange = [0, 2000]
     ploter = ExprPloter("Percentage(%)", ["Latency(ms)"])
     ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k"}, {"app":"app", "type":"type"}, "size", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
@@ -312,7 +320,7 @@ def plotScaleForTwitter():
     ploter = ExprPloter("Percentage(%)", ["Latency(ms)"])
     ploter.addLines(LineDef({"offset":"offset", "width":"width", "k":"k"}, {"app":"app", "type":"type"}, "size", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
-    config = {"scalex":False, "scaley":False, "ylim":[0, 150], "leg":('upper left', 2), "legsize":17}
+    config = {"scalex":False, "scaley":False, "ylim":[0, 2000], "leg":('upper left', 2), "legsize":17}
     ploter.plotFigures(os.path.join(outputDir, "size"), config)
 
 def plotLimitForWeibo():
@@ -354,7 +362,7 @@ def plotAllForWeibo():
     ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
     # "figsize":(15, 10), 
-    config = {"figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[10, 600], "leg":('upper left', 2), "legsize":20, "rotation":"vertical"}
+    config = {"figsize":(9, 7), "scalex":False, "scaley":True, "ylim":[10, 3000], "leg":('upper left', 2), "legsize":20, "rotation":"vertical"}
     ploter.plotFigures(os.path.join(outputDir, "k"), config)
 
     # query width
@@ -494,9 +502,9 @@ def plotKeywordsForWeibo():
 
 if __name__ == "__main__":
     # dataDir+"dataset/weiboexpr/2015_12_03/raw"
-    plotAllForWeibo()
+    #plotAllForWeibo()
     #plotLimitForWeibo()
-    # plotScaleForWeibo()
+    plotScaleForWeibo()
     #plotKeywordsForWeibo()
     #plotUpdateScaleForWeibo()
     #plotThroughputForWeibo()
