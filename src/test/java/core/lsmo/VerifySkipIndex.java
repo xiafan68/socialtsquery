@@ -6,14 +6,14 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import core.commom.BDBBtree;
+import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.lsmo.internformat.BlockBasedSSTableReader;
-import core.lsmo.internformat.SkipCell;
+import core.lsmo.persistence.SkipCell;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import segmentation.Interval;
 
 public class VerifySkipIndex {

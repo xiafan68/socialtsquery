@@ -5,9 +5,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableFactory;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.compact.ICompactStrategy;
 
 public class Configuration {
@@ -72,20 +73,29 @@ public class Configuration {
 		return Integer.parseInt(props.getProperty("batch_commit_num", "1000"));
 	}
 
-	public WritableComparableKeyFactory getIndexKeyFactory() {
+	public WritableComparableFactory getDirKeyFactory() {
 		return WritableComparableKey.StringKeyFactory.INSTANCE;
 	}
 
-	WritableComparableKeyFactory factory = null;
+	public WritableFactory getDirValueFactory() {
+		String valueClass = props.getProperty("dir_value_fatory", "core.lsmt.WritableFactory$DirEntryFactory");
+		try {
+			return (WritableFactory) Class.forName(valueClass).newInstance();
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-	public WritableComparableKeyFactory getIndexValueFactory() {
+	WritableComparableFactory factory = null;
+
+	public WritableComparableFactory getIndexValueFactory() {
 		// TODO : implement two factories:one for [seglistkey], one for
 		// [encoding]
 		// 不需要bucketID
 		String valueClass = props.getProperty("value_factory", "core.lsmt.WritableComparableKey$EncodingFactory");
 		try {
 			if (factory == null)
-				factory = (WritableComparableKeyFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
+				factory = (WritableComparableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
 						"INSTANCE");
 
 			return factory;
@@ -130,10 +140,19 @@ public class Configuration {
 
 	public ICompactStrategy getCompactStragety() {
 		try {
-			return (ICompactStrategy) Class.forName(props.getProperty("compactStragety", "core.lsmt.compact.LSMCompactStrategy"))
+			return (ICompactStrategy) Class
+					.forName(props.getProperty("compactStragety", "core.lsmt.compact.LSMCompactStrategy"))
 					.newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public boolean indexLeafOnly() {
+		return Boolean.parseBoolean(props.getProperty("indexLeafOnly", "true"));
+	}
+
+	public boolean standaloneSentinal() {
+		return Boolean.parseBoolean(props.getProperty("standaloneSential", "true"));
 	}
 }

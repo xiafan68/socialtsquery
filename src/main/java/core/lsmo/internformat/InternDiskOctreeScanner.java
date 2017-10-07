@@ -12,15 +12,15 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.Encoding;
+import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
-import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
+import core.lsmo.MarkDirEntry;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
-import core.lsmt.WritableComparableKey;
+import core.lsmt.DirEntry;
 import core.lsmt.postinglist.PostingListMeta;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
 
 /**

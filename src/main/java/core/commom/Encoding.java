@@ -8,7 +8,6 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import core.lsmt.WritableComparableKey;
 import io.ByteUtil;
 
 /**

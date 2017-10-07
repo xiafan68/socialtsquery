@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
+import core.commom.WritableComparableKey.StringKey;
 import core.concurrent.ILockStrategy;
 import core.concurrent.LockManager;
 import core.concurrent.LockStrategyFactory;
@@ -34,7 +35,6 @@ import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmo.octree.OctreePostingListIter;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.WritableComparableKey.StringKey;
 import core.lsmt.compact.CompactService;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;

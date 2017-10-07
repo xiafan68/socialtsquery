@@ -9,12 +9,13 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
+import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreePostingListIter;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
+import core.lsmo.persistence.SkipCell;
+import core.lsmt.DirEntry;
 import util.Pair;
 
 public class InternPostingListIter extends OctreePostingListIter {

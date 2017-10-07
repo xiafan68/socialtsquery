@@ -7,10 +7,10 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
+import core.commom.WritableComparableKey;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.ISSTableReader;
 import util.Configuration;
 

@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import core.commom.MemoryPostingListIterUtil;
+import core.commom.WritableComparableKey;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
+import core.lsmt.DirEntry;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
-import core.lsmt.WritableComparableKey;
 
 public class MemorySSTableReader implements ISSTableReader {
 	OctreeMemTable table;

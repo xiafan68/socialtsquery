@@ -10,13 +10,13 @@ import java.util.PriorityQueue;
 
 import common.MidSegment;
 import core.commom.Encoding;
+import core.commom.WritableComparableKey;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmt.DirEntry;
 import core.lsmt.IBucketBasedSSTableReader;
-import util.Pair;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.PostingListMeta;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
+import util.Pair;
 
 /**
  * 用于扫描一个sstable文件中的一个posting list

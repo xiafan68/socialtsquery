@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import core.commom.WritableComparableKey;
 import core.lsmt.postinglist.IPostingList;
 
 /**

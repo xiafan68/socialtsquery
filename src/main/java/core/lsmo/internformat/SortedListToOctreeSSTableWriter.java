@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.io.Bucket;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmo.octree.MemoryOctree;
@@ -16,7 +17,6 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.postinglist.PostingListMeta;
-import core.lsmt.WritableComparableKey;
 import util.Configuration;
 
 public class SortedListToOctreeSSTableWriter extends ISSTableWriter {

@@ -6,9 +6,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import core.commom.Encoding;
+import core.commom.WritableComparableKey.EncodingFactory;
 import core.io.Block;
 import core.io.Bucket.BucketID;
-import core.lsmt.WritableComparableKey.EncodingFactory;
+import core.lsmo.persistence.SkipCell;
 
 public class SkipCellTest {
 	@Test

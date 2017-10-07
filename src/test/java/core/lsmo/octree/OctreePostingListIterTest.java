@@ -11,12 +11,12 @@ import org.junit.Test;
 import common.MidSegment;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.StringKey;
 import core.lsmo.bdbformat.DiskSSTableBDBReader;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.StringKey;
 import segmentation.Interval;
 import util.Configuration;
 

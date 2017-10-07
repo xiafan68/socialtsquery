@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import common.MidSegment;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 import core.commom.Encoding;
+import core.commom.WritableComparableKey;
 
 /**
  * merge leaf nodes of two octrees

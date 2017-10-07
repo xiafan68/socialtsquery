@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import core.commom.WritableComparableKey;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import util.Configuration;

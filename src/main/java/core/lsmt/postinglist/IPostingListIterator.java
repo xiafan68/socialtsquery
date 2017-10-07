@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import common.MidSegment;
-import core.lsmt.WritableComparableKey;
+import core.commom.WritableComparableKey;
 import util.Pair;
 
 /**

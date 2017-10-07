@@ -2,9 +2,12 @@ package core.lsmo.octree;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.TreeSet;
+
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import common.MidSegment;
 import core.commom.Encoding;
@@ -171,6 +174,15 @@ public class OctreeNode {
 
 	public void write(DataOutput output) throws IOException {
 		HANDLER.write(this, output);
+	}
+
+	public byte[] toBytes() throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		// first write the octant code, then write the octant
+		this.getEncoding().write(dos);
+		this.write(dos);
+		return baos.toByteArray();
 	}
 
 	public void read(DataInput input) throws IOException {

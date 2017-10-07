@@ -1,4 +1,4 @@
-package core.lsmo.internformat;
+package core.lsmo.persistence;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,11 +10,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.WritableComparableFactory;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import io.ByteUtil;
 import util.Pair;
 
@@ -33,10 +33,9 @@ import util.Pair;
  *
  */
 public class SkipCell {
-	Block metaBlock;
 	int blockIdx;
 	int nextMetaBlockIdx = 0;// 下一个meta block的地址
-	WritableComparableKeyFactory factory;
+	WritableComparableFactory factory;
 
 	// 以下字段用于写索引
 	ByteArrayOutputStream bout;
@@ -50,7 +49,7 @@ public class SkipCell {
 	// 当从文件中都出时反序列化出以下字段
 	List<Pair<WritableComparableKey, BucketID>> skipList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
 
-	public SkipCell(int blockIdx, WritableComparableKeyFactory factory) {
+	public SkipCell(int blockIdx, WritableComparableFactory factory) {
 		this.blockIdx = blockIdx;
 		this.factory = factory;
 	}
@@ -117,7 +116,7 @@ public class SkipCell {
 		nextMetaBlockIdx = input.readInt();
 		int num = input.readInt();
 		for (int i = 0; i < num; i++) {
-			WritableComparableKey key = factory.createIndexKey();
+			WritableComparableKey key = factory.create();
 			key.read(input);
 			BucketID bucket = new BucketID();
 			bucket.read(input);
@@ -165,7 +164,7 @@ public class SkipCell {
 		} else {
 			// 由于需要新加入一个SkipCell，导致当前的bucket的blockID加1,这里将lastbuck中内容更新之后写入到metaDos中去
 			DataInputStream input = new DataInputStream(new ByteArrayInputStream(lastBuckBout.toByteArray()));
-			WritableComparableKey tempCode = factory.createIndexKey();
+			WritableComparableKey tempCode = factory.create();
 			while (input.available() > 0) {
 				tempCode.read(input);
 				tempCode.write(metaDos);
@@ -193,7 +192,7 @@ public class SkipCell {
 		byte[] metaArray = bout.toByteArray();
 		ByteUtil.writeInt(nextMetaBlockIdx, metaArray, 0);
 		ByteUtil.writeInt(size, metaArray, 4);
-		metaBlock = new Block(BLOCKTYPE.META_BLOCK, 0);
+		Block metaBlock = new Block(BLOCKTYPE.META_BLOCK, 0);
 		metaBlock.setData(metaArray);
 		return metaBlock;
 	}
@@ -204,7 +203,7 @@ public class SkipCell {
 			input.readInt();
 			input.readInt();
 			for (int i = 0; i < size; i++) {
-				WritableComparableKey key = factory.createIndexKey();
+				WritableComparableKey key = factory.create();
 				key.read(input);
 				BucketID bucket = new BucketID();
 				bucket.read(input);

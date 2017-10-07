@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable;
@@ -18,7 +19,6 @@ import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import io.DirLineReader;
 import util.Configuration;
 import util.Pair;

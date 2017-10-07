@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.MidSegment;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;

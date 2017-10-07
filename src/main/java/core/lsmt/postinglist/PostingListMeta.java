@@ -4,9 +4,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import core.commom.Writable;
 import io.ByteUtil;
 
-public class PostingListMeta {
+public class PostingListMeta implements Writable {
 	public int size = 0;
 	public int maxTime = Integer.MIN_VALUE;
 	public int minTime = Integer.MAX_VALUE;

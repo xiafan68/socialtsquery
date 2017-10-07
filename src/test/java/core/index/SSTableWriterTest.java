@@ -8,6 +8,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.octree.OctreeNode;
@@ -16,7 +17,6 @@ import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import io.DirLineReader;
 import util.Configuration;
 

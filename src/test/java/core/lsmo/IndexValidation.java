@@ -11,14 +11,14 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 
+import core.commom.WritableComparableKey;
 import core.commom.BDBBtree.BDBKeyIterator;
+import core.commom.WritableComparableKey.StringKey;
 import core.executor.QueryExecutorFactory.ExecType;
 import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.StringKey;
 import core.lsmt.postinglist.ISSTableReader;
 import segmentation.Interval;
 import util.Configuration;

@@ -1,7 +1,5 @@
 package core.lsmo.internformat;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,11 +14,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
+import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
+import core.commom.IndexFileUtils;
+import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.MarkDirEntry;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -28,11 +30,11 @@ import core.lsmo.octree.OctreeMerger;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmo.persistence.SSTableScanner;
+import core.lsmo.persistence.SkipCell;
+import core.lsmt.DirEntry;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.postinglist.PostingListMeta;
@@ -83,7 +85,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	 */
 	public InternOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		super(meta, conf);
-		
+
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -93,14 +95,14 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		for (final ISSTableReader table : tables) {
 			iter.add(PeekIterDecorate.decorate(new SSTableScanner(table)));
 		}
-		
+
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
 	}
 
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
-		
+
 		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
 			@Override
 			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
@@ -142,7 +144,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 	public InternOctreeSSTableWriter(SSTableMeta meta, Configuration conf) {
 		super(meta, conf);
-		
+
 		this.step = conf.getIndexStep();
 		indexHelper = new InternIndexHelper(conf);
 	}
@@ -157,7 +159,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	public void write() throws IOException {
 		while (iter.hasNext()) {
 			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
-			logger.debug(String.format("writing postinglist for key%s",entry.getKey()));
+			logger.debug(String.format("writing postinglist for key%s", entry.getKey()));
 			// setup meta values
 			indexHelper.startPostingList(entry.getKey(), null);
 			for (IOctreeIterator iter : entry.getValue()) {
@@ -250,16 +252,6 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public Bucket getDataBucket() {
-		return null;
-	}
-
-	@Override
-	public Bucket newDataBucket() {
-		return null;
-	}
-
-	@Override
 	public void moveToDir(File preDir, File dir) {
 		File tmpFile = dataFile(preDir, getMeta());
 		tmpFile.renameTo(dataFile(dir, getMeta()));
@@ -310,7 +302,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		ByteArrayOutputStream tempDataBout = new ByteArrayOutputStream();
 		DataOutputStream tempDataDos = new DataOutputStream(tempDataBout);
 
-		Bucket markUpBuck; //the bucket used to store sentinel octant
+		Bucket markUpBuck; // the bucket used to store sentinel octant
 		Bucket dataBuck; // the bucket that stores octants
 		List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 		List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
@@ -326,8 +318,10 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 		@Override
 		public void openIndexFile(File dir, SSTableMeta meta) throws IOException {
-			dirMap = new BDBBtree(dirMetaFile(dir, meta), conf);
-			dirMap.open(false, false);
+			dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(conf.getIndexDir(), meta))
+					.setKeyFactory(conf.getDirKeyFactory()).setValueFactory(conf.getDirValueFactory())
+					.setAllowDuplicates(false).setReadOnly(false).build();
+			dirMap.open();
 
 			cell = new SkipCell(currentBlockIdx(), conf.getIndexValueFactory());
 			dataBuck = new Bucket((cell.getBlockIdx() + 1) * Block.BLOCK_SIZE);
@@ -340,7 +334,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 		@Override
 		public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
-			curDir = new MarkDirEntry(conf.getIndexKeyFactory());
+			curDir = new MarkDirEntry(conf.getDirKeyFactory());
 			curDir.curKey = key;
 			writeFirstBlock = true;
 			sampleFirstIndex = true;
@@ -528,33 +522,5 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 		markFileOs = new FileOutputStream(markFile(dir, meta));
 		markDos = new DataOutputStream(markFileOs);
 		indexHelper.openIndexFile(dir, meta);
-	}
-
-	public static class MarkDirEntry extends DirEntry {
-		public BucketID startMarkOffset = new BucketID(0, (short) 0);
-		public int markNum = 0;
-
-		public MarkDirEntry(WritableComparableKeyFactory factory) {
-			super(factory);
-		}
-
-		public MarkDirEntry(DirEntry curDir) {
-			super(curDir);
-		}
-
-		@Override
-		public void write(DataOutput output) throws IOException {
-			super.write(output);
-			startMarkOffset.write(output);
-			output.writeInt(markNum);
-		}
-
-		@Override
-		public void read(DataInput input) throws IOException {
-			super.read(input);
-			startMarkOffset.read(input);
-			markNum = input.readInt();
-		}
-
 	}
 }

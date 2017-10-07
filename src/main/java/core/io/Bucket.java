@@ -142,8 +142,8 @@ public class Bucket {
 	}
 
 	public static class BucketID implements Comparable<BucketID> {
-		public int blockID;
-		public short offset;
+		public int blockID = -1;
+		public short offset = -1;
 
 		public BucketID(int blockID, short offset) {
 			this.blockID = blockID;

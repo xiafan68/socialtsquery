@@ -1,10 +1,10 @@
 package core.lsmo;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.PostingListMeta;
 

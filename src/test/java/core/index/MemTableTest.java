@@ -5,10 +5,10 @@ import java.io.IOException;
 import org.junit.Test;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmo.OctreeMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import io.DirLineReader;
 import util.Configuration;
 

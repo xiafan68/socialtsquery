@@ -1,6 +1,5 @@
-package core.lsmt;
+package core.commom;
 
-import core.commom.Encoding;
 import core.lsmi.ListDiskSSTableReader;
 
 import java.io.DataInput;
@@ -8,10 +7,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Comparator;
 
-public interface WritableComparableKey extends Comparable<WritableComparableKey> {
-	public void write(DataOutput output) throws IOException;
-
-	public void read(DataInput input) throws IOException;
+public interface WritableComparableKey extends Comparable<WritableComparableKey>, Writable {
 
 	public static enum WritableComparableKeyComp implements Comparator<WritableComparableKey> {
 		INSTANCE;
@@ -21,35 +17,34 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 		}
 	}
 
-	public static interface WritableComparableKeyFactory {
-		WritableComparableKey createIndexKey();
+	public static interface WritableComparableFactory {
+		WritableComparableKey create();
 	}
-//
-//	public static enum SegKeyList  WritableComparableKeyFactory {
-//		WritableComparableKey createIndexKey();
-//	}
+	//
+	// public static enum SegKeyList WritableComparableKeyFactory {
+	// WritableComparableKey createIndexKey();
+	// }
 
-	public static enum StringKeyFactory implements WritableComparableKeyFactory {
+	public static enum StringKeyFactory implements WritableComparableFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparableKey create() {
 			return new StringKey();
 		}
 	}
 
-	public static enum EncodingFactory implements WritableComparableKeyFactory {
+	public static enum EncodingFactory implements WritableComparableFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparableKey create() {
 			return new Encoding();
 		}
 	}
 
-	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
+	public static enum SegListKeyFactory implements WritableComparableFactory {
 		INSTANCE;
-		public WritableComparableKey createIndexKey() {
+		public WritableComparableKey create() {
 			return new ListDiskSSTableReader.SegListKey();
 		}
 	}
-
 
 	public static class StringKey implements WritableComparableKey {
 		String val;
@@ -90,8 +85,9 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 			StringKey o = (StringKey) object;
 			return val.equals(o.val);
 		}
+
 		@Override
-		public String toString(){
+		public String toString() {
 			return val;
 		}
 	}

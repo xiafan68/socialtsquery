@@ -6,12 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.WritableComparableFactory;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
 import util.Configuration;
 
 /**
@@ -71,105 +71,7 @@ public abstract class ISSTableWriter {
 		}
 	}
 
-	/**
-	 * return a bucket
-	 * 
-	 * @return
-	 */
-	public abstract Bucket getDataBucket();
-
-	/**
-	 * create a new bucket
-	 * 
-	 * @return
-	 */
-	public abstract Bucket newDataBucket();
-
-	public static class DirEntry extends PostingListMeta {
-		final WritableComparableKeyFactory factory;
-		// runtime state
-		public WritableComparableKey curKey = null;
-		public BucketID startBucketID = new BucketID();
-		public BucketID endBucketID = new BucketID();
-		public long indexStartOffset;
-		public long sampleNum;
-
-		public DirEntry(WritableComparableKeyFactory factory) {
-			this.factory = factory;
-		}
-
-		public DirEntry(DirEntry curDir) {
-			factory = curDir.factory;
-			curKey = curDir.curKey;
-			startBucketID.copy(curDir.startBucketID);
-			endBucketID.copy(curDir.endBucketID);
-			indexStartOffset = curDir.indexStartOffset;
-			sampleNum = curDir.sampleNum;
-		}
-
-		public long getIndexOffset() {
-			return indexStartOffset;
-		}
-
-		public static int indexBlockIdx(long indexOffset) {
-			return (int) ((indexOffset >> 32) & 0xffffffff);
-		}
-
-		public static int indexOffsetInBlock(long indexOffset) {
-			return (int) (indexOffset & 0xffffffff);
-		}
-
-		public void init() {
-			curKey = factory.createIndexKey();
-			size = 0;
-			minTime = Integer.MAX_VALUE;
-			maxTime = Integer.MIN_VALUE;
-			sampleNum = 0;
-			indexStartOffset = 0;
-		}
-
-		/**
-		 * 写出
-		 * 
-		 * @param output
-		 * @throws IOException
-		 */
-		public void write(DataOutput output) throws IOException {
-			super.write(output);
-			curKey.write(output);
-			startBucketID.write(output);
-			endBucketID.write(output);
-			output.writeLong(indexStartOffset);
-			output.writeLong(sampleNum);
-		}
-
-		/**
-		 * 读取
-		 * 
-		 * @param input
-		 * @throws IOException
-		 */
-		public void read(DataInput input) throws IOException {
-			super.read(input);
-			curKey = factory.createIndexKey();
-			curKey.read(input);
-			startBucketID.read(input);
-			endBucketID.read(input);
-			indexStartOffset = input.readLong();
-			sampleNum = input.readLong();
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see java.lang.Object#toString()
-		 */
-		@Override
-		public String toString() {
-			return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
-					+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
-		}
-	}
+	
 
 	public abstract void delete(File indexDir, SSTableMeta meta);
 	

@@ -1,8 +1,8 @@
 package core.common;
 
 import core.commom.BDBBtree;
+import core.commom.WritableComparableKey;
 import core.io.Bucket;
-import core.lsmt.WritableComparableKey;
 import util.Configuration;
 import util.Pair;
 

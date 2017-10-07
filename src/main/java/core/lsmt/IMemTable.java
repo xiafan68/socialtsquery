@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmt.postinglist.IPostingList;
 import core.lsmt.postinglist.ISSTableReader;
 

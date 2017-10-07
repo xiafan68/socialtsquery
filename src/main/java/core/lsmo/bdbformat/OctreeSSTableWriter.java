@@ -15,6 +15,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
 import core.commom.Encoding;
+import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Bucket;
 import core.lsmo.octree.IOctreeIterator;
@@ -33,7 +34,6 @@ import util.GroupByKeyIterator;
 import util.Pair;
 import util.PeekIterDecorate;
 import core.lsmt.IndexHelper;
-import core.lsmt.WritableComparableKey;
 
 public class OctreeSSTableWriter extends ISSTableWriter {
 	private static final Logger logger = Logger.getLogger(OctreeSSTableWriter.class);
@@ -268,12 +268,10 @@ public class OctreeSSTableWriter extends ISSTableWriter {
 		return dataDos;
 	}
 
-	@Override
 	public Bucket getDataBucket() {
 		return buck;
 	}
 
-	@Override
 	public Bucket newDataBucket() {
 		buck.reset();
 		try {

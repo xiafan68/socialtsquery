@@ -8,21 +8,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.PropertyConfigurator;
 
+import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
+import core.commom.IndexFileUtils;
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.WritableComparableFactory;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.io.SeekableDirectIO;
-import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
+import core.lsmt.DirEntry;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
-import core.lsmt.bdbindex.BDBBasedIndexHelper;
 import core.lsmt.postinglist.IPostingListIterator;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Configuration;
 import util.Pair;
 import util.Profile;
@@ -38,14 +38,14 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 
 	protected LSMTInvertedIndex index;
 	protected SSTableMeta meta;
-	WritableComparableKeyFactory valueFactory;
-	WritableComparableKeyFactory keyFactory;
+	WritableComparableFactory valueFactory;
+	WritableComparableFactory keyFactory;
 
 	public BlockBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
 		this.index = index;
 		this.meta = meta;
 		this.valueFactory = index.getConf().getIndexValueFactory();
-		this.keyFactory = index.getConf().getIndexKeyFactory();
+		this.keyFactory = index.getConf().getDirKeyFactory();
 	}
 
 	public boolean isInited() {
@@ -53,8 +53,8 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	}
 
 	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
-		MarkDirEntry ret = new MarkDirEntry(keyFactory);
-		dirMap.get(key, ret);
+		DirEntry ret = (DirEntry) dirMap.get(key);
+		ret.curKey = key;
 		return ret;
 	}
 
@@ -73,8 +73,10 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	}
 
 	private void loadDirMeta() throws IOException {
-		dirMap = new BDBBtree(BDBBasedIndexHelper.dirMetaFile(index.getConf().getIndexDir(), meta), index.getConf());
-		dirMap.open(false, false);
+		dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(index.getConf().getIndexDir(), meta))
+				.setKeyFactory(index.getConf().getDirKeyFactory()).setValueFactory(index.getConf().getDirValueFactory())
+				.setAllowDuplicates(false).setReadOnly(true).build();
+		dirMap.open();
 	}
 
 	public synchronized int getBucketFromMarkFile(Bucket block) throws IOException {
@@ -107,7 +109,7 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 
 	};
 
-	public WritableComparableKeyFactory getFactory() {
+	public WritableComparableFactory getFactory() {
 		return valueFactory;
 	}
 
@@ -138,16 +140,12 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 
 	@Override
 	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
-		MarkDirEntry entry = new MarkDirEntry(keyFactory);
-		dirMap.get(key, entry);
-		return new InternDiskOctreeScanner(entry, this);
+		return new InternDiskOctreeScanner(getDirEntry(key), this);
 	}
 
 	@Override
 	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
-		MarkDirEntry entry = new MarkDirEntry(keyFactory);
-		dirMap.get(key, entry);
-		return new InternPostingListIter(entry, this, start, end);
+		return new InternPostingListIter(getDirEntry(key), this, start, end);
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -174,21 +172,18 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 
 	@Override
 	public int getBucket(BucketID id, Bucket bucket) throws IOException {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
 			throws IOException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

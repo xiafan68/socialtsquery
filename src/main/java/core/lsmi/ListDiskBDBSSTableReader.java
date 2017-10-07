@@ -4,24 +4,97 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import common.MidSegment;
+import core.commom.BDBBTreeBuilder;
+import core.commom.BDBBtree;
+import core.commom.IndexFileUtils;
+import core.commom.WritableComparableKey;
+import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.io.SeekableDirectIO;
+import core.lsmt.DirEntry;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
-import core.lsmt.WritableComparableKey.WritableComparableKeyFactory;
-import core.lsmt.bdbindex.BucketBasedBDBSSTableReader;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.PostingListMeta;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Pair;
+import util.Profile;
+import util.ProfileField;
 
-public class ListDiskBDBSSTableReader extends BucketBasedBDBSSTableReader {
+public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
+
+	protected SeekableDirectIO dataInput;
+	protected BDBBtree dirMap = null;
+	protected AtomicBoolean init = new AtomicBoolean(false);
+
+	protected LSMTInvertedIndex index;
+	protected SSTableMeta meta;
+	WritableComparableFactory keyFactory;
+
+	public ListDiskBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta, WritableComparableFactory keyFactory) {
+		this.index = index;
+		this.meta = meta;
+		this.keyFactory = keyFactory;
+	}
+
+	public boolean isInited() {
+		return true;
+	}
+
+	@Override
+	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
+		return (DirEntry) dirMap.get(key);
+	}
+
+	public void init() throws IOException {
+		if (!init.get()) {
+			synchronized (this) {
+				if (!init.get()) {
+					File dataDir = index.getConf().getIndexDir();
+					dataInput = SeekableDirectIO.create(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					loadDirMeta();
+				}
+				init.set(true);
+			}
+		}
+	}
+
+	private void loadDirMeta() throws IOException {
+		dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(index.getConf().getIndexDir(), meta))
+				.setKeyFactory(index.getConf().getDirKeyFactory()).setValueFactory(index.getConf().getDirValueFactory())
+				.setAllowDuplicates(false).setReadOnly(true).build();
+		dirMap.open();
+	}
+
+	/**
+	 * 读取id对应的bucket
+	 * 
+	 * @param id
+	 * @param bucket
+	 * @return the last offset
+	 * @throws IOException
+	 */
+	public synchronized int getBucket(BucketID id, Bucket bucket) throws IOException {
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
+		try {
+			bucket.reset();
+			bucket.setBlockIdx(id.blockID);
+			dataInput.seek(id.getFileOffset());
+			bucket.read(dataInput);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
+		}
+	}
 
 	public static class SegListKey implements WritableComparableKey {
 		int top;
@@ -66,10 +139,10 @@ public class ListDiskBDBSSTableReader extends BucketBasedBDBSSTableReader {
 		}
 	}
 
-	public static enum SegListKeyFactory implements WritableComparableKeyFactory {
+	public static enum SegListKeyFactory implements WritableComparableFactory {
 		INSTANCE;
 		@Override
-		public WritableComparableKey createIndexKey() {
+		public WritableComparableKey create() {
 			return new SegListKey();
 		}
 

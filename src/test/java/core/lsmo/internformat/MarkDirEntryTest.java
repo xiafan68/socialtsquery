@@ -8,9 +8,9 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import core.commom.WritableComparableKey.StringKey;
+import core.commom.WritableComparableKey.StringKeyFactory;
 import core.lsmo.internformat.InternOctreeSSTableWriter.MarkDirEntry;
-import core.lsmt.WritableComparableKey.StringKey;
-import core.lsmt.WritableComparableKey.StringKeyFactory;
 
 public class MarkDirEntryTest {
 	@Test

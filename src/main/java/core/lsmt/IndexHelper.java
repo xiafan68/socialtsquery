@@ -3,6 +3,7 @@ package core.lsmt;
 import java.io.File;
 import java.io.IOException;
 
+import core.commom.WritableComparableKey;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter;
@@ -21,7 +22,7 @@ public abstract class IndexHelper {
 	protected Configuration conf;
 
 	public IndexHelper(ISSTableWriter writer, Configuration conf) {
-		curDir = new DirEntry(conf.getIndexKeyFactory());
+		curDir = new DirEntry(conf.getDirKeyFactory());
 		this.conf = conf;
 	}
 

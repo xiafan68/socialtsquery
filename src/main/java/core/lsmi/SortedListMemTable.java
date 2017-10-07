@@ -6,10 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import common.MidSegment;
+import core.commom.WritableComparableKey;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.IPostingList;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.PostingListMeta;

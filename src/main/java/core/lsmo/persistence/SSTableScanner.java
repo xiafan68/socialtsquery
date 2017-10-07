@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import core.commom.WritableComparableKey;
 import core.lsmo.octree.IOctreeIterator;
-import core.lsmt.WritableComparableKey;
 import core.lsmt.postinglist.ISSTableReader;
 import util.Pair;
 

@@ -7,13 +7,13 @@ import java.util.List;
 
 import common.MidSegment;
 import core.commom.MemoryPostingListIterUtil;
+import core.commom.WritableComparableKey;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
+import core.lsmt.DirEntry;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.PostingListMeta;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
-import core.lsmt.WritableComparableKey;
 import util.Pair;
 
 public class SortedListMemTableReader implements ISSTableReader {
