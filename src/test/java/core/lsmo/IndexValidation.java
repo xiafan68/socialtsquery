@@ -15,7 +15,7 @@ import core.commom.WritableComparableKey;
 import core.commom.BDBBtree.BDBKeyIterator;
 import core.commom.WritableComparableKey.StringKey;
 import core.executor.QueryExecutorFactory.ExecType;
-import core.lsmo.internformat.BlockBasedSSTableReader;
+import core.lsmo.internformat.InternOctreeSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
@@ -48,7 +48,7 @@ public class IndexValidation {
 		// FileOutputStream fos = new FileOutputStream("../../error.txt");
 		// System.setOut(new PrintStream(fos));
 		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
-			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
+			InternOctreeSSTableReader reader = (InternOctreeSSTableReader) index.getSSTableReader(index.getVersion(), meta);
 			Iterator<WritableComparableKey> iter = reader.keySetIter();
 			int start = 696000;
 			int end = 699100;
@@ -85,7 +85,7 @@ public class IndexValidation {
 		FileOutputStream fos = new FileOutputStream("../../error.txt");
 		System.setOut(new PrintStream(fos));
 		for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
-			BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(), meta);
+			InternOctreeSSTableReader reader = (InternOctreeSSTableReader) index.getSSTableReader(index.getVersion(), meta);
 			Iterator<WritableComparableKey> iter = reader.keySetIter();
 			int start = 696000;
 			int end = 699100;

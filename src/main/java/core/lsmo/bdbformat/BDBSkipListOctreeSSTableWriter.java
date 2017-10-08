@@ -16,14 +16,20 @@ import core.lsmo.persistence.IOctreeSSTableWriter;
 import core.lsmt.DirEntry;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.ISSTableReader;
 import util.Configuration;
 
 public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 
 	private BDBBtree skipListMap;
 
+	@SuppressWarnings("rawtypes")
 	public BDBSkipListOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(tables, conf);
+	}
+
+	public BDBSkipListOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
+		super(meta, tables, conf);
 	}
 
 	@Override
@@ -45,12 +51,20 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 
 	@Override
 	protected DirEntry startNewPostingList(WritableComparableKey key) {
-		MarkDirEntry ret = new MarkDirEntry();
+		DirEntry ret;
+		if (conf.standaloneSentinal()) {
+			ret = new MarkDirEntry();
+			((MarkDirEntry) ret).markNum = 0;
+		} else {
+			ret = new DirEntry();
+		}
+
 		ret.curKey = key;
 		ret.sampleNum = 0;
 		ret.size = 0;
 		ret.minTime = Integer.MAX_VALUE;
 		ret.maxTime = Integer.MIN_VALUE;
+
 		return ret;
 	}
 
@@ -59,10 +73,8 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 		// record end positions of posting list, no need to flush markupBuck and
 		// curDataBuck as they can be spanned by posting lists
 		curDir.endBucketID.copy(curDataBuck.blockIdx());
-		if (conf.standaloneSentinal() && sentinelOctantNum > 0) {
-			((MarkDirEntry) curDir).endBucketID.copy(markupBuck.blockIdx());
-		} else if (conf.standaloneSentinal()) {
-			((MarkDirEntry) curDir).endBucketID.blockID = -1;
+		if (conf.standaloneSentinal()) {
+			((MarkDirEntry) curDir).markNum = sentinelOctantNum;
 		}
 
 		dirMap.insert(curDir.curKey, curDir);

@@ -335,6 +335,12 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	public void moveToDir(File preDir, File dir) {
 		File tmpFile = IndexFileUtils.dataFile(preDir, getMeta());
 		tmpFile.renameTo(IndexFileUtils.dataFile(dir, getMeta()));
+
+		if (conf.standaloneSentinal()) {
+			tmpFile = IndexFileUtils.markFile(preDir, getMeta());
+			tmpFile.renameTo(IndexFileUtils.dataFile(dir, getMeta()));
+		}
+
 		try {
 			FileUtils.moveDirectory(IndexFileUtils.dirMetaFile(preDir, meta), IndexFileUtils.dirMetaFile(dir, meta));
 		} catch (IOException e) {
@@ -346,13 +352,21 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	@Override
 	public boolean validate(SSTableMeta meta) {
 		File dFile = IndexFileUtils.dataFile(conf.getIndexDir(), meta);
+		File markFile = null;
+		if (conf.standaloneSentinal()) {
+			markFile = IndexFileUtils.markFile(conf.getIndexDir(), meta);
+		}
 		File dirFile = IndexFileUtils.dirMetaFile(conf.getIndexDir(), meta);
-		return dFile.exists() && !dirFile.exists();
+		return dFile.exists() && !dirFile.exists() && (markFile == null || markFile.exists());
 	}
 
 	@Override
 	public void delete(File indexDir, SSTableMeta meta) {
 		IndexFileUtils.dataFile(conf.getIndexDir(), meta).delete();
+		if (conf.standaloneSentinal()) {
+			IndexFileUtils.markFile(conf.getIndexDir(), meta).delete();
+		}
+
 		try {
 			FileUtils.deleteDirectory(IndexFileUtils.dirMetaFile(indexDir, meta));
 		} catch (IOException e) {

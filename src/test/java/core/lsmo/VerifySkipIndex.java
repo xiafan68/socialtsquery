@@ -9,7 +9,7 @@ import core.commom.BDBBtree;
 import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
-import core.lsmo.internformat.BlockBasedSSTableReader;
+import core.lsmo.internformat.InternOctreeSSTableReader;
 import core.lsmo.persistence.SkipCell;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter.DirEntry;
@@ -26,7 +26,7 @@ public class VerifySkipIndex {
 		Interval window = new Interval(0, ts, te, 0);
 		try {
 			for (SSTableMeta meta : internIndex.getVersion().diskTreeMetas) {
-				BlockBasedSSTableReader reader = (BlockBasedSSTableReader) internIndex
+				InternOctreeSSTableReader reader = (InternOctreeSSTableReader) internIndex
 						.getSSTableReader(internIndex.getVersion(), meta);
 				Iterator<WritableComparableKey> iter = reader.keySetIter();
 				while (iter.hasNext()) {

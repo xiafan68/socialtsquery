@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,27 +48,33 @@ public class BlockOutputStream {
 		return block;
 	}
 
-	public void appendBlock(Block block) {
+	public void appendBlock(Block block) throws IOException {
+		block.setBlockIdx(currentBlockIdx());
 		appendSize += Block.BLOCK_SIZE;
 		appendBlocks.add(block);
 		blockIdxMapping.put(block.getBlockIdx(), appendBlocks.size() - 1);
 	}
 
-	public void appendBlocks(List<Block> blocks) {
+	public void appendBlocks(List<Block> blocks) throws IOException {
 		for (Block block : blocks) {
 			appendBlock(block);
 		}
 	}
-	
+
 	public void writeBlock(Block block) throws IOException {
-		block.write(dataDos);
+		if (blockIdxMapping.containsKey(block.getBlockIdx())) {
+			appendBlocks.set(blockIdxMapping.get(block.getBlockIdx()), block);
+		} else {
+			// in such case we think you are appending to the end
+			block.write(dataDos);
+		}
 	}
-	
-	public void writeBlocks(List<Block> blocks)  throws IOException {
+
+	public void writeBlocks(List<Block> blocks) throws IOException {
 		for (Block block : blocks) {
 			writeBlock(block);
 		}
-		
+
 	}
 
 	public void flushAppends() throws IOException {

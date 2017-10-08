@@ -14,8 +14,9 @@ import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.io.SeekableDirectIO;
-import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.lsmo.persistence.DiskOctreeScanner;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import util.Pair;
 import util.Profile;
@@ -23,6 +24,7 @@ import util.ProfileField;
 
 public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 	protected SeekableDirectIO dataInput;
+	protected SeekableDirectIO markInput;
 	protected BDBBtree dirMap = null;
 
 	protected AtomicBoolean init = new AtomicBoolean(false);
@@ -49,13 +51,20 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 			synchronized (this) {
 				if (!init.get()) {
 					File dataDir = index.getConf().getIndexDir();
-					dataInput = SeekableDirectIO.create(OctreeSSTableWriter.dataFile(dataDir, meta), "r");
+					dataInput = SeekableDirectIO.create(IndexFileUtils.dataFile(dataDir, meta), "r");
+					if (index.getConf().standaloneSentinal())
+						markInput = SeekableDirectIO.create(IndexFileUtils.markFile(dataDir, meta), "r");
 					loadDirMeta();
 					initIndex();
 				}
 				init.set(true);
 			}
 		}
+	}
+
+	@Override
+	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+		return new DiskOctreeScanner(getDirEntry(key), this);
 	}
 
 	private void loadDirMeta() throws IOException {
@@ -103,10 +112,10 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey,
+	public abstract Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException;
 
-	public abstract Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
+	public abstract Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException;
 
 	@Override
@@ -124,6 +133,8 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 		if (dataInput != null)
 			dataInput.close();
 
+		if (markInput != null)
+			markInput.close();
 		closeIndex();
 		dirMap.close();
 	}
@@ -134,4 +145,25 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 		return index;
 	}
 
+	public synchronized int getBucketFromMarkFile(Bucket block) throws IOException {
+		Profile.instance.start("markblock");
+		try {
+			markInput.seek(block.blockIdx().getFileOffset());
+			block.read(markInput);
+			return (int) (markInput.position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end("markblock");
+		}
+	}
+
+	public synchronized int getBlockFromDataFile(Block block) throws IOException {
+		Profile.instance.start(ProfileField.READ_BLOCK.toString());
+		try {
+			dataInput.seek(block.getFileOffset());
+			block.read(dataInput);
+			return (int) (dataInput.position() / Block.BLOCK_SIZE);
+		} finally {
+			Profile.instance.end(ProfileField.READ_BLOCK.toString());
+		}
+	}
 }

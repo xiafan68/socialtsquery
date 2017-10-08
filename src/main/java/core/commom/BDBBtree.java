@@ -21,8 +21,6 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.PreloadConfig;
 
 import core.commom.WritableComparableKey.WritableComparableFactory;
-import core.io.Bucket.BucketID;
-import core.lsmt.DirEntry;
 import util.Pair;
 
 /**
@@ -196,8 +194,8 @@ public class BDBBtree {
 		return ret;
 	}
 
-	public Pair<WritableComparableKey, WritableComparableKey> cell(WritableComparableKey curKey,
-			WritableComparableKey secondaryKey) throws IOException {
+	public Pair<WritableComparableKey, Writable> cell(WritableComparableKey curKey, WritableComparableKey secondaryKey)
+			throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(secondaryKey);
 		Cursor cursor = nodeDb.openCursor(null, null);
@@ -223,8 +221,8 @@ public class BDBBtree {
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<WritableComparableKey, WritableComparableKey> floor(WritableComparableKey curKey,
-			WritableComparableKey secondaryKey) throws IOException {
+	public Pair<WritableComparableKey, Writable> floor(WritableComparableKey curKey, WritableComparableKey secondaryKey)
+			throws IOException {
 
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(secondaryKey);
@@ -235,7 +233,7 @@ public class BDBBtree {
 			// 找到第一个大于等于data的
 			OperationStatus status = cursor.getSearchBothRange(key, data, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				Pair<WritableComparableKey, WritableComparableKey> ret = parsePair(data);
+				Pair<WritableComparableKey, Writable> ret = parsePair(data);
 				if (ret.getKey().compareTo(secondaryKey) == 0)
 					return ret;
 				else {
@@ -261,7 +259,7 @@ public class BDBBtree {
 	 * @return
 	 * @throws IOException
 	 */
-	private Pair<WritableComparableKey, WritableComparableKey> getKeyLast(WritableComparableKey curKey,
+	private Pair<WritableComparableKey, Writable> getKeyLast(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(curCode);
@@ -303,11 +301,11 @@ public class BDBBtree {
 		return ret;
 	}
 
-	private Pair<WritableComparableKey, WritableComparableKey> parsePair(DatabaseEntry data) throws IOException {
+	private Pair<WritableComparableKey, Writable> parsePair(DatabaseEntry data) throws IOException {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data.getData()));
 		WritableComparableKey curSecondaryKey = bdbbTreeBuilder.getSecondaryKeyFactory().create();
 		curSecondaryKey.read(dis);
-		WritableComparableKey value = bdbbTreeBuilder.getSecondaryKeyFactory().create();
+		Writable value = bdbbTreeBuilder.getValueFactory().create();
 		value.read(dis);
 
 		return new Pair<>(curSecondaryKey, value);

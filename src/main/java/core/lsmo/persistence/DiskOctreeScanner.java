@@ -17,10 +17,10 @@ import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.MarkDirEntry;
-import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.DirEntry;
+import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 
@@ -50,7 +50,7 @@ public class DiskOctreeScanner implements IOctreeIterator {
 	private OctreeNode[] curNodes = new OctreeNode[] { null, null };
 
 	DataInputStream input = null;
-	private BlockBasedSSTableReader reader;
+	private IBucketBasedSSTableReader reader;
 
 	PriorityQueue<OctreeNode> traverseQueue = new PriorityQueue<OctreeNode>(256, new Comparator<OctreeNode>() {
 		@Override
@@ -66,7 +66,7 @@ public class DiskOctreeScanner implements IOctreeIterator {
 	 * @param meta
 	 *            the meta data of the octree
 	 */
-	public DiskOctreeScanner(DirEntry entry, BlockBasedSSTableReader reader) {
+	public DiskOctreeScanner(DirEntry entry, IBucketBasedSSTableReader reader) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;

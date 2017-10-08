@@ -14,7 +14,7 @@ import core.commom.Encoding;
 import core.commom.WritableComparableKey;
 import core.commom.WritableComparableKey.StringKey;
 import core.lsmo.bdbformat.DiskSSTableBDBReader;
-import core.lsmo.internformat.BlockBasedSSTableReader;
+import core.lsmo.internformat.InternOctreeSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import segmentation.Interval;
@@ -162,7 +162,7 @@ public class OctreePostingListIterTest {
 
 		try {
 			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
-				BlockBasedSSTableReader reader = (BlockBasedSSTableReader) index.getSSTableReader(index.getVersion(),
+				InternOctreeSSTableReader reader = (InternOctreeSSTableReader) index.getSSTableReader(index.getVersion(),
 						meta);
 				Iterator<WritableComparableKey> iter = reader.keySetIter();
 				HashSet<Encoding> mids = new HashSet<Encoding>();

@@ -61,11 +61,11 @@ public class BDBBtreeTest {
     public Pair<WritableComparableKey, Bucket.BucketID> getFloorPair(BDBBtree bdbBtree, String key, String value) throws IOException {
         WritableComparableKey.StringKey curkey = new WritableComparableKey.StringKey(key);
         WritableComparableKey.StringKey curvalue = new WritableComparableKey.StringKey(value);
-        return bdbBtree.floorOffset(curkey, curvalue);
+        return bdbBtree.cellOffset(curkey, curvalue);
     }
     public Pair<WritableComparableKey, Bucket.BucketID> getCellPair(BDBBtree bdbBtree, String key, String value) throws IOException {
         WritableComparableKey.StringKey curkey = new WritableComparableKey.StringKey(key);
         WritableComparableKey.StringKey curvalue = new WritableComparableKey.StringKey(value);
-        return bdbBtree.cellOffset(curkey, curvalue);
+        return bdbBtree.floorOffset(curkey, curvalue);
     }
 }

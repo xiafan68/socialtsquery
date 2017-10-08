@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
 
-import core.lsmo.bdbformat.OctreeSSTableWriter;
+import core.commom.IndexFileUtils;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.LSMTInvertedIndex.VersionSet;
@@ -45,45 +45,6 @@ public class CompactService extends Thread {
 		super("compaction thread");
 		this.index = index;
 		iCompactStrategy = index.getConf().getCompactStragety();
-	}
-
-	/**
-	 * TODO
-	 * 
-	 * @return
-	 */
-	private List<SSTableMeta> fileToCompact() {
-		List<SSTableMeta> ret = new ArrayList<SSTableMeta>();
-		snapshot = index.getVersion();
-		TreeMap<Integer, Integer> levelNums = new TreeMap<Integer, Integer>();
-		Map<Integer, List> levelList = new HashMap<Integer, List>();
-
-		for (SSTableMeta meta : snapshot.diskTreeMetas) {
-			if (levelNums.containsKey(meta.level)) {
-				levelList.get(meta.level).add(meta);
-				levelNums.put(meta.level, levelNums.get(meta.level) + 1);
-			} else {
-				levelNums.put(meta.level, 1);
-				ArrayList<SSTableMeta> metas = new ArrayList<SSTableMeta>();
-				metas.add(meta);
-				levelList.put(meta.level, metas);
-			}
-		}
-		ArrayList<Entry<Integer, Integer>> sortedLevelNum = new ArrayList<Entry<Integer, Integer>>(
-				levelNums.entrySet());
-		if (sortedLevelNum.isEmpty()) {
-			return ret;
-		}
-
-		Collections.sort(sortedLevelNum, new Comparator<Entry<Integer, Integer>>() {
-
-			@Override
-			public int compare(Entry<Integer, Integer> o1, Entry<Integer, Integer> o2) {
-				return o2.getValue().compareTo(o1.getValue());
-			}
-		});
-		ret = levelList.get(sortedLevelNum.get(0).getKey());
-		return ret;
 	}
 
 	@Override
@@ -115,7 +76,7 @@ public class CompactService extends Thread {
 
 	public boolean compactTrees(List<SSTableMeta> toCompact) {
 		// find out trees needing compaction
-		// TODO 1. 确定需要压缩的文件。2. 获取相关的SSTableReader， 3. 使用SSTableWriter写出数据 4.
+		// 1. 确定需要压缩的文件。2. 获取相关的SSTableReader， 3. 使用SSTableWriter写出数据 4.
 		// 使用Index更新版本集合。
 		boolean ret = false;
 		if (toCompact.size() >= 2) {
@@ -170,7 +131,7 @@ public class CompactService extends Thread {
 
 	private void markAsDel(List<SSTableMeta> toCompact) throws IOException {
 		for (SSTableMeta meta : toCompact) {
-			File file = OctreeSSTableWriter.dataFile(index.getConf().getIndexDir(), meta);
+			File file = IndexFileUtils.dataFile(index.getConf().getIndexDir(), meta);
 			FileUtil.markDel(file);
 		}
 	}

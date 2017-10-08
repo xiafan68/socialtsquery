@@ -22,8 +22,8 @@ import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 
 public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
-	public ListDiskBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta, WritableComparableFactory keyFactory) {
-		super(index, meta, keyFactory);
+	public ListDiskBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
+		super(index, meta);
 	}
 
 	public static class SegListKey implements WritableComparableKey {
@@ -76,10 +76,6 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 			return new SegListKey();
 		}
 
-	}
-
-	public ListDiskBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta);
 	}
 
 	@Override
@@ -190,14 +186,14 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
-			throws IOException {
+	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
+			WritableComparableKey curCode) throws IOException {
 		return null;
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
+	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
+			throws IOException {
 		return null;
 	}
 

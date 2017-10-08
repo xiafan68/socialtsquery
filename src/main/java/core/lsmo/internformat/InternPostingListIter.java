@@ -30,7 +30,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * @param ts
 	 * @param te
 	 */
-	public InternPostingListIter(DirEntry entry, BlockBasedSSTableReader reader, int ts, int te) {
+	public InternPostingListIter(DirEntry entry, InternOctreeSSTableReader reader, int ts, int te) {
 		super(entry, reader, ts, te);
 		if (entry != null && entry.curKey != null && entry.minTime <= te && entry.maxTime >= ts) {
 			curSkipBlockIdx = DirEntry.indexBlockIdx(entry.indexStartOffset);
@@ -44,14 +44,14 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * @throws IOException
 	 */
 	private void loadMetaBlock(Block block) throws IOException {
-		SkipCell cell = new SkipCell(block.getBlockIdx(), ((BlockBasedSSTableReader) reader).getFactory());
+		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getIndex().getConf().getSecondaryKeyFactory());
 		cell.read(block);
 		skipMeta.put(block.getBlockIdx(), cell);
 	}
 
 	private void loadMetaBlock(int blockIdx) throws IOException {
 		Block block = new Block(BLOCKTYPE.META_BLOCK, blockIdx);
-		((BlockBasedSSTableReader) reader).getBlockFromDataFile(block);
+		((InternOctreeSSTableReader) reader).getBlockFromDataFile(block);
 		loadMetaBlock(block);
 	}
 
@@ -76,7 +76,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	}
 
 	@Override
-	protected Pair<WritableComparableKey, BucketID> cellOffset() throws IOException {
+	protected Pair<WritableComparableKey, BucketID> floorOffset() throws IOException {
 		Pair<WritableComparableKey, BucketID> ret = new Pair<WritableComparableKey, BucketID>(null, null);
 		SkipCell curCell = null;
 
@@ -155,7 +155,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 		do {
 			Block block = new Block(Block.BLOCKTYPE.DATA_BLOCK, 0);
 			block.setBlockIdx(nextBlockID);
-			nextBlockID = ((BlockBasedSSTableReader) reader).getBlockFromDataFile(block);
+			nextBlockID = ((InternOctreeSSTableReader) reader).getBlockFromDataFile(block);
 			if (block.isDataBlock()) {
 				blocks.add(block);
 			} else {

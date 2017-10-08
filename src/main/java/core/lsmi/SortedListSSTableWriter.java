@@ -14,11 +14,11 @@ import org.apache.log4j.Logger;
 
 import collection.CollectionUtils;
 import common.MidSegment;
+import core.commom.IndexFileUtils;
 import core.commom.WritableComparableKey;
 import core.io.Block;
 import core.io.Bucket;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
-import core.lsmo.bdbformat.OctreeSSTableWriter;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.IndexHelper;
@@ -264,8 +264,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	@Override
 	public void moveToDir(File preDir, File dir) {
 		indexHelper.moveToDir(preDir, dir, meta);
-		File tmpFile = OctreeSSTableWriter.dataFile(preDir, getMeta());
-		tmpFile.renameTo(OctreeSSTableWriter.dataFile(dir, getMeta()));
+		File tmpFile = IndexFileUtils.dataFile(preDir, getMeta());
+		tmpFile.renameTo(IndexFileUtils.dataFile(dir, getMeta()));
 	}
 
 	public static File dataFile(File dir, SSTableMeta meta) {

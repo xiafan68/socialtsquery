@@ -31,7 +31,7 @@ public enum OctreeInternFormatLSMTFactory implements ILSMTFactory {
 
 	@Override
 	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		return new BlockBasedSSTableReader(index, meta);
+		return new InternOctreeSSTableReader(index, meta);
 	}
 
 }

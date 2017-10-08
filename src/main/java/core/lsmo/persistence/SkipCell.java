@@ -113,6 +113,25 @@ public class SkipCell implements Writable {
 		return idx;
 	}
 
+	public int floorOffset(WritableComparableKey curKey, int start, int end) {
+		Pair<WritableComparableKey, BucketID> pair = new Pair<WritableComparableKey, BucketID>(curKey, null);
+		int idx = Collections.binarySearch(skipList.subList(start, end), pair,
+				new Comparator<Pair<WritableComparableKey, BucketID>>() {
+					@Override
+					public int compare(Pair<WritableComparableKey, BucketID> o1,
+							Pair<WritableComparableKey, BucketID> o2) {
+						return o1.getKey().compareTo(o2.getKey());
+					}
+				});
+		if (idx < 0) {
+			idx = Math.abs(1 + idx);// 找到第一个小于key的索引项
+		}
+		idx += start;
+		if (idx == end)
+			idx = -1;
+		return idx;
+	}
+
 	/**
 	 * 重置当前cell，用于开始新的写入
 	 */
@@ -207,7 +226,7 @@ public class SkipCell implements Writable {
 		byte[] metaArray = bout.toByteArray();
 		ByteUtil.writeInt(nextMetaBlockIdx, metaArray, 0);
 		ByteUtil.writeInt(size, metaArray, 4);
-		Block metaBlock = new Block(BLOCKTYPE.META_BLOCK, 0);
+		Block metaBlock = new Block(BLOCKTYPE.META_BLOCK, blockIdx);
 		metaBlock.setData(metaArray);
 		return metaBlock;
 	}
