@@ -88,7 +88,7 @@ public class Configuration {
 
 	WritableComparableFactory factory = null;
 
-	public WritableComparableFactory getIndexValueFactory() {
+	public WritableComparableFactory getSecondaryKeyFactory() {
 		// TODO : implement two factories:one for [seglistkey], one for
 		// [encoding]
 		// 不需要bucketID

@@ -92,14 +92,4 @@ public class SortedListToOctreeSSTableWriter extends ISSTableWriter {
 	public void delete(File indexDir, SSTableMeta meta) {
 		octreeWriter.delete(indexDir, meta);
 	}
-
-	@Override
-	public Bucket getDataBucket() {
-		return null;
-	}
-
-	@Override
-	public Bucket newDataBucket() {
-		return null;
-	}
 }

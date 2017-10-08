@@ -7,12 +7,12 @@ import core.commom.WritableComparableKey;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 import util.Configuration;
 
 /**
- * define interfaces required to store (key, offset) pair. The <code>BucketID</code> class stores
- * information required to seek the bucket whose data contains key.
+ * define interfaces required to store (key, offset) pair. The
+ * <code>BucketID</code> class stores information required to seek the bucket
+ * whose data contains key.
  * 
  * @author xiafan
  *
@@ -22,7 +22,7 @@ public abstract class IndexHelper {
 	protected Configuration conf;
 
 	public IndexHelper(ISSTableWriter writer, Configuration conf) {
-		curDir = new DirEntry(conf.getDirKeyFactory());
+		curDir = new DirEntry();
 		this.conf = conf;
 	}
 
@@ -69,7 +69,7 @@ public abstract class IndexHelper {
 	@Override
 	public void finalize() {
 		try {
-			//in case we forget to close the file handle
+			// in case we forget to close the file handle
 			close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);

@@ -4,12 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.PropertyConfigurator;
 
 import core.commom.BDBBTreeBuilder;
-import core.commom.BDBBtree;
 import core.commom.IndexFileUtils;
 import core.commom.WritableComparableKey;
 import core.commom.WritableComparableKey.WritableComparableFactory;
@@ -17,8 +15,8 @@ import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
+import core.lsmo.persistence.DiskOctreeScanner;
 import core.io.SeekableDirectIO;
-import core.lsmt.DirEntry;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
@@ -28,34 +26,13 @@ import util.Pair;
 import util.Profile;
 import util.ProfileField;
 
-public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
-	protected SeekableDirectIO dataInput;
+public class BlockBasedSSTableReader extends IBucketBasedSSTableReader {
 	protected SeekableDirectIO markInput;
-
-	protected BDBBtree dirMap = null;
-
-	protected AtomicBoolean init = new AtomicBoolean(false);
-
-	protected LSMTInvertedIndex index;
-	protected SSTableMeta meta;
-	WritableComparableFactory valueFactory;
-	WritableComparableFactory keyFactory;
+	WritableComparableFactory secondaryKeyFactory;
 
 	public BlockBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		this.index = index;
-		this.meta = meta;
-		this.valueFactory = index.getConf().getIndexValueFactory();
-		this.keyFactory = index.getConf().getDirKeyFactory();
-	}
-
-	public boolean isInited() {
-		return true;
-	}
-
-	public DirEntry getDirEntry(WritableComparableKey key) throws IOException {
-		DirEntry ret = (DirEntry) dirMap.get(key);
-		ret.curKey = key;
-		return ret;
+		super(index, meta);
+		this.secondaryKeyFactory = index.getConf().getSecondaryKeyFactory();
 	}
 
 	public void init() throws IOException {
@@ -110,7 +87,7 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	};
 
 	public WritableComparableFactory getFactory() {
-		return valueFactory;
+		return secondaryKeyFactory;
 	}
 
 	@Override
@@ -140,7 +117,7 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 
 	@Override
 	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
-		return new InternDiskOctreeScanner(getDirEntry(key), this);
+		return new DiskOctreeScanner(getDirEntry(key), this);
 	}
 
 	@Override
@@ -171,8 +148,9 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	}
 
 	@Override
-	public int getBucket(BucketID id, Bucket bucket) throws IOException {
-		return 0;
+	public void initIndex() throws IOException {
+		markInput = SeekableDirectIO.create(InternOctreeSSTableWriter.markFile(index.getConf().getIndexDir(), meta),
+				"r");
 	}
 
 	@Override
@@ -185,5 +163,10 @@ public class BlockBasedSSTableReader implements IBucketBasedSSTableReader {
 	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
 			WritableComparableKey curCode) throws IOException {
 		return null;
+	}
+
+	@Override
+	public void closeIndex() throws IOException {
+		markInput.close();
 	}
 }

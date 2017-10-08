@@ -256,9 +256,6 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 				helper.first = false;
 				indexHelper.setupDataStartBlockIdx(buck.blockIdx());
 			}
-			// MidSegment cur = helper.list.get(0);
-			// indexHelper.buildIndex(new SegListKey(cur.getPoint().getZ(),
-			// cur.getStart(), cur.mid), buck.blockIdx());
 			helper.init();
 		}
 
@@ -288,12 +285,6 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		indexHelper.close();
 	}
 
-	@Override
-	public Bucket getDataBucket() {
-		return buck;
-	}
-
-	@Override
 	public Bucket newDataBucket() {
 		buck.reset();
 		try {

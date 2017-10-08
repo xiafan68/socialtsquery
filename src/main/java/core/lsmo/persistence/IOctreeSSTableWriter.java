@@ -49,11 +49,6 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
 
-	// for data files
-	// FileOutputStream dataFileOs;
-	// DataOutputStream dataDos;
-	// private BufferedOutputStream dataBuffer;
-
 	protected BlockOutputStream dataBos;
 	protected BlockOutputStream markupBos;
 
@@ -151,12 +146,14 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 	/**
 	 * start writing a new posting list into disk
+	 * 
+	 * @throws IOException
 	 */
-	protected abstract void endNewPostingList();
+	protected abstract void endNewPostingList() throws IOException;
 
-	protected abstract void newSentinalBucket();
+	protected abstract void flushAndNewSentinalBucket() throws IOException;
 
-	protected abstract void flushAndNewSkipCell();
+	protected abstract void flushAndNewSkipCell() throws IOException;
 
 	protected void addSkipOffset(WritableComparableKey code) throws IOException {
 		if (!indexCell.addIndex(code, curDataBuck.blockIdx())) {
@@ -171,19 +168,12 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	protected abstract void firstSentinelOctantWritten();
 
 	/**
-	 * return a bucket
-	 * 
-	 * @return
-	 */
-	public abstract Bucket getDataBucket();
-
-	/**
 	 * create a new bucket
 	 * 
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract void newDataBucket() throws IOException;
+	public abstract void flushAndNewDataBucket() throws IOException;
 
 	/**
 	 * write the memtable into sstables stored in directory
@@ -237,7 +227,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 		if (conf.standaloneSentinal()) {
 			if (!markupBuck.canStore(data.length)) {
 				markupBos.appendBlocks(curDataBuck.toBlocks());
-				newSentinalBucket();
+				flushAndNewSentinalBucket();
 			}
 			markupBuck.storeOctant(data);
 		} else {
@@ -249,7 +239,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 		byte[] data = octreeNode.toBytes();
 		if (!curDataBuck.canStore(data.length)) {
 			dataBos.appendBlocks(curDataBuck.toBlocks());
-			newDataBucket();
+			flushAndNewDataBucket();
 		}
 		curDataBuck.storeOctant(data);
 	}
@@ -305,6 +295,14 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	public void close() throws IOException {
+		if (markupBuck.octNum() > 0) {
+			markupBos.writeBlocks(markupBuck.toBlocks());
+		}
+
+		if (curDataBuck.octNum() > 0) {
+			dataBos.writeBlocks(curDataBuck.toBlocks());
+		}
+
 		if (dataBos != null) {
 			dataBos.close();
 			dataBos = null;

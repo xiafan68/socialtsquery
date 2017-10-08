@@ -323,7 +323,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 					.setAllowDuplicates(false).setReadOnly(false).build();
 			dirMap.open();
 
-			cell = new SkipCell(currentBlockIdx(), conf.getIndexValueFactory());
+			cell = new SkipCell(currentBlockIdx(), conf.getSecondaryKeyFactory());
 			dataBuck = new Bucket((cell.getBlockIdx() + 1) * Block.BLOCK_SIZE);
 			markUpBuck = new Bucket(currentMarkIdx() * Block.BLOCK_SIZE);
 		}
@@ -334,7 +334,7 @@ public class InternOctreeSSTableWriter extends ISSTableWriter {
 
 		@Override
 		public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
-			curDir = new MarkDirEntry(conf.getDirKeyFactory());
+			curDir = new MarkDirEntry();
 			curDir.curKey = key;
 			writeFirstBlock = true;
 			sampleFirstIndex = true;

@@ -32,7 +32,7 @@ public class DiskSSTableBDBReader extends IBucketBasedSSTableReader {
 	}
 
 	public DiskSSTableBDBReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta, EncodingFactory.INSTANCE);
+		super(index, meta);
 	}
 
 	public IOctreeIterator getPostingListScanner(WritableComparableKey key) throws IOException {

@@ -2,7 +2,9 @@ package core.lsmo.persistence;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,6 +12,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import core.commom.Writable;
 import core.commom.WritableComparableKey;
 import core.commom.WritableComparableKey.WritableComparableFactory;
 import core.io.Block;
@@ -32,9 +35,9 @@ import util.Pair;
  * @author xiafan
  *
  */
-public class SkipCell {
-	int blockIdx;
-	int nextMetaBlockIdx = 0;// 下一个meta block的地址
+public class SkipCell implements Writable {
+	public int blockIdx;
+	public int nextMetaBlockIdx = 0;// 下一个meta block的地址
 	WritableComparableFactory factory;
 
 	// 以下字段用于写索引
@@ -49,9 +52,9 @@ public class SkipCell {
 	// 当从文件中都出时反序列化出以下字段
 	List<Pair<WritableComparableKey, BucketID>> skipList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
 
-	public SkipCell(int blockIdx, WritableComparableFactory factory) {
+	public SkipCell(int blockIdx, WritableComparableFactory keyFactory) {
 		this.blockIdx = blockIdx;
-		this.factory = factory;
+		this.factory = keyFactory;
 	}
 
 	public int getBlockIdx() {
@@ -108,20 +111,6 @@ public class SkipCell {
 		}
 		idx += start;
 		return idx;
-	}
-
-	public void read(Block metaBlock) throws IOException {
-		ByteArrayInputStream binput = new ByteArrayInputStream(metaBlock.getData());
-		DataInputStream input = new DataInputStream(binput);
-		nextMetaBlockIdx = input.readInt();
-		int num = input.readInt();
-		for (int i = 0; i < num; i++) {
-			WritableComparableKey key = factory.create();
-			key.read(input);
-			BucketID bucket = new BucketID();
-			bucket.read(input);
-			skipList.add(new Pair<WritableComparableKey, BucketID>(key, bucket));
-		}
 	}
 
 	/**
@@ -182,6 +171,32 @@ public class SkipCell {
 	public boolean addIndex(WritableComparableKey code, BucketID indexBlockIdx) throws IOException {
 		int bOffset = indexBlockIdx.blockID - blockIdx - 1;
 		return addIndex(code, bOffset, indexBlockIdx.offset);
+	}
+
+	public void read(Block metaBlock) throws IOException {
+		ByteArrayInputStream binput = new ByteArrayInputStream(metaBlock.getData());
+		DataInputStream input = new DataInputStream(binput);
+		nextMetaBlockIdx = input.readInt();
+		int num = input.readInt();
+		for (int i = 0; i < num; i++) {
+			WritableComparableKey key = factory.create();
+			key.read(input);
+			BucketID bucket = new BucketID();
+			bucket.read(input);
+			skipList.add(new Pair<WritableComparableKey, BucketID>(key, bucket));
+		}
+	}
+
+	@Override
+	public void read(DataInput input) throws IOException {
+		Block metaBlock = new Block(BLOCKTYPE.META_BLOCK, -1);
+		metaBlock.read(input);
+		read(metaBlock);
+	}
+
+	@Override
+	public void write(DataOutput output) throws IOException {
+		write(-1).write(output);
 	}
 
 	public Block write(int nextMetaBlockIdx) throws IOException {

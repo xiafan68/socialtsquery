@@ -1,7 +1,5 @@
 package core.commom;
 
-import core.lsmi.ListDiskSSTableReader;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -36,13 +34,6 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 		INSTANCE;
 		public WritableComparableKey create() {
 			return new Encoding();
-		}
-	}
-
-	public static enum SegListKeyFactory implements WritableComparableFactory {
-		INSTANCE;
-		public WritableComparableKey create() {
-			return new ListDiskSSTableReader.SegListKey();
 		}
 	}
 

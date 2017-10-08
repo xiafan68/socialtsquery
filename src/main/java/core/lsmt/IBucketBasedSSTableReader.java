@@ -10,7 +10,6 @@ import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.IndexFileUtils;
 import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.WritableComparableFactory;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -30,12 +29,10 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 
 	protected LSMTInvertedIndex index;
 	protected SSTableMeta meta;
-	WritableComparableFactory keyFactory;
 
-	public IBucketBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta, WritableComparableFactory keyFactory) {
+	public IBucketBasedSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
 		this.index = index;
 		this.meta = meta;
-		this.keyFactory = keyFactory;
 	}
 
 	public boolean isInited() {
@@ -131,5 +128,10 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 		dirMap.close();
 	}
 
-	public abstract void closeIndex();
+	public abstract void closeIndex() throws IOException;
+
+	public LSMTInvertedIndex getIndex() {
+		return index;
+	}
+
 }

@@ -1,4 +1,4 @@
-package core.lsmo.internformat;
+package core.lsmo.persistence;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -17,6 +17,7 @@ import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.MarkDirEntry;
+import core.lsmo.internformat.BlockBasedSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.DirEntry;
@@ -29,8 +30,8 @@ import util.Pair;
  * @author xiafan
  *
  */
-public class InternDiskOctreeScanner implements IOctreeIterator {
-	private Logger logger = Logger.getLogger(InternDiskOctreeScanner.class);
+public class DiskOctreeScanner implements IOctreeIterator {
+	private Logger logger = Logger.getLogger(DiskOctreeScanner.class);
 
 	DirEntry entry;
 	int segNum = 0;
@@ -39,11 +40,13 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	private Bucket curBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
 	private int nextBlockID = 0; // 下一个bucket的blockid
 
+	private boolean standaloneSentinal;
 	BucketID nextMarkID = new BucketID(0, (short) 0); // 下一个需要读取的octant
 	private Bucket curMarkBuck = new Bucket(Integer.MIN_VALUE); // 当前这个bucket
 	private int nextMarkBlockID = 0; // 下一个bucket的blockid
 	private int readMarkNum = 0;
 
+	// the toppest octants in the leaf file and markup file respectively
 	private OctreeNode[] curNodes = new OctreeNode[] { null, null };
 
 	DataInputStream input = null;
@@ -63,12 +66,14 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	 * @param meta
 	 *            the meta data of the octree
 	 */
-	public InternDiskOctreeScanner(DirEntry entry, BlockBasedSSTableReader reader) {
+	public DiskOctreeScanner(DirEntry entry, BlockBasedSSTableReader reader) {
 		if (entry != null) {
 			this.entry = entry;
 			this.reader = reader;
 			nextID.copy(entry.startBucketID);
-			nextMarkID.copy(((MarkDirEntry) entry).startMarkOffset);
+			standaloneSentinal = reader.getIndex().getConf().standaloneSentinal();
+			if (standaloneSentinal)
+				nextMarkID.copy(((MarkDirEntry) entry).startMarkOffset);
 		}
 	}
 
@@ -140,7 +145,7 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 	 */
 	private boolean diskHasMore() {
 		return curNodes[0] != null || curNodes[1] != null || nextID.compareTo(entry.endBucketID) <= 0
-				|| !traverseQueue.isEmpty() || readMarkNum < ((MarkDirEntry) entry).markNum;
+				|| !traverseQueue.isEmpty() || (standaloneSentinal && readMarkNum < ((MarkDirEntry) entry).markNum);
 	}
 
 	private void nextMarkNode() throws IOException {
@@ -196,7 +201,10 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 		OctreeNode ret = null;
 		if (diskHasMore()) {
 			nextDataOctant();
-			nextMarkNode();
+
+			if (standaloneSentinal)
+				nextMarkNode();
+
 			int idx = largeNode();
 			if (idx == -1) {
 				ret = traverseQueue.poll();
@@ -250,8 +258,7 @@ public class InternDiskOctreeScanner implements IOctreeIterator {
 
 	@Override
 	public void skipTo(WritableComparableKey key) throws IOException {
-		// TODO Auto-generated method stub
-
+		throw new RuntimeException("DiskOctreeScanner doesn't support skipTo");
 	}
 
 	@Override
