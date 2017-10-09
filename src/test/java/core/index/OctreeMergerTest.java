@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.collections.Factory;
 import org.junit.Assert;
@@ -16,7 +17,6 @@ import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.WritableComparable;
 import core.commom.WritableComparable.StringKey;
-import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
 import core.lsmo.octree.OctreeMerger;
@@ -82,10 +82,17 @@ public class OctreeMergerTest {
 		Random rand = new Random();
 		rand.setSeed(seed);
 		HashSet<MidSegment> segs = new HashSet<MidSegment>();
+		int start = Math.abs(rand.nextInt()) % 10000;
+		int tgap = Math.abs(rand.nextInt()) % 100;
+		Set<Long> existingMids = new HashSet<Long>();
 		for (int i = 0; i < 100000; i++) {
-			int start = Math.abs(rand.nextInt()) % 10000;
+			
+			long mid = rand.nextLong();
+			
+			for(int j = 0; j < )
+			start = start + tgap;
+			tgap = Math.abs(rand.nextInt()) % 100;
 			int count = Math.abs(rand.nextInt()) % 200;
-			int tgap = Math.abs(rand.nextInt()) % 100;
 			int cgap = Math.abs(rand.nextInt()) % 100;
 			MidSegment seg = new MidSegment(rand.nextLong(), new Segment(start, count, start + tgap, count + cgap));
 			octree.insert(seg);

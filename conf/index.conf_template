@@ -1,8 +1,9 @@
 index_step=128
 #the directory where index files are stored
-datadir=/home/xiafan/expr/index/weibo/tpii_test
+#datadir=/home/xiafan/expr/index/weibo/tpii_test
+datadir=/Users/kc/test/tpii_test
 #the directory where temporary files generated in running time are stored
-tmpdir=/home/xiafan/tmp/
+tmpdir=/Users/kc/test/tmp
 memtable_size_limit=100000
 compact=true
 debug=false
