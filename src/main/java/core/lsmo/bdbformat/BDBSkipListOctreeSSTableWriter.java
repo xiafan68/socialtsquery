@@ -1,7 +1,6 @@
 package core.lsmo.bdbformat;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -13,6 +12,7 @@ import core.commom.WritableComparable.EncodingFactory;
 import core.commom.WritableFactory;
 import core.lsmo.MarkDirEntry;
 import core.lsmo.persistence.IOctreeSSTableWriter;
+import core.lsmo.persistence.SkipCell;
 import core.lsmt.DirEntry;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
@@ -22,6 +22,7 @@ import util.Configuration;
 public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 
 	private BDBBtree skipListMap;
+	int cellIndex = 0;
 
 	@SuppressWarnings("rawtypes")
 	public BDBSkipListOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
@@ -33,9 +34,9 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 	}
 
 	@Override
-	public void open(File dir) throws FileNotFoundException {
+	public void open(File dir) throws IOException {
 		super.open(dir);
-
+		indexCell = new SkipCell(cellIndex++, conf.getSecondaryKeyFactory());
 		skipListMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.idxFile(conf.getIndexDir(), meta))
 				.setKeyFactory(conf.getDirKeyFactory()).setSecondaryKeyFactory(EncodingFactory.INSTANCE)
 				.setValueFactory(WritableFactory.SkipCellFactory.INSTANCE).setAllowDuplicates(true).setReadOnly(false)
@@ -118,6 +119,7 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 	protected void flushAndNewSkipCell() throws IOException {
 		skipListMap.insert(curDir.curKey, indexCell.getIndexEntry(0).getKey(), indexCell);
 		indexCell.reset();
+		indexCell.setBlockIdx(cellIndex++);
 	}
 
 }

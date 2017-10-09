@@ -2,7 +2,6 @@ package core.lsmi;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -20,17 +19,12 @@ import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
-import util.Configuration;
 import util.Pair;
 
-public class ReaderWriterTest extends LSMITestCommon {
+public class LSMICompactTest extends LSMITestCommon {
 
-	@Test
-	public void test() throws IOException {
-		DefaultedMap termCounts = new DefaultedMap(0);
-
-		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxMidNum(10000).build();
-		SSTableMeta meta = new SSTableMeta(0, 0);
+	private void genDiskSSTable(SSTableMeta meta, TestDataGenerator gen, DefaultedMap termCounts, int sizeLimit)
+			throws IOException {
 		SortedListMemTable tree = new SortedListMemTable(index, meta);
 		int dataNum = 0;
 		while (gen.hasNext()) {
@@ -42,19 +36,47 @@ public class ReaderWriterTest extends LSMITestCommon {
 				termCounts.put(term, (Integer) termCounts.get(term) + 1);
 				tree.insert(new WritableComparable.StringKey(term), data.getValue());
 			}
+			if (dataNum > sizeLimit)
+				break;
 		}
 
+		@SuppressWarnings("rawtypes")
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
 		ISSTableWriter writer = SortedListBasedLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
 		writer.open(conf.getIndexDir());
 		writer.write();
 		writer.close();
+	}
 
-		ISSTableReader reader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta);
+	@Test
+	public void test() throws IOException {
+		DefaultedMap termCounts = new DefaultedMap(0);
+
+		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxMidNum(20000).build();
+		SSTableMeta meta1 = new SSTableMeta(0, 0);
+		genDiskSSTable(meta1, gen, termCounts, 400000);
+
+		SSTableMeta meta2 = new SSTableMeta(1, 0);
+		genDiskSSTable(meta2, gen, termCounts, 400000);
+
+		SSTableMeta meta3 = new SSTableMeta(0, 1);
+		List<ISSTableReader> readers = new ArrayList<ISSTableReader>();
+		ISSTableReader reader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta1);
 		reader.init();
+		readers.add(reader);
+		reader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta2);
+		reader.init();
+		readers.add(reader);
+		ISSTableWriter writer = SortedListBasedLSMTFactory.INSTANCE.newSSTableWriterForCompaction(meta3, readers, conf);
+		writer.open(conf.getIndexDir());
+		writer.write();
+		writer.close();
 
+		reader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta3);
+		reader.init();
 		for (Object obj : termCounts.entrySet()) {
+			@SuppressWarnings("unchecked")
 			Entry<String, Integer> entry = (Entry<String, Integer>) obj;
 			WritableComparable key = new WritableComparable.StringKey(entry.getKey());
 			Assert.assertEquals(entry.getValue().longValue(), reader.getDirEntry(key).size);
@@ -66,26 +88,5 @@ public class ReaderWriterTest extends LSMITestCommon {
 			}
 			Assert.assertEquals(entry.getValue().longValue(), count);
 		}
-	}
-
-	public static void readerVerify(ISSTableReader reader, Configuration conf, int level) throws IOException {
-		int expect = (conf.getFlushLimit() + 1) * (1 << level);
-		int size = 0;
-		Iterator<WritableComparable> iter = reader.keySetIter();
-		while (iter.hasNext()) {
-			WritableComparable key = iter.next();
-			System.out.println("scanning postinglist of " + key);
-			IPostingListIterator scanner = reader.getPostingListScanner(key);
-			Pair<Integer, List<MidSegment>> cur = null;
-			while (scanner.hasNext()) {
-				cur = scanner.next();
-				size += cur.getValue().size();
-			}
-			System.out.println("expect size:" + expect + " cursize size:" + size);
-
-		}
-		if (expect != size)
-			System.err.println("expect size:" + expect + " total size:" + size);
-		Assert.assertEquals(expect, size);
 	}
 }

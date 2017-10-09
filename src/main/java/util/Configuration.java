@@ -76,8 +76,8 @@ public class Configuration {
 		// return WritableComparable.StringKeyFactory.INSTANCE;
 		String valueClass = props.getProperty("dir_key_fatory", "core.commom.WritableComparable$StringKeyFactory");
 		try {
-			return (WritableComparableFactory) Enum
-					.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
+			return (WritableComparableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
+					"INSTANCE");
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -86,8 +86,7 @@ public class Configuration {
 	public WritableFactory getDirValueFactory() {
 		String valueClass = props.getProperty("dir_value_fatory", "core.lsmt.WritableFactory$DirEntryFactory");
 		try {
-			return (WritableFactory)  Enum
-					.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
+			return (WritableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -99,7 +98,8 @@ public class Configuration {
 		// TODO : implement two factories:one for [seglistkey], one for
 		// [encoding]
 		// 不需要bucketID
-		String valueClass = props.getProperty("secondary_key_factory", "core.lsmt.WritableComparableKey$EncodingFactory");
+		String valueClass = props.getProperty("secondary_key_factory",
+				"core.commom.WritableComparable$EncodingFactory");
 		try {
 			if (factory == null)
 				factory = (WritableComparableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
@@ -124,7 +124,7 @@ public class Configuration {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-	
+
 	public String getIndexFactory() {
 		return props.getProperty("index_factory", "core.lsmi.SortedListBasedLSMTFactory");
 	}

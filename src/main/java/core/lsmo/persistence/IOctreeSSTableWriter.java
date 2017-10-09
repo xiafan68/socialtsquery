@@ -1,7 +1,6 @@
 package core.lsmo.persistence;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -98,6 +97,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	 * @param tables
 	 * @param conf
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public IOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
 
@@ -155,14 +155,6 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 	protected abstract void flushAndNewSkipCell() throws IOException;
 
-	protected void addSkipOffset(WritableComparable code) throws IOException {
-		if (!indexCell.addIndex(code, curDataBuck.blockIdx())) {
-			// flush current index cell, reallocate address for current databuck
-			flushAndNewSkipCell();
-			indexCell.addIndex(code, curDataBuck.blockIdx());
-		}
-	}
-
 	protected abstract void firstLeafOctantWritten();
 
 	protected abstract void firstSentinelOctantWritten();
@@ -174,6 +166,14 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	 * @throws IOException
 	 */
 	public abstract void flushAndNewDataBucket() throws IOException;
+
+	protected void addSkipOffset(WritableComparable code) throws IOException {
+		if (!indexCell.addIndex(code, curDataBuck.blockIdx())) {
+			// flush current index cell, reallocate address for current databuck
+			flushAndNewSkipCell();
+			indexCell.addIndex(code, curDataBuck.blockIdx());
+		}
+	}
 
 	/**
 	 * write the memtable into sstables stored in directory
@@ -207,13 +207,15 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	}
 
 	@Override
-	public void open(File dir) throws FileNotFoundException {
+	public void open(File dir) throws IOException {
 		if (!dir.exists())
 			dir.mkdirs();
 
 		dataBos = new BlockOutputStream(IndexFileUtils.dataFile(dir, meta));
+		curDataBuck = new Bucket(dataBos.currentBlockIdx());
 		if (conf.standaloneSentinal()) {
 			markupBos = new BlockOutputStream(IndexFileUtils.markFile(dir, meta));
+			markupBuck = new Bucket(markupBos.currentBlockIdx());
 		}
 
 		dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(conf.getIndexDir(), meta))
@@ -269,10 +271,6 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 						++sentinelOctantNum;
 					}
 
-					if ((conf.indexLeafOnly() && leafOctantNum % step == 0)
-							|| (!conf.indexLeafOnly() && (leafOctantNum + sentinelOctantNum) % step == 0))
-						addSkipOffset(octreeNode.getEncoding());
-
 					if (octreeNode.size() > 0) {
 						writeLeafOctant(octreeNode);
 						if (leafOctantNum == 1) {
@@ -284,6 +282,10 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 							firstSentinelOctantWritten();
 						}
 					}
+
+					if ((conf.indexLeafOnly() && leafOctantNum % step == 0)
+							|| (!conf.indexLeafOnly() && (leafOctantNum + sentinelOctantNum) % step == 0))
+						addSkipOffset(octreeNode.getEncoding());
 				}
 			}
 		}

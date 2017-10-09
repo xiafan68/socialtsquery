@@ -59,7 +59,7 @@ public class OctreeTextWriter implements OctreeVisitor {
 			}
 			byte[] data = baos.toByteArray();
 			if (cur == null || !cur.canStore(data.length)) {
-				cur = new Bucket(blockIdx * Block.BLOCK_SIZE);
+				cur = new Bucket(blockIdx);
 			}
 
 			System.out.println(

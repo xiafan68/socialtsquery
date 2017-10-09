@@ -19,8 +19,7 @@ public class GroupByKeyIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 		queue = new PriorityQueue<PeekableClosableIterator<Entry<K, V>>>(2,
 				new Comparator<PeekableClosableIterator<Entry<K, V>>>() {
 					@Override
-					public int compare(
-							PeekableClosableIterator<Entry<K, V>> o1,
+					public int compare(PeekableClosableIterator<Entry<K, V>> o1,
 							PeekableClosableIterator<Entry<K, V>> o2) {
 						if (!o1.hasNext())
 							return -1;
@@ -34,16 +33,12 @@ public class GroupByKeyIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 				});
 	}
 
-	public GroupByKeyIterator(
-			final List<PeekableClosableIterator<Entry<K, V>>> iters,
-			final Comparator<K> comp) {
+	public GroupByKeyIterator(final List<PeekableClosableIterator<Entry<K, V>>> iters, final Comparator<K> comp) {
 		this.comp = comp;
-		queue = new PriorityQueue<PeekableClosableIterator<Entry<K, V>>>(
-				iters.size(),
+		queue = new PriorityQueue<PeekableClosableIterator<Entry<K, V>>>(iters.size(),
 				new Comparator<PeekableClosableIterator<Entry<K, V>>>() {
 					@Override
-					public int compare(
-							PeekableClosableIterator<Entry<K, V>> o1,
+					public int compare(PeekableClosableIterator<Entry<K, V>> o1,
 							PeekableClosableIterator<Entry<K, V>> o2) {
 						if (!o1.hasNext())
 							return -1;
@@ -59,7 +54,8 @@ public class GroupByKeyIterator<K, V> implements Iterator<Entry<K, List<V>>> {
 	}
 
 	public void add(PeekableClosableIterator<Entry<K, V>> iter) {
-		queue.offer(iter);
+		if (iter.hasNext())
+			queue.offer(iter);
 	}
 
 	public Entry<K, List<V>> next() {

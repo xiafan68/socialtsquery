@@ -33,6 +33,7 @@ import util.Configuration;
 import util.GroupByKeyIterator;
 import util.Pair;
 import util.PeekIterDecorate;
+import util.PeekIterDecorate.PeekableClosableIterator;
 
 /**
  * dirMeta, index, datafile
@@ -62,33 +63,36 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 		for (final IMemTable<SortedListPostinglist> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
-				Iterator<WritableComparable> keyIter = table.getReader().keySetIter();
+			PeekableClosableIterator<Entry<WritableComparable, IPostingListIterator>> iter = PeekIterDecorate
+					.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
+						Iterator<WritableComparable> keyIter = table.getReader().keySetIter();
 
-				@Override
-				public boolean hasNext() {
-					return keyIter.hasNext();
-				}
+						@Override
+						public boolean hasNext() {
+							return keyIter.hasNext();
+						}
 
-				@Override
-				public Entry<WritableComparable, IPostingListIterator> next() {
-					WritableComparable key = keyIter.next();
-					Entry<WritableComparable, IPostingListIterator> ret = null;
-					try {
-						ret = new Pair<WritableComparable, IPostingListIterator>(key,
-								table.getReader().getPostingListScanner(key));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					return ret;
-				}
+						@Override
+						public Entry<WritableComparable, IPostingListIterator> next() {
+							WritableComparable key = keyIter.next();
+							Entry<WritableComparable, IPostingListIterator> ret = null;
+							try {
+								ret = new Pair<WritableComparable, IPostingListIterator>(key,
+										table.getReader().getPostingListScanner(key));
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+							return ret;
+						}
 
-				@Override
-				public void remove() {
+						@Override
+						public void remove() {
 
-				}
+						}
 
-			}));
+					});
+			if (iter.hasNext())
+				view.add(iter);
 		}
 		this.meta = new SSTableMeta(version, tables.get(0).getMeta().level);
 		this.step = conf.getIndexStep();
@@ -98,35 +102,38 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 		super(meta, conf);
 
 		for (final ISSTableReader table : tables) {
-			view.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
-				ISSTableReader reader = table;
-				Iterator<WritableComparable> iter = table.keySetIter();
+			PeekableClosableIterator<Entry<WritableComparable, IPostingListIterator>> iter = PeekIterDecorate
+					.decorate(new Iterator<Entry<WritableComparable, IPostingListIterator>>() {
+						ISSTableReader reader = table;
+						Iterator<WritableComparable> iter = table.keySetIter();
 
-				@Override
-				public boolean hasNext() {
-					return iter.hasNext();
-				}
+						@Override
+						public boolean hasNext() {
+							return iter.hasNext();
+						}
 
-				@Override
-				public Entry<WritableComparable, IPostingListIterator> next() {
-					WritableComparable entry = iter.next();
-					Pair<WritableComparable, IPostingListIterator> ret;
-					try {
-						ret = new Pair<WritableComparable, IPostingListIterator>(entry,
-								reader.getPostingListScanner(entry));
-					} catch (IOException e) {
-						e.printStackTrace();
-						ret = null;
-					}
-					return ret;
-				}
+						@Override
+						public Entry<WritableComparable, IPostingListIterator> next() {
+							WritableComparable entry = iter.next();
+							Pair<WritableComparable, IPostingListIterator> ret;
+							try {
+								ret = new Pair<WritableComparable, IPostingListIterator>(entry,
+										reader.getPostingListScanner(entry));
+							} catch (IOException e) {
+								e.printStackTrace();
+								ret = null;
+							}
+							return ret;
+						}
 
-				@Override
-				public void remove() {
+						@Override
+						public void remove() {
 
-				}
+						}
 
-			}));
+					});
+			if (iter.hasNext())
+				view.add(iter);
 		}
 		this.step = conf.getIndexStep();
 	}
@@ -246,7 +253,7 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 	private void endPostingList(BucketID blockIdx) throws IOException {
 		curDir.endBucketID.copy(blockIdx);
-		if(curDir.startBucketID.compareTo(curDir.endBucketID)>0){
+		if (curDir.startBucketID.compareTo(curDir.endBucketID) > 0) {
 			System.out.println("error");
 		}
 		dirMap.insert(curDir.curKey, curDir);

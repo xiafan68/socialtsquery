@@ -1,4 +1,4 @@
-package core.lsmi;
+package core.lsmo.internformat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,22 +8,49 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.collections.map.DefaultedMap;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.PropertyConfigurator;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import common.MidSegment;
 import common.TestDataGenerator;
 import common.TestDataGeneratorBuilder;
 import core.commom.WritableComparable;
+import core.lsmo.OctreeMemTable;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
 import util.Pair;
 
-public class ReaderWriterTest extends LSMITestCommon {
+public class InternFormatReaderWriterTest {
+	private static final Logger logger = LoggerFactory.getLogger(InternFormatReaderWriterTest.class);
+	LSMTInvertedIndex index;
+	Configuration conf;
+
+	@Before
+	public void setupIndex() throws IOException {
+		PropertyConfigurator.configure("conf/log4j-server.properties");
+		conf = new Configuration();
+		conf.load("conf/index_lsmo_intern.conf");
+		FileUtils.deleteDirectory(conf.getIndexDir());
+		conf.getIndexDir().mkdirs();
+		conf.getTmpDir().mkdirs();
+		index = new LSMTInvertedIndex(conf);
+	}
+
+	@After
+	public void cleanUp() throws IOException {
+		FileUtils.deleteDirectory(conf.getIndexDir());
+	}
 
 	@Test
 	public void test() throws IOException {
@@ -31,7 +58,7 @@ public class ReaderWriterTest extends LSMITestCommon {
 
 		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxMidNum(10000).build();
 		SSTableMeta meta = new SSTableMeta(0, 0);
-		SortedListMemTable tree = new SortedListMemTable(index, meta);
+		OctreeMemTable tree = new OctreeMemTable(index, meta);
 		int dataNum = 0;
 		while (gen.hasNext()) {
 			if (dataNum++ % 100 == 0) {
@@ -46,12 +73,12 @@ public class ReaderWriterTest extends LSMITestCommon {
 
 		List<IMemTable> tables = new ArrayList<IMemTable>();
 		tables.add(tree);
-		ISSTableWriter writer = SortedListBasedLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
+		ISSTableWriter writer = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
 		writer.open(conf.getIndexDir());
 		writer.write();
 		writer.close();
 
-		ISSTableReader reader = SortedListBasedLSMTFactory.INSTANCE.newSSTableReader(index, meta);
+		ISSTableReader reader = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta);
 		reader.init();
 
 		for (Object obj : termCounts.entrySet()) {
@@ -61,8 +88,7 @@ public class ReaderWriterTest extends LSMITestCommon {
 			IPostingListIterator scanner = reader.getPostingListScanner(key);
 			int count = 0;
 			while (scanner.hasNext()) {
-				count++;
-				scanner.next();
+				count += scanner.next().getValue().size();
 			}
 			Assert.assertEquals(entry.getValue().longValue(), count);
 		}

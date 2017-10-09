@@ -1,48 +1,22 @@
 package core.lsmo.internformat;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.log4j.Logger;
 
-import core.commom.BDBBTreeBuilder;
-import core.commom.BDBBtree;
-import core.commom.Encoding;
-import core.commom.IndexFileUtils;
 import core.commom.WritableComparable;
 import core.io.Block;
-import core.io.Bucket;
-import core.io.Bucket.BucketID;
 import core.lsmo.MarkDirEntry;
-import core.lsmo.octree.IOctreeIterator;
-import core.lsmo.octree.MemoryOctree;
-import core.lsmo.octree.MemoryOctreeIterator;
-import core.lsmo.octree.OctreeMerger;
-import core.lsmo.octree.OctreeNode;
-import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmo.persistence.IOctreeSSTableWriter;
-import core.lsmo.persistence.SSTableScanner;
 import core.lsmo.persistence.SkipCell;
 import core.lsmt.DirEntry;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.IndexHelper;
 import core.lsmt.postinglist.ISSTableReader;
-import core.lsmt.postinglist.ISSTableWriter;
-import core.lsmt.postinglist.PostingListMeta;
 import util.Configuration;
-import util.GroupByKeyIterator;
-import util.Pair;
-import util.PeekIterDecorate;
 
 /**
  * 把meta data写入到data文件中
@@ -83,6 +57,14 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 	@SuppressWarnings({ "rawtypes" })
 	public InternOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(tables, conf);
+	}
+
+	@Override
+	public void open(File dir) throws IOException {
+		super.open(dir);
+		indexCell = new SkipCell(dataBos.currentBlockIdx(), conf.getSecondaryKeyFactory());
+		dataBos.appendBlock(indexCell.write(-1));
+		curDataBuck.setBlockIdx(dataBos.currentBlockIdx());
 	}
 
 	@Override

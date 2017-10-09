@@ -37,8 +37,8 @@ public class Bucket {
 		this.isVarLength = isVarLength;
 	}
 
-	public Bucket(long offset) {
-		blockIdx = (int) (offset / Block.BLOCK_SIZE);
+	public Bucket(int blockIdx) {
+		this.blockIdx = blockIdx;
 	}
 
 	public void storeOctant(byte[] octant) {
