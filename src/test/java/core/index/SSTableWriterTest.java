@@ -8,7 +8,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmo.OctreeMemTable;
 import core.lsmo.octree.OctreeNode;
@@ -36,7 +36,7 @@ public class SSTableWriterTest {
 		while (null != (line = reader.readLine())) {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
-			tree.insert(new WritableComparableKey.StringKey(Long.toString(seg.getMid())), seg);
+			tree.insert(new WritableComparable.StringKey(Long.toString(seg.getMid())), seg);
 			if (tree.size() == conf.getFlushLimit()) {
 				break;
 			}

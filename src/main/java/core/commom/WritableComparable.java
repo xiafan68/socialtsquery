@@ -3,41 +3,38 @@ package core.commom;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Comparator;
 
-public interface WritableComparableKey extends Comparable<WritableComparableKey>, Writable {
+public interface WritableComparable extends Comparable<WritableComparable>, Writable {
 
-	public static enum WritableComparableKeyComp implements Comparator<WritableComparableKey> {
+	public static enum WritableComparableKeyComp implements Comparator<WritableComparable> {
 		INSTANCE;
 		@Override
-		public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+		public int compare(WritableComparable o1, WritableComparable o2) {
 			return o1.compareTo(o2);
 		}
 	}
 
-	public static interface WritableComparableFactory {
-		WritableComparableKey create();
+	public static interface WritableComparableFactory extends Serializable {
+		WritableComparable create();
 	}
-	//
-	// public static enum SegKeyList WritableComparableKeyFactory {
-	// WritableComparableKey createIndexKey();
-	// }
 
 	public static enum StringKeyFactory implements WritableComparableFactory {
 		INSTANCE;
-		public WritableComparableKey create() {
+		public WritableComparable create() {
 			return new StringKey();
 		}
 	}
 
 	public static enum EncodingFactory implements WritableComparableFactory {
 		INSTANCE;
-		public WritableComparableKey create() {
+		public WritableComparable create() {
 			return new Encoding();
 		}
 	}
 
-	public static class StringKey implements WritableComparableKey {
+	public static class StringKey implements WritableComparable {
 		String val;
 
 		public StringKey(String val) {
@@ -49,7 +46,7 @@ public interface WritableComparableKey extends Comparable<WritableComparableKey>
 		}
 
 		@Override
-		public int compareTo(WritableComparableKey o) {
+		public int compareTo(WritableComparable o) {
 			StringKey other = (StringKey) o;
 			return val.compareTo(other.val);
 		}

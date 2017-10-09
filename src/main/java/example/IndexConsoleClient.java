@@ -116,6 +116,8 @@ public class IndexConsoleClient {
 					} else if (args[0].equals("stats")) {
 						Map<Integer, Integer> stats = client.collectStatistics(args[1]);
 						System.out.println(stats);
+					} else if (args[0].equals("term_stats")) {
+						System.out.println(client.collectTermMeta(args[1]));
 					}
 				} catch (Exception ex) {
 					ex.printStackTrace();

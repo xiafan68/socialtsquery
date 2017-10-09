@@ -2,7 +2,7 @@ package core.commom;
 
 import java.io.File;
 
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable.WritableComparableFactory;
 
 public class BDBBTreeBuilder {
 	private File dir;

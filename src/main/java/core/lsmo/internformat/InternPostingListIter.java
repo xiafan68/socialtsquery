@@ -9,7 +9,7 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
@@ -44,7 +44,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 	 * @throws IOException
 	 */
 	private void loadMetaBlock(Block block) throws IOException {
-		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getIndex().getConf().getSecondaryKeyFactory());
+		SkipCell cell = new SkipCell(block.getBlockIdx(), reader.getConf().getSecondaryKeyFactory());
 		cell.read(block);
 		skipMeta.put(block.getBlockIdx(), cell);
 	}
@@ -76,8 +76,8 @@ public class InternPostingListIter extends OctreePostingListIter {
 	}
 
 	@Override
-	protected Pair<WritableComparableKey, BucketID> floorOffset() throws IOException {
-		Pair<WritableComparableKey, BucketID> ret = new Pair<WritableComparableKey, BucketID>(null, null);
+	protected Pair<WritableComparable, BucketID> floorOffset() throws IOException {
+		Pair<WritableComparable, BucketID> ret = new Pair<WritableComparable, BucketID>(null, null);
 		SkipCell curCell = null;
 
 		boolean hitFirst = false;
@@ -94,7 +94,7 @@ public class InternPostingListIter extends OctreePostingListIter {
 			skipIdx = curCell.cellOffset(curMin, start, end);
 
 			if (skipIdx == curCell.size() - 1) {
-				Pair<WritableComparableKey, BucketID> temp = curCell.getIndexEntry(skipIdx);
+				Pair<WritableComparable, BucketID> temp = curCell.getIndexEntry(skipIdx);
 				ret.setKey(temp.getKey());
 				ret.setValue(new BucketID(curCell.getBlockIdx() + temp.getValue().blockID + 1, temp.getValue().offset));
 				if (hitFirst) {
@@ -107,13 +107,13 @@ public class InternPostingListIter extends OctreePostingListIter {
 					break;
 				}
 			} else if (skipIdx != 0) {
-				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
+				Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
 				assert tmp.getKey().compareTo(curMin) <= 0;
 				ret.setKey(tmp.getKey());
 				ret.setValue(new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
 				break;
 			} else {
-				Pair<WritableComparableKey, BucketID> tmp = curCell.getIndexEntry(skipIdx);
+				Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
 				if (tmp.getKey().compareTo(curMin) <= 0) {
 					ret.setKey(tmp.getKey());
 					ret.setValue(

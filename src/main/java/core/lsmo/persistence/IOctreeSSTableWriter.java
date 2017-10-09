@@ -15,7 +15,7 @@ import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.commom.IndexFileUtils;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.BlockOutputStream;
 import core.io.Bucket;
 import core.lsmo.octree.IOctreeIterator;
@@ -47,7 +47,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	// stores the directory
 	protected BDBBtree dirMap = null;
 
-	GroupByKeyIterator<WritableComparableKey, IOctreeIterator> iter;
+	GroupByKeyIterator<WritableComparable, IOctreeIterator> iter;
 
 	protected BlockOutputStream dataBos;
 	protected BlockOutputStream markupBos;
@@ -78,9 +78,9 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	public IOctreeSSTableWriter(SSTableMeta meta, List<ISSTableReader> tables, Configuration conf) {
 		super(meta, conf);
 
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+		iter = new GroupByKeyIterator<WritableComparable, IOctreeIterator>(new Comparator<WritableComparable>() {
 			@Override
-			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+			public int compare(WritableComparable o1, WritableComparable o2) {
 				return o1.compareTo(o2);
 			}
 		});
@@ -101,17 +101,17 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	public IOctreeSSTableWriter(List<IMemTable> tables, Configuration conf) {
 		super(null, conf);
 
-		iter = new GroupByKeyIterator<WritableComparableKey, IOctreeIterator>(new Comparator<WritableComparableKey>() {
+		iter = new GroupByKeyIterator<WritableComparable, IOctreeIterator>(new Comparator<WritableComparable>() {
 			@Override
-			public int compare(WritableComparableKey o1, WritableComparableKey o2) {
+			public int compare(WritableComparable o1, WritableComparable o2) {
 				return o1.compareTo(o2);
 			}
 		});
 		int version = 0;
 		for (final IMemTable<MemoryOctree> table : tables) {
 			version = Math.max(version, table.getMeta().version);
-			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparableKey, IOctreeIterator>>() {
-				Iterator<Entry<WritableComparableKey, MemoryOctree>> iter = table.iterator();
+			iter.add(PeekIterDecorate.decorate(new Iterator<Entry<WritableComparable, IOctreeIterator>>() {
+				Iterator<Entry<WritableComparable, MemoryOctree>> iter = table.iterator();
 
 				@Override
 				public boolean hasNext() {
@@ -119,11 +119,11 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 				}
 
 				@Override
-				public Entry<WritableComparableKey, IOctreeIterator> next() {
-					Entry<WritableComparableKey, MemoryOctree> entry = iter.next();
+				public Entry<WritableComparable, IOctreeIterator> next() {
+					Entry<WritableComparable, MemoryOctree> entry = iter.next();
 					// an optimization
 					entry.getValue().visit(OctreePrepareForWriteVisitor.INSTANCE);
-					Entry<WritableComparableKey, IOctreeIterator> ret = new Pair<WritableComparableKey, IOctreeIterator>(
+					Entry<WritableComparable, IOctreeIterator> ret = new Pair<WritableComparable, IOctreeIterator>(
 							entry.getKey(), new MemoryOctreeIterator(entry.getValue()));
 					return ret;
 				}
@@ -142,7 +142,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	/**
 	 * start writing a new posting list into disk
 	 */
-	protected abstract DirEntry startNewPostingList(WritableComparableKey key);
+	protected abstract DirEntry startNewPostingList(WritableComparable key);
 
 	/**
 	 * start writing a new posting list into disk
@@ -155,7 +155,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 	protected abstract void flushAndNewSkipCell() throws IOException;
 
-	protected void addSkipOffset(WritableComparableKey code) throws IOException {
+	protected void addSkipOffset(WritableComparable code) throws IOException {
 		if (!indexCell.addIndex(code, curDataBuck.blockIdx())) {
 			// flush current index cell, reallocate address for current databuck
 			flushAndNewSkipCell();
@@ -184,7 +184,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	 */
 	public void write() throws IOException {
 		while (iter.hasNext()) {
-			Entry<WritableComparableKey, List<IOctreeIterator>> entry = iter.next();
+			Entry<WritableComparable, List<IOctreeIterator>> entry = iter.next();
 			logger.debug(String.format("writing postinglist for key%s", entry.getKey()));
 			// start writing a new posting list
 			curDir = startNewPostingList(entry.getKey());

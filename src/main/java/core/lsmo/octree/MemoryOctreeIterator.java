@@ -10,7 +10,7 @@ import common.MidSegment;
 import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 import core.commom.Encoding;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 
 /**
  * an iterator visiting a memory octree
@@ -119,7 +119,7 @@ public class MemoryOctreeIterator implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

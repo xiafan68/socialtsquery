@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import core.commom.MemoryPostingListIterUtil;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -23,19 +23,19 @@ public class MemorySSTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public IOctreeIterator getPostingListScanner(WritableComparableKey key) {
+	public IOctreeIterator getPostingListScanner(WritableComparable key) {
 		return new MemoryOctreeIterator(table.get(key));
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) {
+	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) {
 		MemoryOctree tree = table.get(key);
 		MemoryOctreeIterator iter = new MemoryOctreeIterator(tree, start, end);
 		return MemoryPostingListIterUtil.getPostingListIter(iter, start, end);
 	}
 
 	@Override
-	public Iterator<WritableComparableKey> keySetIter() {
+	public Iterator<WritableComparable> keySetIter() {
 		return table.keySet().iterator();
 	}
 
@@ -58,7 +58,7 @@ public class MemorySSTableReader implements ISSTableReader {
 	}
 
 	@Override
-	public DirEntry getDirEntry(WritableComparableKey key) {
+	public DirEntry getDirEntry(WritableComparable key) {
 		return null;
 	}
 }

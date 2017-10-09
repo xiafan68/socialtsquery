@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 import common.MidSegment;
 import core.commom.Encoding;
 import core.commom.Point;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.DirEntry;
@@ -151,8 +151,8 @@ public class OctreePostingListIter implements IOctreeIterator {
 		return ret;
 	}
 
-	protected Pair<WritableComparableKey, BucketID> floorOffset() throws IOException {
-		Pair<WritableComparableKey, BucketID> pair = null;
+	protected Pair<WritableComparable, BucketID> floorOffset() throws IOException {
+		Pair<WritableComparable, BucketID> pair = null;
 		pair = reader.floorOffset(entry.curKey, curMin);
 		if (pair == null) {
 			// this should never happens
@@ -175,7 +175,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	 * @throws IOException
 	 */
 	protected boolean skipToOctant() throws IOException {
-		Pair<WritableComparableKey, BucketID> pair = floorOffset();
+		Pair<WritableComparable, BucketID> pair = floorOffset();
 		if (pair.getKey() != null) {
 			// 利用pair跳转，nextID
 			if (curBuck.octNum() == 0 || nextID.compareTo(pair.getValue()) < 0) {
@@ -279,7 +279,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 
 	}

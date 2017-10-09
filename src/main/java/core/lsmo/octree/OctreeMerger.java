@@ -9,7 +9,7 @@ import common.MidSegment;
 import core.lsmt.postinglist.PostingListMeta;
 import util.Pair;
 import core.commom.Encoding;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 
 /**
  * merge leaf nodes of two octrees
@@ -160,7 +160,7 @@ public class OctreeMerger implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		throw new RuntimeException("skipto OctreeMerger");
 	}
 }

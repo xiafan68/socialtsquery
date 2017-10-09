@@ -13,8 +13,8 @@ import java.util.Comparator;
 import java.util.List;
 
 import core.commom.Writable;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.WritableComparableFactory;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
@@ -50,7 +50,7 @@ public class SkipCell implements Writable {
 	int size = 0;
 
 	// 当从文件中都出时反序列化出以下字段
-	List<Pair<WritableComparableKey, BucketID>> skipList = new ArrayList<Pair<WritableComparableKey, BucketID>>();
+	List<Pair<WritableComparable, BucketID>> skipList = new ArrayList<Pair<WritableComparable, BucketID>>();
 
 	public SkipCell(int blockIdx, WritableComparableFactory keyFactory) {
 		this.blockIdx = blockIdx;
@@ -76,7 +76,7 @@ public class SkipCell implements Writable {
 		this.blockIdx = blockIdx;
 	}
 
-	public Pair<WritableComparableKey, BucketID> getIndexEntry(int idx) {
+	public Pair<WritableComparable, BucketID> getIndexEntry(int idx) {
 		return skipList.get(idx);
 	}
 
@@ -95,13 +95,13 @@ public class SkipCell implements Writable {
 		lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 	}
 
-	public int cellOffset(WritableComparableKey key, int start, int end) {
-		Pair<WritableComparableKey, BucketID> pair = new Pair<WritableComparableKey, BucketID>(key, null);
+	public int cellOffset(WritableComparable key, int start, int end) {
+		Pair<WritableComparable, BucketID> pair = new Pair<WritableComparable, BucketID>(key, null);
 		int idx = Collections.binarySearch(skipList.subList(start, end), pair,
-				new Comparator<Pair<WritableComparableKey, BucketID>>() {
+				new Comparator<Pair<WritableComparable, BucketID>>() {
 					@Override
-					public int compare(Pair<WritableComparableKey, BucketID> o1,
-							Pair<WritableComparableKey, BucketID> o2) {
+					public int compare(Pair<WritableComparable, BucketID> o1,
+							Pair<WritableComparable, BucketID> o2) {
 						return o1.getKey().compareTo(o2.getKey());
 					}
 				});
@@ -113,13 +113,13 @@ public class SkipCell implements Writable {
 		return idx;
 	}
 
-	public int floorOffset(WritableComparableKey curKey, int start, int end) {
-		Pair<WritableComparableKey, BucketID> pair = new Pair<WritableComparableKey, BucketID>(curKey, null);
+	public int floorOffset(WritableComparable curKey, int start, int end) {
+		Pair<WritableComparable, BucketID> pair = new Pair<WritableComparable, BucketID>(curKey, null);
 		int idx = Collections.binarySearch(skipList.subList(start, end), pair,
-				new Comparator<Pair<WritableComparableKey, BucketID>>() {
+				new Comparator<Pair<WritableComparable, BucketID>>() {
 					@Override
-					public int compare(Pair<WritableComparableKey, BucketID> o1,
-							Pair<WritableComparableKey, BucketID> o2) {
+					public int compare(Pair<WritableComparable, BucketID> o1,
+							Pair<WritableComparable, BucketID> o2) {
 						return o1.getKey().compareTo(o2.getKey());
 					}
 				});
@@ -158,7 +158,7 @@ public class SkipCell implements Writable {
 	 * @return
 	 * @throws IOException
 	 */
-	private boolean addIndex(WritableComparableKey code, int bOffset, short octOffset) throws IOException {
+	private boolean addIndex(WritableComparable code, int bOffset, short octOffset) throws IOException {
 		if (metaDos == null) {
 			setupWriteStream();
 			reset();
@@ -172,7 +172,7 @@ public class SkipCell implements Writable {
 		} else {
 			// 由于需要新加入一个SkipCell，导致当前的bucket的blockID加1,这里将lastbuck中内容更新之后写入到metaDos中去
 			DataInputStream input = new DataInputStream(new ByteArrayInputStream(lastBuckBout.toByteArray()));
-			WritableComparableKey tempCode = factory.create();
+			WritableComparable tempCode = factory.create();
 			while (input.available() > 0) {
 				tempCode.read(input);
 				tempCode.write(metaDos);
@@ -187,7 +187,7 @@ public class SkipCell implements Writable {
 		return ret;
 	}
 
-	public boolean addIndex(WritableComparableKey code, BucketID indexBlockIdx) throws IOException {
+	public boolean addIndex(WritableComparable code, BucketID indexBlockIdx) throws IOException {
 		int bOffset = indexBlockIdx.blockID - blockIdx - 1;
 		return addIndex(code, bOffset, indexBlockIdx.offset);
 	}
@@ -198,11 +198,11 @@ public class SkipCell implements Writable {
 		nextMetaBlockIdx = input.readInt();
 		int num = input.readInt();
 		for (int i = 0; i < num; i++) {
-			WritableComparableKey key = factory.create();
+			WritableComparable key = factory.create();
 			key.read(input);
 			BucketID bucket = new BucketID();
 			bucket.read(input);
-			skipList.add(new Pair<WritableComparableKey, BucketID>(key, bucket));
+			skipList.add(new Pair<WritableComparable, BucketID>(key, bucket));
 		}
 	}
 
@@ -237,11 +237,11 @@ public class SkipCell implements Writable {
 			input.readInt();
 			input.readInt();
 			for (int i = 0; i < size; i++) {
-				WritableComparableKey key = factory.create();
+				WritableComparable key = factory.create();
 				key.read(input);
 				BucketID bucket = new BucketID();
 				bucket.read(input);
-				skipList.add(new Pair<WritableComparableKey, BucketID>(key, bucket));
+				skipList.add(new Pair<WritableComparable, BucketID>(key, bucket));
 			}
 		}
 	}

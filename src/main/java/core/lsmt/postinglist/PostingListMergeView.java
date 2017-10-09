@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import util.Pair;
 
 /**
@@ -71,7 +71,7 @@ public class PostingListMergeView implements IPostingListIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		// TODO Auto-generated method stub
 	}
 }

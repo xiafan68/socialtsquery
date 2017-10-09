@@ -1,7 +1,7 @@
 package core.lsmo;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
@@ -35,7 +35,7 @@ public class OctreeMemTable extends InvertedMemtable<MemoryOctree> {
 		return meta;
 	}
 
-	public void insert(WritableComparableKey key, MidSegment seg) {
+	public void insert(WritableComparable key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}

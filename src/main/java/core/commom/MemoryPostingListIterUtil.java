@@ -62,7 +62,7 @@ public class MemoryPostingListIterUtil {
 			}
 
 			@Override
-			public void skipTo(WritableComparableKey key) throws IOException {
+			public void skipTo(WritableComparable key) throws IOException {
 
 			}
 

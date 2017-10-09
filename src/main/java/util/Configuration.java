@@ -5,8 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable.WritableComparableFactory;
 import core.commom.WritableFactory;
 import core.lsmo.octree.OctreePrepareForWriteVisitor;
 import core.lsmt.compact.ICompactStrategy;
@@ -74,14 +73,22 @@ public class Configuration {
 	}
 
 	public WritableComparableFactory getDirKeyFactory() {
-		return WritableComparableKey.StringKeyFactory.INSTANCE;
+		// return WritableComparable.StringKeyFactory.INSTANCE;
+		String valueClass = props.getProperty("dir_key_fatory", "core.commom.WritableComparable$StringKeyFactory");
+		try {
+			return (WritableComparableFactory) Enum
+					.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public WritableFactory getDirValueFactory() {
 		String valueClass = props.getProperty("dir_value_fatory", "core.lsmt.WritableFactory$DirEntryFactory");
 		try {
-			return (WritableFactory) Class.forName(valueClass).newInstance();
-		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			return (WritableFactory)  Enum
+					.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
+		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -92,7 +99,7 @@ public class Configuration {
 		// TODO : implement two factories:one for [seglistkey], one for
 		// [encoding]
 		// 不需要bucketID
-		String valueClass = props.getProperty("value_factory", "core.lsmt.WritableComparableKey$EncodingFactory");
+		String valueClass = props.getProperty("secondary_key_factory", "core.lsmt.WritableComparableKey$EncodingFactory");
 		try {
 			if (factory == null)
 				factory = (WritableComparableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class),
@@ -117,11 +124,7 @@ public class Configuration {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-
-	public String getIndexHelper() {
-		return props.getProperty("indexhelper", "core.lsmt.bdbindex.BDBBasedIndexHelper");
-	}
-
+	
 	public String getIndexFactory() {
 		return props.getProperty("index_factory", "core.lsmi.SortedListBasedLSMTFactory");
 	}
@@ -153,6 +156,6 @@ public class Configuration {
 	}
 
 	public boolean standaloneSentinal() {
-		return Boolean.parseBoolean(props.getProperty("standaloneSential", "true"));
+		return Boolean.parseBoolean(props.getProperty("standaloneSentinal", "true"));
 	}
 }

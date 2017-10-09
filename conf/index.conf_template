@@ -1,8 +1,27 @@
 index_step=128
-indexdir=/Users/xiafan/Documents/lsmodata/datadir
-tmpdir=/tmp
-oplogdir=/Users/xiafan/Documents/lsmodata/oplog
+#the directory where index files are stored
+datadir=/home/xiafan/expr/index/weibo/tpii_test
+#the directory where temporary files generated in running time are stored
+tmpdir=/home/xiafan/tmp/
 memtable_size_limit=100000
-#import core.lsmi.SortedListBasedLSMTFactory;
-#import core.lsmo.OctreeBasedLSMTFactory;
+compact=true
+debug=false
+#the number of data stored in an octant
+octant_size_limit=350
+split_ratio=2.0
+#the number of logs accumulated before they are written to disk
+batch_commit_num=1000
+#the maximum idle time when a memtable is kept in memory
+duration_time=3600000
+#the following are factories
 index_factory=core.lsmi.SortedListBasedLSMTFactory
+#the factory that creates objects that are used as the keys in the directory of inverted index
+dir_key_factory=core.commom.WritableComparable$StringKeyFactory
+dir_value_fatory=core.commom.WritableFactory$DirEntryFactory
+dir_value_fatory=core.commom.WritableFactory$DirEntryFactory
+compactStragety=core.lsmt.compact.LSMCompactStrategy
+starttime=0
+#whether only leaf nodes are indexed in skip list
+indexLeafOnly=true
+#are sentinal nodes stored in seperate files
+standaloneSentinal=false

@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmt.LSMTInvertedIndex;
@@ -41,11 +41,11 @@ public class DifferentIndexCompareTest {
 				internIndex.getVersion().diskTreeMetas.get(index));
 
 		try {
-			Iterator<WritableComparableKey> bdbIter = bdbReader.keySetIter();
-			Iterator<WritableComparableKey> internIter = internReader.keySetIter();
+			Iterator<WritableComparable> bdbIter = bdbReader.keySetIter();
+			Iterator<WritableComparable> internIter = internReader.keySetIter();
 
-			WritableComparableKey bdbKey = null;
-			WritableComparableKey internKey = null;
+			WritableComparable bdbKey = null;
+			WritableComparable internKey = null;
 			while (bdbIter.hasNext()) {
 				bdbKey = bdbIter.next();
 				internKey = internIter.next();

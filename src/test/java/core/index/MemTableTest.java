@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.OctreeMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
@@ -27,7 +27,7 @@ public class MemTableTest {
 			MidSegment seg = new MidSegment();
 			seg.parse(line);
 			// int keyCode = index.getKeywordCode(Long.toString(seg.getMid()));
-			table.insert(new WritableComparableKey.StringKey(Long.toString(seg.getMid())), seg);
+			table.insert(new WritableComparable.StringKey(Long.toString(seg.getMid())), seg);
 			if (i++ > conf.getFlushLimit())
 				break;
 		}

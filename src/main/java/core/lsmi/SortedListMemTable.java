@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmi.SortedListMemTable.SortedListPostinglist;
 import core.lsmt.InvertedMemtable;
 import core.lsmt.LSMTInvertedIndex;
@@ -48,7 +48,7 @@ public class SortedListMemTable extends InvertedMemtable<SortedListPostinglist> 
 	}
 
 	@Override
-	public void insert(WritableComparableKey key, MidSegment seg) {
+	public void insert(WritableComparable key, MidSegment seg) {
 		if (frezen) {
 			throw new RuntimeException("insertion on frezen memtable!!!");
 		}

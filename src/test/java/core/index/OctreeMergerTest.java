@@ -14,8 +14,8 @@ import org.junit.Test;
 import collection.DefaultedPutMap;
 import common.MidSegment;
 import core.commom.Encoding;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.StringKey;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.StringKey;
 import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.MemoryOctree;
 import core.lsmo.octree.MemoryOctreeIterator;
@@ -107,13 +107,13 @@ public class OctreeMergerTest {
 		DiskSSTableReader rhs = new DiskSSTableReader(index, new SSTableMeta(1, level));
 		rhs.init();
 
-		Iterator<WritableComparableKey> keyIter = lhs.keySetIter();
+		Iterator<WritableComparable> keyIter = lhs.keySetIter();
 		int size = 0;
 
 		// System.setOut(new PrintStream(new
 		// FileOutputStream("/tmp/131_1.txt")));
 		while (keyIter.hasNext()) {
-			WritableComparableKey key = keyIter.next();
+			WritableComparable key = keyIter.next();
 			// key = 0;
 			System.out.println("merge for key:" + key);
 			OctreeMerger merge = new OctreeMerger(lhs.getPostingListScanner(key), rhs.getPostingListScanner(key));

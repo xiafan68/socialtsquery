@@ -18,7 +18,7 @@ import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.Encoding;
 import core.commom.IndexFileUtils;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -86,7 +86,7 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 	}
 
 	@Override
-	public DirEntry startNewPostingList(WritableComparableKey key) {
+	public DirEntry startNewPostingList(WritableComparable key) {
 		DirEntry ret;
 		if (conf.standaloneSentinal()) {
 			ret = new MarkDirEntry();

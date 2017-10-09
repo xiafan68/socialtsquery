@@ -6,8 +6,8 @@ import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.IndexFileUtils;
 import core.commom.Writable;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.EncodingFactory;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.EncodingFactory;
 import core.commom.WritableFactory;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.IOctreeIterator;
@@ -15,7 +15,7 @@ import core.lsmo.octree.OctreePostingListIter;
 import core.lsmo.persistence.SkipCell;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMTInvertedIndex;
+import util.Configuration;
 import util.Pair;
 
 /**
@@ -29,11 +29,11 @@ import util.Pair;
 public class DiskSSTableBDBReader extends IBucketBasedSSTableReader {
 	private BDBBtree skipListMap;
 
-	public DiskSSTableBDBReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta);
+	public DiskSSTableBDBReader(Configuration conf, SSTableMeta meta) {
+		super(conf, meta);
 	}
 
-	public IOctreeIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IOctreeIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		IOctreeIterator iter = new OctreePostingListIter(getDirEntry(key), this, start, end);
 		iter.open();
 		return iter;
@@ -41,17 +41,17 @@ public class DiskSSTableBDBReader extends IBucketBasedSSTableReader {
 
 	@Override
 	public void initIndex() throws IOException {
-		skipListMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.idxFile(index.getConf().getIndexDir(), meta))
-				.setKeyFactory(index.getConf().getDirKeyFactory()).setSecondaryKeyFactory(EncodingFactory.INSTANCE)
+		skipListMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.idxFile(getConf().getIndexDir(), meta))
+				.setKeyFactory(getConf().getDirKeyFactory()).setSecondaryKeyFactory(EncodingFactory.INSTANCE)
 				.setValueFactory(WritableFactory.SkipCellFactory.INSTANCE).setAllowDuplicates(true).setReadOnly(true)
 				.build();
 		skipListMap.open();
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
-		Pair<WritableComparableKey, Writable> pair = skipListMap.floor(curKey, curCode);
+	public Pair<WritableComparable, BucketID> floorOffset(WritableComparable curKey,
+			WritableComparable curCode) throws IOException {
+		Pair<WritableComparable, Writable> pair = skipListMap.floor(curKey, curCode);
 		if (pair == null) {
 			return null;
 		} else {
@@ -61,9 +61,9 @@ public class DiskSSTableBDBReader extends IBucketBasedSSTableReader {
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
+	public Pair<WritableComparable, BucketID> cellOffset(WritableComparable curKey, WritableComparable curCode)
 			throws IOException {
-		Pair<WritableComparableKey, Writable> pair = skipListMap.floor(curKey, curCode);
+		Pair<WritableComparable, Writable> pair = skipListMap.floor(curKey, curCode);
 		if (pair == null) {
 			return null;
 		} else {

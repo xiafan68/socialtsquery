@@ -1,7 +1,7 @@
 package core.common;
 
 import core.commom.BDBBtree;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Bucket;
 import util.Configuration;
 import util.Pair;
@@ -30,12 +30,12 @@ public class BDBBtreeTest {
         String value[] = new String[]{"12", "13", "14"};
         int buckid1[] = new int[]{1, 1, 1};
         int buckid2[] = new int[]{2, 2, 2};
-        WritableComparableKey.StringKey curkeys[] = new WritableComparableKey.StringKey[3];
-        WritableComparableKey.StringKey curvalues[] = new WritableComparableKey.StringKey[3];
+        WritableComparable.StringKey curkeys[] = new WritableComparable.StringKey[3];
+        WritableComparable.StringKey curvalues[] = new WritableComparable.StringKey[3];
         Bucket.BucketID bucketIDs[] = new Bucket.BucketID[3];
         for (int i = 0; i < key.length; i++) {
-            curkeys[i] = new WritableComparableKey.StringKey(key[i]);
-            curvalues[i] = new WritableComparableKey.StringKey(value[i]);
+            curkeys[i] = new WritableComparable.StringKey(key[i]);
+            curvalues[i] = new WritableComparable.StringKey(value[i]);
             bucketIDs[i] = new Bucket.BucketID(buckid1[i], (short) buckid2[i]);
 
 
@@ -58,14 +58,14 @@ public class BDBBtreeTest {
     }
 
 
-    public Pair<WritableComparableKey, Bucket.BucketID> getFloorPair(BDBBtree bdbBtree, String key, String value) throws IOException {
-        WritableComparableKey.StringKey curkey = new WritableComparableKey.StringKey(key);
-        WritableComparableKey.StringKey curvalue = new WritableComparableKey.StringKey(value);
+    public Pair<WritableComparable, Bucket.BucketID> getFloorPair(BDBBtree bdbBtree, String key, String value) throws IOException {
+        WritableComparable.StringKey curkey = new WritableComparable.StringKey(key);
+        WritableComparable.StringKey curvalue = new WritableComparable.StringKey(value);
         return bdbBtree.cellOffset(curkey, curvalue);
     }
-    public Pair<WritableComparableKey, Bucket.BucketID> getCellPair(BDBBtree bdbBtree, String key, String value) throws IOException {
-        WritableComparableKey.StringKey curkey = new WritableComparableKey.StringKey(key);
-        WritableComparableKey.StringKey curvalue = new WritableComparableKey.StringKey(value);
+    public Pair<WritableComparable, Bucket.BucketID> getCellPair(BDBBtree bdbBtree, String key, String value) throws IOException {
+        WritableComparable.StringKey curkey = new WritableComparable.StringKey(key);
+        WritableComparable.StringKey curvalue = new WritableComparable.StringKey(value);
         return bdbBtree.floorOffset(curkey, curvalue);
     }
 }

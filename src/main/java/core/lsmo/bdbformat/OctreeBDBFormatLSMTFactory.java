@@ -34,7 +34,7 @@ public enum OctreeBDBFormatLSMTFactory implements ILSMTFactory {
 
 	@Override
 	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		return new DiskSSTableBDBReader(index, meta);
+		return new DiskSSTableBDBReader(index.getConf(), meta);
 	}
 
 }

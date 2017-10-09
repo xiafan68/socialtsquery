@@ -11,6 +11,7 @@ import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
 import core.lsmt.LSMTInvertedIndex;
 
+@SuppressWarnings("rawtypes")
 public enum OctreeInternFormatLSMTFactory implements ILSMTFactory {
 	INSTANCE;
 	@Override
@@ -31,7 +32,7 @@ public enum OctreeInternFormatLSMTFactory implements ILSMTFactory {
 
 	@Override
 	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		return new InternOctreeSSTableReader(index, meta);
+		return new InternOctreeSSTableReader(index.getConf(), meta);
 	}
 
 }

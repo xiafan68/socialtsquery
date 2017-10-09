@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import util.Pair;
 
 /**
@@ -28,7 +28,7 @@ public interface IPostingListIterator {
 	 */
 	public Pair<Integer, List<MidSegment>> next() throws IOException;
 
-	public void skipTo(WritableComparableKey key) throws IOException;
+	public void skipTo(WritableComparable key) throws IOException;
 
 	public void close() throws IOException;
 

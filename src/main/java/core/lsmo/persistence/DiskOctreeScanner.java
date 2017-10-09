@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.Encoding;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Block;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
@@ -71,7 +71,7 @@ public class DiskOctreeScanner implements IOctreeIterator {
 			this.entry = entry;
 			this.reader = reader;
 			nextID.copy(entry.startBucketID);
-			standaloneSentinal = reader.getIndex().getConf().standaloneSentinal();
+			standaloneSentinal = reader.getConf().standaloneSentinal();
 			if (standaloneSentinal)
 				nextMarkID.copy(((MarkDirEntry) entry).startMarkOffset);
 		}
@@ -257,7 +257,7 @@ public class DiskOctreeScanner implements IOctreeIterator {
 	}
 
 	@Override
-	public void skipTo(WritableComparableKey key) throws IOException {
+	public void skipTo(WritableComparable key) throws IOException {
 		throw new RuntimeException("DiskOctreeScanner doesn't support skipTo");
 	}
 

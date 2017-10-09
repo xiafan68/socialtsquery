@@ -6,8 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.WritableComparableFactory;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmo.octree.OctreeNode;
@@ -73,7 +73,7 @@ public abstract class ISSTableWriter {
 
 	
 
-	public abstract void delete(File indexDir, SSTableMeta meta);
+	public abstract void delete(File indexDir, SSTableMeta meta) throws IOException;
 	
 	public boolean shouldSplitOctant(OctreeNode octreeNode ){
 		int[] hist = octreeNode.histogram();

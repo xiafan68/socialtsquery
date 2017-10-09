@@ -9,24 +9,24 @@ import java.util.Arrays;
 import java.util.List;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.WritableComparableFactory;
 import core.io.Bucket;
 import core.io.Bucket.BucketID;
 import core.lsmt.DirEntry;
 import core.lsmt.IBucketBasedSSTableReader;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.PostingListMeta;
+import util.Configuration;
 import util.Pair;
 
 public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
-	public ListDiskBDBSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta);
+	public ListDiskBDBSSTableReader(Configuration conf, SSTableMeta meta) {
+		super(conf, meta);
 	}
 
-	public static class SegListKey implements WritableComparableKey {
+	public static class SegListKey implements WritableComparable {
 		int top;
 		int start;
 		long mid;
@@ -42,7 +42,7 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 		}
 
 		@Override
-		public int compareTo(WritableComparableKey o) {
+		public int compareTo(WritableComparable o) {
 			SegListKey obj = (SegListKey) o;
 			int ret = Integer.compare(top, obj.top);
 			if (ret == 0) {
@@ -72,19 +72,19 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 	public static enum SegListKeyFactory implements WritableComparableFactory {
 		INSTANCE;
 		@Override
-		public WritableComparableKey create() {
+		public WritableComparable create() {
 			return new SegListKey();
 		}
 
 	}
 
 	@Override
-	public IPostingListIterator getPostingListScanner(WritableComparableKey key) throws IOException {
+	public IPostingListIterator getPostingListScanner(WritableComparable key) throws IOException {
 		return new ListDiskPostingListIterator(getDirEntry(key), 0, Integer.MAX_VALUE);
 	}
 
 	@Override
-	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		return new ListDiskPostingListIterator(getDirEntry(key), start, end);
 	}
 
@@ -169,7 +169,7 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 		}
 
 		@Override
-		public void skipTo(WritableComparableKey key) throws IOException {
+		public void skipTo(WritableComparable key) throws IOException {
 			// TODO Auto-generated method stub
 
 		}
@@ -186,13 +186,13 @@ public class ListDiskBDBSSTableReader extends IBucketBasedSSTableReader {
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
+	public Pair<WritableComparable, BucketID> floorOffset(WritableComparable curKey, WritableComparable curCode)
+			throws IOException {
 		return null;
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey, WritableComparableKey curCode)
+	public Pair<WritableComparable, BucketID> cellOffset(WritableComparable curKey, WritableComparable curCode)
 			throws IOException {
 		return null;
 	}

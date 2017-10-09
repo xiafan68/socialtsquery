@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import core.commom.Encoding;
-import core.commom.WritableComparableKey.EncodingFactory;
+import core.commom.WritableComparable.EncodingFactory;
 import core.io.Block;
 import core.io.Bucket.BucketID;
 import core.lsmo.persistence.SkipCell;

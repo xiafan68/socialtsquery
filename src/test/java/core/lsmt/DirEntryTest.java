@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.Test;
 
-import core.commom.WritableComparableKey.StringKey;
+import core.commom.WritableComparable.StringKey;
 
 public class DirEntryTest {
 	@Test

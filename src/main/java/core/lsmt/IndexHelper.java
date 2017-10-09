@@ -3,7 +3,7 @@ package core.lsmt;
 import java.io.File;
 import java.io.IOException;
 
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Bucket.BucketID;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.postinglist.ISSTableWriter;
@@ -30,7 +30,7 @@ public abstract class IndexHelper {
 		curDir.startBucketID.copy(newListStart);
 	}
 
-	public void startPostingList(WritableComparableKey key, BucketID newListStart) throws IOException {
+	public void startPostingList(WritableComparable key, BucketID newListStart) throws IOException {
 		if (newListStart != null)
 			curDir.startBucketID.copy(newListStart);
 		curDir.curKey = key;
@@ -52,7 +52,7 @@ public abstract class IndexHelper {
 
 	public abstract void openIndexFile(File dir, SSTableMeta meta) throws IOException;
 
-	public abstract void buildIndex(WritableComparableKey code, BucketID id) throws IOException;
+	public abstract void buildIndex(WritableComparable code, BucketID id) throws IOException;
 
 	public DirEntry getDirEntry() {
 		return curDir;

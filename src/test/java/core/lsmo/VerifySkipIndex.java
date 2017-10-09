@@ -6,7 +6,7 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import core.commom.BDBBtree;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.lsmo.internformat.InternOctreeSSTableReader;
@@ -28,9 +28,9 @@ public class VerifySkipIndex {
 			for (SSTableMeta meta : internIndex.getVersion().diskTreeMetas) {
 				InternOctreeSSTableReader reader = (InternOctreeSSTableReader) internIndex
 						.getSSTableReader(internIndex.getVersion(), meta);
-				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				Iterator<WritableComparable> iter = reader.keySetIter();
 				while (iter.hasNext()) {
-					WritableComparableKey key = iter.next();
+					WritableComparable key = iter.next();
 					DirEntry entry = reader.getDirEntry(key);
 
 

@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.log4j.PropertyConfigurator;
 
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Block;
 import core.io.Block.BLOCKTYPE;
 import core.io.Bucket.BucketID;
@@ -17,8 +17,8 @@ import util.Pair;
 
 public class InternOctreeSSTableReader extends IBucketBasedSSTableReader {
 
-	public InternOctreeSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		super(index, meta);
+	public InternOctreeSSTableReader(Configuration conf, SSTableMeta meta) {
+		super(conf, meta);
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class InternOctreeSSTableReader extends IBucketBasedSSTableReader {
 	};
 
 	@Override
-	public IPostingListIterator getPostingListIter(WritableComparableKey key, int start, int end) throws IOException {
+	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		return new InternPostingListIter(getDirEntry(key), this, start, end);
 	}
 
@@ -36,7 +36,7 @@ public class InternOctreeSSTableReader extends IBucketBasedSSTableReader {
 		Configuration conf = new Configuration();
 		conf.load("conf/index_twitter_intern.conf");
 		LSMTInvertedIndex index = new LSMTInvertedIndex(conf);
-		InternOctreeSSTableReader reader = new InternOctreeSSTableReader(index, new SSTableMeta(255, 7));
+		InternOctreeSSTableReader reader = new InternOctreeSSTableReader(conf, new SSTableMeta(255, 7));
 		reader.init();
 		Block block = new Block(BLOCKTYPE.DATA_BLOCK, 0);
 		for (int i = 516000; i < 527300; i++) {
@@ -58,14 +58,14 @@ public class InternOctreeSSTableReader extends IBucketBasedSSTableReader {
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> floorOffset(WritableComparableKey curKey, WritableComparableKey curCode)
+	public Pair<WritableComparable, BucketID> floorOffset(WritableComparable curKey, WritableComparable curCode)
 			throws IOException {
 		return null;
 	}
 
 	@Override
-	public Pair<WritableComparableKey, BucketID> cellOffset(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
+	public Pair<WritableComparable, BucketID> cellOffset(WritableComparable curKey,
+			WritableComparable curCode) throws IOException {
 		return null;
 	}
 

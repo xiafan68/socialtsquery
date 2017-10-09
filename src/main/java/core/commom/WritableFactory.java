@@ -1,6 +1,6 @@
 package core.commom;
 
-import core.commom.WritableComparableKey.EncodingFactory;
+import core.commom.WritableComparable.EncodingFactory;
 import core.lsmo.MarkDirEntry;
 import core.lsmo.persistence.SkipCell;
 import core.lsmt.DirEntry;

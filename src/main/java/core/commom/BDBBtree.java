@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
 
@@ -20,7 +21,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.PreloadConfig;
 
-import core.commom.WritableComparableKey.WritableComparableFactory;
+import core.commom.WritableComparable.WritableComparableFactory;
 import util.Pair;
 
 /**
@@ -41,8 +42,11 @@ public class BDBBtree {
 		this.bdbbTreeBuilder = bdbbTreeBuilder;
 	}
 
-	private static class BDBComparator implements Comparator<byte[]> {
+	private static class BDBComparator implements Comparator<byte[]>, Serializable {
 		WritableComparableFactory factory;
+
+		public BDBComparator() {
+		}
 
 		public BDBComparator(WritableComparableFactory factory) {
 			this.factory = factory;
@@ -50,8 +54,8 @@ public class BDBBtree {
 
 		@Override
 		public int compare(byte[] a, byte[] a2) {
-			WritableComparableKey t = factory.create();
-			WritableComparableKey t2 = factory.create();
+			WritableComparable t = factory.create();
+			WritableComparable t2 = factory.create();
 
 			try {
 				t.read(new DataInputStream(new ByteArrayInputStream(a)));
@@ -114,7 +118,8 @@ public class BDBBtree {
 	public void close() {
 		if (nodeDb != null) {
 			nodeDb.close();
-			env.cleanLog();
+			if (!myEnvConfig.getReadOnly())
+				env.cleanLog();
 			env.close();
 			nodeDb = null;
 			env = null;
@@ -132,7 +137,7 @@ public class BDBBtree {
 
 	// 将key和code插入Btree索引
 	// value: [value, id]
-	public void insert(WritableComparableKey curkey, Writable value) throws IOException {
+	public void insert(WritableComparable curkey, Writable value) throws IOException {
 		DatabaseEntry key = getDBEntry(curkey);
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -161,8 +166,7 @@ public class BDBBtree {
 
 	// 将key和code插入Btree索引
 	// value: [value, id]
-	public void insert(WritableComparableKey curkey, WritableComparableKey secondaryKey, Writable value)
-			throws IOException {
+	public void insert(WritableComparable curkey, WritableComparable secondaryKey, Writable value) throws IOException {
 		DatabaseEntry key = getDBEntry(curkey);
 		DatabaseEntry data = writeEntry(secondaryKey, value);
 
@@ -175,7 +179,7 @@ public class BDBBtree {
 		}
 	}
 
-	public Writable get(WritableComparableKey curKey) throws IOException {
+	public Writable get(WritableComparable curKey) throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = new DatabaseEntry();
 
@@ -194,7 +198,7 @@ public class BDBBtree {
 		return ret;
 	}
 
-	public Pair<WritableComparableKey, Writable> cell(WritableComparableKey curKey, WritableComparableKey secondaryKey)
+	public Pair<WritableComparable, Writable> cell(WritableComparable curKey, WritableComparable secondaryKey)
 			throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(secondaryKey);
@@ -221,7 +225,7 @@ public class BDBBtree {
 	 * @return
 	 * @throws IOException
 	 */
-	public Pair<WritableComparableKey, Writable> floor(WritableComparableKey curKey, WritableComparableKey secondaryKey)
+	public Pair<WritableComparable, Writable> floor(WritableComparable curKey, WritableComparable secondaryKey)
 			throws IOException {
 
 		DatabaseEntry key = getDBEntry(curKey);
@@ -233,7 +237,7 @@ public class BDBBtree {
 			// 找到第一个大于等于data的
 			OperationStatus status = cursor.getSearchBothRange(key, data, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				Pair<WritableComparableKey, Writable> ret = parsePair(data);
+				Pair<WritableComparable, Writable> ret = parsePair(data);
 				if (ret.getKey().compareTo(secondaryKey) == 0)
 					return ret;
 				else {
@@ -259,15 +263,15 @@ public class BDBBtree {
 	 * @return
 	 * @throws IOException
 	 */
-	private Pair<WritableComparableKey, Writable> getKeyLast(WritableComparableKey curKey,
-			WritableComparableKey curCode) throws IOException {
+	private Pair<WritableComparable, Writable> getKeyLast(WritableComparable curKey, WritableComparable curCode)
+			throws IOException {
 		DatabaseEntry key = getDBEntry(curKey);
 		DatabaseEntry data = getDBEntry(curCode);
 		Cursor cursor = nodeDb.openCursor(null, null);
 		try {
 			OperationStatus status = cursor.getSearchKeyRange(key, data, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				WritableComparableKey readKey = bdbbTreeBuilder.getKeyFactory().create();
+				WritableComparable readKey = bdbbTreeBuilder.getKeyFactory().create();
 				DataInputStream dis = new DataInputStream(new ByteArrayInputStream(key.getData()));
 				readKey.read(dis);
 				if (readKey.compareTo(curKey) == 0) {
@@ -290,7 +294,7 @@ public class BDBBtree {
 		}
 	}
 
-	private DatabaseEntry writeEntry(WritableComparableKey key, Writable value) throws IOException {
+	private DatabaseEntry writeEntry(WritableComparable key, Writable value) throws IOException {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(outputStream);
 		key.write(dos);
@@ -301,9 +305,9 @@ public class BDBBtree {
 		return ret;
 	}
 
-	private Pair<WritableComparableKey, Writable> parsePair(DatabaseEntry data) throws IOException {
+	private Pair<WritableComparable, Writable> parsePair(DatabaseEntry data) throws IOException {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data.getData()));
-		WritableComparableKey curSecondaryKey = bdbbTreeBuilder.getSecondaryKeyFactory().create();
+		WritableComparable curSecondaryKey = bdbbTreeBuilder.getSecondaryKeyFactory().create();
 		curSecondaryKey.read(dis);
 		Writable value = bdbbTreeBuilder.getValueFactory().create();
 		value.read(dis);
@@ -311,7 +315,7 @@ public class BDBBtree {
 		return new Pair<>(curSecondaryKey, value);
 	}
 
-	private DatabaseEntry getDBEntry(WritableComparableKey key) throws IOException {
+	private DatabaseEntry getDBEntry(WritableComparable key) throws IOException {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		key.write(new DataOutputStream(outputStream));
 		DatabaseEntry ret = new DatabaseEntry();
@@ -319,7 +323,7 @@ public class BDBBtree {
 		return ret;
 	}
 
-	public class BDBKeyIterator implements Iterator<WritableComparableKey> {
+	public class BDBKeyIterator implements Iterator<WritableComparable> {
 		DatabaseEntry key = new DatabaseEntry();
 		DatabaseEntry value = new DatabaseEntry();
 		Cursor cursor = null;
@@ -343,11 +347,11 @@ public class BDBBtree {
 		}
 
 		@Override
-		public WritableComparableKey next() {
+		public WritableComparable next() {
 			if (key == null) {
 				advance();
 			}
-			WritableComparableKey ret = bdbbTreeBuilder.getKeyFactory().create();
+			WritableComparable ret = bdbbTreeBuilder.getKeyFactory().create();
 			try {
 				ret.read(new DataInputStream(new ByteArrayInputStream(key.getData())));
 				key = null;
@@ -390,7 +394,7 @@ public class BDBBtree {
 		}
 	}
 
-	public Iterator<WritableComparableKey> keyIterator() {
+	public Iterator<WritableComparable> keyIterator() {
 		return new BDBKeyIterator();
 	}
 }

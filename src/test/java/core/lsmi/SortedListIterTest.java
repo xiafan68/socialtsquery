@@ -10,8 +10,8 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.BDBBtree;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.StringKey;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.StringKey;
 import core.lsmt.IMemTable.SSTableMeta;
 import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.IPostingListIterator;
@@ -21,7 +21,7 @@ import util.Configuration;
 import util.Pair;
 
 public class SortedListIterTest {
-	public int ExpectedResult(WritableComparableKey key, ISSTableReader reader, Interval window) throws IOException {
+	public int ExpectedResult(WritableComparable key, ISSTableReader reader, Interval window) throws IOException {
 		int ret = 0;
 		System.out.println(key);
 		Pair<Integer, List<MidSegment>> cur = null;
@@ -39,7 +39,7 @@ public class SortedListIterTest {
 		return ret;
 	}
 
-	public int queryResult(WritableComparableKey key, ISSTableReader reader, Interval window) throws IOException {
+	public int queryResult(WritableComparable key, ISSTableReader reader, Interval window) throws IOException {
 		int ret = 0;
 		IPostingListIterator scanner = reader.getPostingListIter(key, window.getStart(), window.getEnd());
 
@@ -75,7 +75,7 @@ public class SortedListIterTest {
 			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 				ListDiskBDBSSTableReader reader = (ListDiskBDBSSTableReader) index.getSSTableReader(index.getVersion(),
 						meta);
-				WritableComparableKey key = new StringKey("#beatcancer");
+				WritableComparable key = new StringKey("#beatcancer");
 				int expect = ExpectedResult(key, reader, window);
 				int answer = queryResult(key, reader, window);
 				// fos.close();
@@ -108,9 +108,9 @@ public class SortedListIterTest {
 			for (SSTableMeta meta : index.getVersion().diskTreeMetas) {
 				ListDiskBDBSSTableReader reader = (ListDiskBDBSSTableReader) index.getSSTableReader(index.getVersion(),
 						meta);
-				Iterator<WritableComparableKey> iter = reader.keySetIter();
+				Iterator<WritableComparable> iter = reader.keySetIter();
 				while (iter.hasNext()) {
-					WritableComparableKey key = iter.next();
+					WritableComparable key = iter.next();
 					int expect = ExpectedResult(key, reader, window);
 					int answer = queryResult(key, reader, window);
 					// fos.close();

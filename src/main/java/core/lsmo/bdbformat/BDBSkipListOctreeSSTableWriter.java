@@ -8,8 +8,8 @@ import java.util.List;
 import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.IndexFileUtils;
-import core.commom.WritableComparableKey;
-import core.commom.WritableComparableKey.EncodingFactory;
+import core.commom.WritableComparable;
+import core.commom.WritableComparable.EncodingFactory;
 import core.commom.WritableFactory;
 import core.lsmo.MarkDirEntry;
 import core.lsmo.persistence.IOctreeSSTableWriter;
@@ -50,7 +50,7 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 	}
 
 	@Override
-	protected DirEntry startNewPostingList(WritableComparableKey key) {
+	protected DirEntry startNewPostingList(WritableComparable key) {
 		DirEntry ret;
 		if (conf.standaloneSentinal()) {
 			ret = new MarkDirEntry();

@@ -17,7 +17,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import common.MidSegment;
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
@@ -80,10 +80,10 @@ public class DiskSSTableReaderTest {
 		reader.init();
 		readerTest(reader, conf, 1);
 
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		OctreeNode pre = null;
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 
 			System.out.println("scanning postinglist of " + key);
 			pre = null;
@@ -137,9 +137,9 @@ public class DiskSSTableReaderTest {
 	}
 
 	public static void readerTest(ISSTableReader reader, HashSet<MidSegment> segs) throws IOException {
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 			IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);
 			OctreeNode cur = null;
 			while (scanner.hasNext()) {
@@ -157,11 +157,11 @@ public class DiskSSTableReaderTest {
 	public static void readerTest(ISSTableReader reader, Configuration conf, int level) throws IOException {
 		int expect = (conf.getFlushLimit() + 1) * (1 << level);
 		int size = 0;
-		Iterator<WritableComparableKey> iter = reader.keySetIter();
+		Iterator<WritableComparable> iter = reader.keySetIter();
 		OctreeNode pre = null;
 		// HashSet<MidSegment> segs = new HashSet<MidSegment>();
 		while (iter.hasNext()) {
-			WritableComparableKey key = iter.next();
+			WritableComparable key = iter.next();
 			System.out.println("scanning postinglist of " + key);
 			pre = null;
 			IOctreeIterator scanner = (IOctreeIterator) reader.getPostingListScanner(key);

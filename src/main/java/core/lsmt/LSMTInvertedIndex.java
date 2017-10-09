@@ -24,7 +24,7 @@ import org.apache.log4j.Logger;
 
 import common.MidSegment;
 import core.commom.TempKeywordQuery;
-import core.commom.WritableComparableKey.StringKey;
+import core.commom.WritableComparable.StringKey;
 import core.concurrent.ILockStrategy;
 import core.concurrent.LockManager;
 import core.concurrent.LockStrategyFactory;
@@ -40,6 +40,7 @@ import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import core.lsmt.postinglist.PostingListMergeView;
+import core.lsmt.postinglist.PostingListMeta;
 import segmentation.Interval;
 import shingle.ITextShingle;
 import shingle.ShingleFactory;
@@ -123,7 +124,7 @@ public class LSMTInvertedIndex {
 
 	private static final Pattern regex = Pattern.compile("[0-9]+_[0-9]+.data");
 
-	private void setupVersionSet() {
+	private void setupVersionSet() throws IOException {
 		File[] indexFiles = conf.getIndexDir().listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -558,13 +559,17 @@ public class LSMTInvertedIndex {
 					e.printStackTrace();
 				}
 				if (!conf.debugMode() && reader.getMeta().markAsDel.get()) {
-					delIndexFile(reader.getMeta());
+					try {
+						delIndexFile(reader.getMeta());
+					} catch (IOException e) {
+						throw new RuntimeException(e.getMessage());
+					}
 				}
 			}
 		}
 	}
 
-	private void delIndexFile(SSTableMeta meta) {
+	private void delIndexFile(SSTableMeta meta) throws IOException {
 		valWriter.delete(conf.getIndexDir(), meta);
 		logger.info("delete data of " + meta.version + " " + meta.level);
 	}
@@ -670,6 +675,21 @@ public class LSMTInvertedIndex {
 		}
 
 		return size;
+	}
+
+	public Map<SSTableMeta, PostingListMeta> collectTermMeta(String term) throws IOException {
+		Map<SSTableMeta, PostingListMeta> ret = new HashMap<SSTableMeta, PostingListMeta>();
+		StringKey curKey = new StringKey(term);
+		DirEntry memoryDir = new DirEntry();
+		memoryDir.curKey = curKey;
+		ret.put(versionSet.curTable.getMeta(), versionSet.curTable.getPostingList(curKey).getMeta());
+		Map<Integer, Integer> dist = new TreeMap<Integer, Integer>();
+
+		for (SSTableMeta meta : versionSet.diskTreeMetas) {
+			ISSTableReader reader = getSSTableReader(versionSet, meta);
+			ret.put(meta, reader.getDirEntry(curKey));
+		}
+		return ret;
 	}
 
 	/**

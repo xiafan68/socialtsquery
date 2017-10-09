@@ -5,11 +5,12 @@ import java.util.List;
 import core.lsmt.ILSMTFactory;
 import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
 import util.Configuration;
-import core.lsmt.LSMTInvertedIndex;
 
+@SuppressWarnings("rawtypes")
 public enum SortedListBasedLSMTFactory implements ILSMTFactory {
 	INSTANCE;
 	@Override
@@ -30,7 +31,7 @@ public enum SortedListBasedLSMTFactory implements ILSMTFactory {
 
 	@Override
 	public ISSTableReader newSSTableReader(LSMTInvertedIndex index, SSTableMeta meta) {
-		return new ListDiskBDBSSTableReader(index, meta);
+		return new ListDiskBDBSSTableReader(index.getConf(), meta);
 	}
 
 }

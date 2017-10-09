@@ -15,7 +15,7 @@ import io.ByteUtil;
  * 
  * @author xiafan
  */
-public class Encoding extends Point implements WritableComparableKey {
+public class Encoding extends Point implements WritableComparable {
 	// log_2(length of cube)
 	private int paddingBitNum;// the number bits that are padded at the ends
 	private int[] encodes = new int[3];
@@ -148,7 +148,7 @@ public class Encoding extends Point implements WritableComparableKey {
 	}
 
 	@Override
-	public int compareTo(WritableComparableKey other) {
+	public int compareTo(WritableComparable other) {
 		Encoding arg0 = (Encoding) other;
 		int ret = 0;
 		ret = 0 - Integer.compare(encodes[0], arg0.encodes[0]);

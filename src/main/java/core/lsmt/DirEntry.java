@@ -4,12 +4,12 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import core.commom.WritableComparableKey;
+import core.commom.WritableComparable;
 import core.io.Bucket.BucketID;
 import core.lsmt.postinglist.PostingListMeta;
 
 public class DirEntry extends PostingListMeta {
-	public WritableComparableKey curKey = null;
+	public WritableComparable curKey = null;
 	public BucketID startBucketID = new BucketID();
 	public BucketID endBucketID = new BucketID();
 	public long indexStartOffset;
