@@ -18,15 +18,13 @@ import org.junit.Test;
 
 import common.MidSegment;
 import core.commom.WritableComparableKey;
-import core.lsmo.OctreeBasedLSMTFactory;
-import core.lsmo.bdbformat.DiskSSTableReader;
 import core.lsmo.octree.IOctreeIterator;
 import core.lsmo.octree.OctreeNode;
 import core.lsmo.octree.OctreeNode.CompressedSerializer;
 import core.lsmt.IMemTable.SSTableMeta;
+import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.ISSTableReader;
 import util.Configuration;
-import core.lsmt.LSMTInvertedIndex;
 
 public class DiskSSTableReaderTest {
 	/**

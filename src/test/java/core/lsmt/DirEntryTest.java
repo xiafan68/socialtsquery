@@ -9,13 +9,11 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.Test;
 
 import core.commom.WritableComparableKey.StringKey;
-import core.commom.WritableComparableKey.StringKeyFactory;
-import core.lsmt.postinglist.ISSTableWriter.DirEntry;
 
 public class DirEntryTest {
 	@Test
 	public void test() throws IOException {
-		DirEntry entry = new DirEntry(StringKeyFactory.INSTANCE);
+		DirEntry entry = new DirEntry();
 		entry.curKey = new StringKey("test");
 		entry.startBucketID.blockID = 2650;
 		entry.startBucketID.offset = 25;
@@ -28,7 +26,7 @@ public class DirEntryTest {
 		DataOutputStream dos = new DataOutputStream(bOutput);
 		entry.write(dos);
 		DataInputStream input = new DataInputStream(new ByteArrayInputStream(bOutput.toByteArray()));
-		DirEntry newEntry = new DirEntry(StringKeyFactory.INSTANCE);
+		DirEntry newEntry = new DirEntry();
 		newEntry.read(input);
 		System.out.println(entry + "\n" + newEntry);
 		// Assert.assertTrue(entry.equals(newEntry));

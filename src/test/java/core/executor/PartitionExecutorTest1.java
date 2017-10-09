@@ -9,9 +9,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
 import core.commom.TempKeywordQuery;
-import core.lsmo.OctreeBasedLSMTFactory;
 import core.lsmt.LSMTInvertedIndex;
-import core.lsmt.PartitionMeta;
 import segmentation.Interval;
 import util.Configuration;
 import util.MyFile;
