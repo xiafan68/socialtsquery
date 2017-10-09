@@ -683,7 +683,6 @@ public class LSMTInvertedIndex {
 		DirEntry memoryDir = new DirEntry();
 		memoryDir.curKey = curKey;
 		ret.put(versionSet.curTable.getMeta(), versionSet.curTable.getPostingList(curKey).getMeta());
-		Map<Integer, Integer> dist = new TreeMap<Integer, Integer>();
 
 		for (SSTableMeta meta : versionSet.diskTreeMetas) {
 			ISSTableReader reader = getSSTableReader(versionSet, meta);
