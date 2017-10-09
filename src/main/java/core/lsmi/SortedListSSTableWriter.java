@@ -246,6 +246,9 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 
 	private void endPostingList(BucketID blockIdx) throws IOException {
 		curDir.endBucketID.copy(blockIdx);
+		if(curDir.startBucketID.compareTo(curDir.endBucketID)>0){
+			System.out.println("error");
+		}
 		dirMap.insert(curDir.curKey, curDir);
 	}
 
@@ -298,6 +301,8 @@ public class SortedListSSTableWriter extends ISSTableWriter {
 	public Bucket newDataBucket() {
 		buck.reset();
 		try {
+			dataDos.flush();
+			dataFileOs.flush();
 			buck.setBlockIdx((int) (dataFileOs.getChannel().position() / Block.BLOCK_SIZE));
 		} catch (IOException e) {
 			throw new RuntimeException(e);

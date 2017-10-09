@@ -44,14 +44,16 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 
 	@Override
 	public DirEntry getDirEntry(WritableComparable key) throws IOException {
-		return (DirEntry) dirMap.get(key);
+		DirEntry ret = (DirEntry) dirMap.get(key);
+		ret.curKey = key;
+		return ret;
 	}
 
 	public void init() throws IOException {
 		if (!init.get()) {
 			synchronized (this) {
 				if (!init.get()) {
-					File dataDir =conf.getIndexDir();
+					File dataDir = conf.getIndexDir();
 					dataInput = SeekableDirectIO.create(IndexFileUtils.dataFile(dataDir, meta), "r");
 					if (conf.standaloneSentinal())
 						markInput = SeekableDirectIO.create(IndexFileUtils.markFile(dataDir, meta), "r");
@@ -116,8 +118,8 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 	public abstract Pair<WritableComparable, BucketID> floorOffset(WritableComparable curKey,
 			WritableComparable curCode) throws IOException;
 
-	public abstract Pair<WritableComparable, BucketID> cellOffset(WritableComparable curKey,
-			WritableComparable curCode) throws IOException;
+	public abstract Pair<WritableComparable, BucketID> cellOffset(WritableComparable curKey, WritableComparable curCode)
+			throws IOException;
 
 	@Override
 	public SSTableMeta getMeta() {
