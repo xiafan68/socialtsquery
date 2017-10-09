@@ -1,3 +1,7 @@
+.classpath
+.project
+.pydevproject
+.settings/
 *.class
 bin/
 target/
