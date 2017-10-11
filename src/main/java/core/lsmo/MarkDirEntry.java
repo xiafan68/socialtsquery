@@ -33,4 +33,23 @@ public class MarkDirEntry extends DirEntry {
 		markNum = input.readInt();
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MarkDirEntry other = (MarkDirEntry) obj;
+		if (markNum != other.markNum)
+			return false;
+		if (startMarkOffset == null) {
+			if (other.startMarkOffset != null)
+				return false;
+		} else if (!startMarkOffset.equals(other.startMarkOffset))
+			return false;
+		return true;
+	}
+
 }

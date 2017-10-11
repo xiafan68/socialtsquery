@@ -88,7 +88,7 @@ public class OctreePostingListIter implements IOctreeIterator {
 
 	@Override
 	public boolean hasNext() throws IOException {
-		if (entry != null && entry.curKey != null && curNode == null && diskHasMore()) {
+		if (entry != null && entry.curKey != null && (curNode == null || diskHasMore())) {
 			advance();
 		}
 		return curNode != null;

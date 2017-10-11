@@ -15,14 +15,15 @@ public class SkipCellTest {
 	@Test
 	public void test() throws IOException {
 		SkipCell cell = new SkipCell(0, EncodingFactory.INSTANCE);
+		cell.reset();
 		for (int i = 0; i < 10; i++) {
 			for (int j = 0; j < 10; j++) {
 				cell.addIndex(new Encoding(), new BucketID(i, (short) j));
 			}
-			cell.newBucket();
 		}
 		Block block = cell.write(1);
 		SkipCell newCell = new SkipCell(0, EncodingFactory.INSTANCE);
+		newCell.reset();
 		newCell.read(block);
 		Assert.assertTrue(cell.equals(newCell));
 
@@ -35,11 +36,10 @@ public class SkipCellTest {
 					break;
 				}
 			}
-			if (i != 9)
-				cell.newBucket();
 		}
 		block = cell.write(1);
 		newCell = new SkipCell(0, EncodingFactory.INSTANCE);
+		newCell.reset();
 		newCell.read(block);
 		Assert.assertTrue(cell.equals(newCell));
 	}

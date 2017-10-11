@@ -85,4 +85,36 @@ public class DirEntry extends PostingListMeta {
 		return "DirEntry [curKey=" + curKey + ", startBucketID=" + startBucketID + ", endBucketID=" + endBucketID
 				+ ", indexStartOffset=" + indexStartOffset + ", sampleNum=" + sampleNum + "]";
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		DirEntry other = (DirEntry) obj;
+		if (curKey == null) {
+			if (other.curKey != null)
+				return false;
+		} else if (!curKey.equals(other.curKey))
+			return false;
+		if (endBucketID == null) {
+			if (other.endBucketID != null)
+				return false;
+		} else if (!endBucketID.equals(other.endBucketID))
+			return false;
+		if (indexStartOffset != other.indexStartOffset)
+			return false;
+		if (sampleNum != other.sampleNum)
+			return false;
+		if (startBucketID == null) {
+			if (other.startBucketID != null)
+				return false;
+		} else if (!startBucketID.equals(other.startBucketID))
+			return false;
+		return true;
+	}
+
 }

@@ -56,4 +56,23 @@ public class PostingListMeta implements Writable {
 	public String toString() {
 		return "PostingListMeta [size=" + size + ", maxTime=" + maxTime + ", minTime=" + minTime + "]";
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		PostingListMeta other = (PostingListMeta) obj;
+		if (maxTime != other.maxTime)
+			return false;
+		if (minTime != other.minTime)
+			return false;
+		if (size != other.size)
+			return false;
+		return true;
+	}
+
 }

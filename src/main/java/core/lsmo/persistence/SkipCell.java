@@ -43,11 +43,10 @@ public class SkipCell implements Writable {
 	// 以下字段用于写索引
 	ByteArrayOutputStream bout;
 	DataOutputStream metaDos = null;
-	// 用于存留最后一个bucket的数据
-	ByteArrayOutputStream lastBuckBout;
-	DataOutputStream lastBuckMetaDos;
-
 	int size = 0;
+
+	ByteArrayOutputStream lastIndexBos;
+	DataOutputStream lastIndexDos = null;
 
 	// 当从文件中都出时反序列化出以下字段
 	List<Pair<WritableComparable, BucketID>> skipList = new ArrayList<Pair<WritableComparable, BucketID>>();
@@ -55,6 +54,11 @@ public class SkipCell implements Writable {
 	public SkipCell(int blockIdx, WritableComparableFactory keyFactory) {
 		this.blockIdx = blockIdx;
 		this.factory = keyFactory;
+		bout = new ByteArrayOutputStream(Block.availableSpace());
+		metaDos = new DataOutputStream(bout);
+		lastIndexBos = new ByteArrayOutputStream();
+		lastIndexDos = new DataOutputStream(lastIndexBos);
+		reset();
 	}
 
 	public int getBlockIdx() {
@@ -63,13 +67,6 @@ public class SkipCell implements Writable {
 
 	public long toFileOffset() {
 		return (((long) getBlockIdx()) << 32) | (size() - 1);
-	}
-
-	private void setupWriteStream() {
-		bout = new ByteArrayOutputStream(Block.availableSpace());
-		metaDos = new DataOutputStream(bout);
-		lastBuckBout = new ByteArrayOutputStream();
-		lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 	}
 
 	public void setBlockIdx(int blockIdx) {
@@ -84,24 +81,12 @@ public class SkipCell implements Writable {
 		return skipList.size() > 0 ? skipList.size() : size;
 	}
 
-	/**
-	 * 如果最后一个bucket写出到缓冲区了，那么它的blockidx就确定了，这时当前skipcell中对应的索引项就可以写出去
-	 * 
-	 * @throws IOException
-	 */
-	public void newBucket() throws IOException {
-		metaDos.write(lastBuckBout.toByteArray());
-		lastBuckBout.reset();
-		lastBuckMetaDos = new DataOutputStream(lastBuckBout);
-	}
-
 	public int cellOffset(WritableComparable key, int start, int end) {
 		Pair<WritableComparable, BucketID> pair = new Pair<WritableComparable, BucketID>(key, null);
 		int idx = Collections.binarySearch(skipList.subList(start, end), pair,
 				new Comparator<Pair<WritableComparable, BucketID>>() {
 					@Override
-					public int compare(Pair<WritableComparable, BucketID> o1,
-							Pair<WritableComparable, BucketID> o2) {
+					public int compare(Pair<WritableComparable, BucketID> o1, Pair<WritableComparable, BucketID> o2) {
 						return o1.getKey().compareTo(o2.getKey());
 					}
 				});
@@ -118,8 +103,7 @@ public class SkipCell implements Writable {
 		int idx = Collections.binarySearch(skipList.subList(start, end), pair,
 				new Comparator<Pair<WritableComparable, BucketID>>() {
 					@Override
-					public int compare(Pair<WritableComparable, BucketID> o1,
-							Pair<WritableComparable, BucketID> o2) {
+					public int compare(Pair<WritableComparable, BucketID> o1, Pair<WritableComparable, BucketID> o2) {
 						return o1.getKey().compareTo(o2.getKey());
 					}
 				});
@@ -136,12 +120,11 @@ public class SkipCell implements Writable {
 	 * 重置当前cell，用于开始新的写入
 	 */
 	public void reset() {
-		bout.reset();
 		try {
+			bout.reset();
+			metaDos = new DataOutputStream(bout);
 			metaDos.writeInt(nextMetaBlockIdx);
 			metaDos.writeInt(0);
-			lastBuckBout.reset();
-			lastBuckMetaDos = new DataOutputStream(lastBuckBout);
 			size = 0;
 			skipList.clear();
 		} catch (IOException e) {
@@ -160,30 +143,21 @@ public class SkipCell implements Writable {
 	 */
 	private boolean addIndex(WritableComparable code, int bOffset, short octOffset) throws IOException {
 		if (metaDos == null) {
-			setupWriteStream();
 			reset();
 		}
-		code.write(lastBuckMetaDos);
-		ByteUtil.writeVInt(lastBuckMetaDos, bOffset);
-		ByteUtil.writeVInt(lastBuckMetaDos, octOffset);
-		boolean ret = (bout.size() + lastBuckMetaDos.size()) <= Block.availableSpace();
+		// if the dos is overflow, this item should be removed from the stream
+		code.write(lastIndexDos);
+		ByteUtil.writeVInt(lastIndexDos, bOffset);
+		ByteUtil.writeVInt(lastIndexDos, octOffset);
+
+		boolean ret = lastIndexDos.size() + metaDos.size() <= Block.availableSpace();
 		if (ret) {
 			size++;
-		} else {
-			// 由于需要新加入一个SkipCell，导致当前的bucket的blockID加1,这里将lastbuck中内容更新之后写入到metaDos中去
-			DataInputStream input = new DataInputStream(new ByteArrayInputStream(lastBuckBout.toByteArray()));
-			WritableComparable tempCode = factory.create();
-			while (input.available() > 0) {
-				tempCode.read(input);
-				tempCode.write(metaDos);
-				// 当前的bucket的blockID加1
-				// TODO:理论上这里应该要+1，但是+1会导致字节数增加
-				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input));
-				ByteUtil.writeVInt(metaDos, ByteUtil.readVInt(input));
-			}
-			lastBuckBout.reset();
-			lastBuckMetaDos.close();
+			lastIndexDos.flush();
+			metaDos.write(lastIndexBos.toByteArray());
 		}
+		lastIndexBos.reset();
+		lastIndexDos = new DataOutputStream(lastIndexBos);
 		return ret;
 	}
 
@@ -196,8 +170,8 @@ public class SkipCell implements Writable {
 		ByteArrayInputStream binput = new ByteArrayInputStream(metaBlock.getData());
 		DataInputStream input = new DataInputStream(binput);
 		nextMetaBlockIdx = input.readInt();
-		int num = input.readInt();
-		for (int i = 0; i < num; i++) {
+		size = input.readInt();
+		for (int i = 0; i < size; i++) {
 			WritableComparable key = factory.create();
 			key.read(input);
 			BucketID bucket = new BucketID();
@@ -219,9 +193,6 @@ public class SkipCell implements Writable {
 	}
 
 	public Block write(int nextMetaBlockIdx) throws IOException {
-		if (lastBuckMetaDos.size() > 0) {
-			metaDos.write(lastBuckBout.toByteArray());
-		}
 		this.nextMetaBlockIdx = nextMetaBlockIdx;
 		byte[] metaArray = bout.toByteArray();
 		ByteUtil.writeInt(nextMetaBlockIdx, metaArray, 0);
@@ -232,7 +203,7 @@ public class SkipCell implements Writable {
 	}
 
 	private void deserialize() throws IOException {
-		if (skipList.size() == 0) {
+		if (skipList.size() == 0 && size > 0) {
 			DataInputStream input = new DataInputStream(new ByteArrayInputStream(bout.toByteArray()));
 			input.readInt();
 			input.readInt();

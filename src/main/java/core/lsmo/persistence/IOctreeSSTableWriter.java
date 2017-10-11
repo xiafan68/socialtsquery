@@ -167,11 +167,16 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	 */
 	public abstract void flushAndNewDataBucket() throws IOException;
 
+	public abstract void endWritingSSTable() throws IOException;
+
 	protected void addSkipOffset(WritableComparable code) throws IOException {
 		if (!indexCell.addIndex(code, curDataBuck.blockIdx())) {
 			// flush current index cell, reallocate address for current databuck
 			flushAndNewSkipCell();
 			indexCell.addIndex(code, curDataBuck.blockIdx());
+		}
+		if (leafOctantNum == 1 || sentinelOctantNum == 1) {
+			curDir.indexStartOffset = indexCell.toFileOffset();
 		}
 	}
 
@@ -185,7 +190,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	public void write() throws IOException {
 		while (iter.hasNext()) {
 			Entry<WritableComparable, List<IOctreeIterator>> entry = iter.next();
-			logger.debug(String.format("writing postinglist for key%s", entry.getKey()));
+			logger.debug(String.format("writing postinglist for key %s", entry.getKey()));
 			// start writing a new posting list
 			curDir = startNewPostingList(entry.getKey());
 			// setup meta values
@@ -204,6 +209,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 			writeOctree(treeIter);
 			endNewPostingList();// end a new posting list
 		}
+		endWritingSSTable();
 	}
 
 	@Override
@@ -228,7 +234,6 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 		byte[] data = octreeNode.toBytes();
 		if (conf.standaloneSentinal()) {
 			if (!markupBuck.canStore(data.length)) {
-				markupBos.appendBlocks(curDataBuck.toBlocks());
 				flushAndNewSentinalBucket();
 			}
 			markupBuck.storeOctant(data);
@@ -240,7 +245,6 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	protected void writeLeafOctant(OctreeNode octreeNode) throws IOException {
 		byte[] data = octreeNode.toBytes();
 		if (!curDataBuck.canStore(data.length)) {
-			dataBos.appendBlocks(curDataBuck.toBlocks());
 			flushAndNewDataBucket();
 		}
 		curDataBuck.storeOctant(data);
@@ -255,6 +259,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 	public void writeOctree(IOctreeIterator iter) throws IOException {
 		leafOctantNum = 0;
 		sentinelOctantNum = 0;
+		int totalSegNum = 0;
 		OctreeNode octreeNode = null;
 
 		while (iter.hasNext()) {
@@ -272,23 +277,26 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 					}
 
 					if (octreeNode.size() > 0) {
+						totalSegNum += octreeNode.size();
 						writeLeafOctant(octreeNode);
 						if (leafOctantNum == 1) {
 							firstLeafOctantWritten();
 						}
-					} else {
+					} else if (Encoding.isMarkupNode(octreeNode.getEncoding())) {
 						writeSentinelOctant(octreeNode);
 						if (sentinelOctantNum == 1) {
 							firstSentinelOctantWritten();
 						}
 					}
 
-					if ((conf.indexLeafOnly() && leafOctantNum % step == 0)
-							|| (!conf.indexLeafOnly() && (leafOctantNum + sentinelOctantNum) % step == 0))
+					if ((conf.indexLeafOnly() && (leafOctantNum - 1) % step == 0)
+							|| (!conf.indexLeafOnly() && (leafOctantNum + sentinelOctantNum - 1) % step == 0))
 						addSkipOffset(octreeNode.getEncoding());
 				}
 			}
 		}
+		logger.debug(String.format("processed %d segments for term %s, direntry says it should be %d segments",
+				totalSegNum, curDir.curKey.toString(), curDir.size));
 
 		// this should never happens!!!
 		if (leafOctantNum == 0) {

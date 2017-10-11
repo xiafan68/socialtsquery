@@ -2,116 +2,103 @@ package core.lsmo.internformat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.collections.map.DefaultedMap;
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.PropertyConfigurator;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import common.MidSegment;
 import common.TestDataGenerator;
 import common.TestDataGeneratorBuilder;
 import core.commom.WritableComparable;
-import core.lsmo.OctreeMemTable;
-import core.lsmt.IMemTable;
 import core.lsmt.IMemTable.SSTableMeta;
-import core.lsmt.LSMTInvertedIndex;
 import core.lsmt.postinglist.IPostingListIterator;
 import core.lsmt.postinglist.ISSTableReader;
 import core.lsmt.postinglist.ISSTableWriter;
-import util.Configuration;
-import util.Pair;
 
-public class InternFormatReaderWriterTest {
-	private static final Logger logger = LoggerFactory.getLogger(InternFormatReaderWriterTest.class);
-	LSMTInvertedIndex index;
-	Configuration conf;
-
-	@Before
-	public void setupIndex() throws IOException {
-		PropertyConfigurator.configure("conf/log4j-server.properties");
-		conf = new Configuration();
-		conf.load("conf/index_lsmo_intern.conf");
-		FileUtils.deleteDirectory(conf.getIndexDir());
-		conf.getIndexDir().mkdirs();
-		conf.getTmpDir().mkdirs();
-		index = new LSMTInvertedIndex(conf);
-	}
-
-	@After
-	public void cleanUp() throws IOException {
-		FileUtils.deleteDirectory(conf.getIndexDir());
-	}
+public class InternFormatReaderWriterTest extends InternFormatCommon {
 
 	@Test
 	public void test() throws IOException {
 		DefaultedMap termCounts = new DefaultedMap(0);
 
-		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxMidNum(10000).build();
+		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxTerm(100).setMaxMidNum(1000).setMaxSegNum(10000)
+				.build();
 		SSTableMeta meta = new SSTableMeta(0, 0);
-		OctreeMemTable tree = new OctreeMemTable(index, meta);
-		int dataNum = 0;
-		while (gen.hasNext()) {
-			if (dataNum++ % 100 == 0) {
-				logger.info("inserted " + dataNum + " items");
-			}
-			Pair<Set<String>, MidSegment> data = gen.nextData();
-			for (String term : data.getKey()) {
-				termCounts.put(term, (Integer) termCounts.get(term) + 1);
-				tree.insert(new WritableComparable.StringKey(term), data.getValue());
-			}
-		}
-
-		List<IMemTable> tables = new ArrayList<IMemTable>();
-		tables.add(tree);
-		ISSTableWriter writer = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableWriterForFlushing(tables, conf);
-		writer.open(conf.getIndexDir());
-		writer.write();
-		writer.close();
-
+		genDiskSSTable(meta, gen, termCounts, 40000);
 		ISSTableReader reader = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta);
 		reader.init();
 
+		int dataNum = 0;
 		for (Object obj : termCounts.entrySet()) {
+			if (dataNum++ % 100 == 0) {
+				logger.info("validated " + dataNum + " terms");
+			}
 			Entry<String, Integer> entry = (Entry<String, Integer>) obj;
 			WritableComparable key = new WritableComparable.StringKey(entry.getKey());
 			Assert.assertEquals(entry.getValue().longValue(), reader.getDirEntry(key).size);
 			IPostingListIterator scanner = reader.getPostingListScanner(key);
 			int count = 0;
+			Set<MidSegment> segs = new HashSet<MidSegment>();
+			// Set<MidSegment> posting = inverted.get(key.toString());
 			while (scanner.hasNext()) {
-				count += scanner.next().getValue().size();
+				List<MidSegment> newSegs = scanner.next().getValue();
+				count += newSegs.size();
 			}
 			Assert.assertEquals(entry.getValue().longValue(), count);
 		}
 	}
 
-	public static void readerVerify(ISSTableReader reader, Configuration conf, int level) throws IOException {
-		int expect = (conf.getFlushLimit() + 1) * (1 << level);
-		int size = 0;
-		Iterator<WritableComparable> iter = reader.keySetIter();
-		while (iter.hasNext()) {
-			WritableComparable key = iter.next();
-			System.out.println("scanning postinglist of " + key);
-			IPostingListIterator scanner = reader.getPostingListScanner(key);
-			Pair<Integer, List<MidSegment>> cur = null;
-			while (scanner.hasNext()) {
-				cur = scanner.next();
-				size += cur.getValue().size();
-			}
-			System.out.println("expect size:" + expect + " cursize size:" + size);
+	@Test
+	public void compact() throws IOException {
+		DefaultedMap termCounts = new DefaultedMap(0);
+		TestDataGenerator gen = TestDataGeneratorBuilder.create().setMaxTerm(200).setMaxMidNum(2000).setMaxSegNum(4000)
+				.build();
 
+		SSTableMeta meta = new SSTableMeta(0, 0);
+		genDiskSSTable(meta, gen, termCounts, 500000);
+		ISSTableReader reader = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta);
+		reader.init();
+
+		SSTableMeta meta1 = new SSTableMeta(1, 0);
+		genDiskSSTable(meta1, gen, termCounts, 500000);
+		ISSTableReader reader1 = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta1);
+		reader1.init();
+
+		List<ISSTableReader> readers = new ArrayList<>();
+		readers.add(reader);
+		readers.add(reader1);
+
+		SSTableMeta meta2 = new SSTableMeta(0, 1);
+		ISSTableWriter writer = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableWriterForCompaction(meta2, readers,
+				conf);
+		writer.open(conf.getIndexDir());
+		writer.write();
+		writer.close();
+
+		ISSTableReader reader2 = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta2);
+		reader2.init();
+		int dataNum = 0;
+		for (Object obj : termCounts.entrySet()) {
+			if (dataNum++ % 100 == 0) {
+				logger.info("validated " + dataNum + " terms");
+			}
+			Entry<String, Integer> entry = (Entry<String, Integer>) obj;
+			WritableComparable key = new WritableComparable.StringKey(entry.getKey());
+			Assert.assertEquals(entry.getValue().longValue(), reader2.getDirEntry(key).size);
+			IPostingListIterator scanner = reader2.getPostingListScanner(key);
+			int count = 0;
+			// Set<MidSegment> segs = new HashSet<MidSegment>();
+			// Set<MidSegment> posting = inverted.get(key.toString());
+			while (scanner.hasNext()) {
+				List<MidSegment> newSegs = scanner.next().getValue();
+				count += newSegs.size();
+			}
+			Assert.assertEquals(entry.getValue().longValue(), count);
 		}
-		if (expect != size)
-			System.err.println("expect size:" + expect + " total size:" + size);
-		Assert.assertEquals(expect, size);
 	}
 }

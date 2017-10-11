@@ -122,4 +122,17 @@ public class BDBSkipListOctreeSSTableWriter extends IOctreeSSTableWriter {
 		indexCell.setBlockIdx(cellIndex++);
 	}
 
+	@Override
+	public void endWritingSSTable() throws IOException {
+		if (curDataBuck.octNum() > 0) {
+			dataBos.appendBlocks(curDataBuck.toBlocks());
+			dataBos.flushAppends();
+		}
+
+		if (markupBuck != null && markupBuck.octNum() > 0) {
+			markupBos.appendBlocks(markupBuck.toBlocks());
+			markupBos.flushAppends();
+		}
+	}
+
 }

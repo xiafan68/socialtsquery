@@ -6,8 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +65,7 @@ public class BlockOutputStream {
 		} else {
 			// in such case we think you are appending to the end
 			block.write(dataDos);
+			dataDos.flush();
 		}
 	}
 
@@ -81,8 +80,16 @@ public class BlockOutputStream {
 		for (Block block : appendBlocks) {
 			block.write(dataDos);
 		}
+		appendSize = 0;
+		dataDos.flush();
+		dataFileOs.flush();
 		appendBlocks.clear();
 		blockIdxMapping.clear();
+	}
+
+	public void flush() throws IOException {
+		dataDos.flush();
+		dataFileOs.flush();
 	}
 
 	public void close() throws IOException {

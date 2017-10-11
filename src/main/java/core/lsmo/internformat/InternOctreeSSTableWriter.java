@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import core.commom.WritableComparable;
 import core.io.Block;
 import core.lsmo.MarkDirEntry;
@@ -36,10 +34,10 @@ import util.Configuration;
  * @author xiafan
  */
 public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
-	private static final Logger logger = Logger.getLogger(InternOctreeSSTableWriter.class);
-
 	List<DirEntry> dirsStartInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
 	List<DirEntry> dirsEndInCurBuck = new ArrayList<DirEntry>();// 起始于最后一个buck的dirs
+
+	boolean curBuckAddressRealloc = false;
 
 	/**
 	 * 用于压缩多个磁盘上的Sstable文件，主要是需要得到一个iter
@@ -94,13 +92,14 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 		if (conf.standaloneSentinal()) {
 			((MarkDirEntry) curDir).markNum = sentinelOctantNum;
 		}
-
+		dirsEndInCurBuck.add(curDir);
 		dirMap.insert(curDir.curKey, curDir);
 	}
 
 	@Override
 	protected void flushAndNewSentinalBucket() throws IOException {
 		markupBos.writeBlocks(markupBuck.toBlocks());
+		markupBos.flush();
 		markupBuck.reset();
 		markupBuck.setBlockIdx(markupBos.currentBlockIdx());
 	}
@@ -116,7 +115,7 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 		dataBos.appendBlock(indexCell.write(-1));
 
 		curDataBuck.setBlockIdx(dataBos.currentBlockIdx());
-
+		curBuckAddressRealloc = true;
 		for (DirEntry entry : dirsStartInCurBuck) {
 			entry.startBucketID.blockID = curDataBuck.blockIdx().blockID;
 		}
@@ -130,6 +129,7 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 	protected void firstLeafOctantWritten() {
 		if (conf.standaloneSentinal() || curDir.startBucketID.blockID != -1) {
 			curDir.startBucketID.copy(curDataBuck.blockIdx());
+			dirsStartInCurBuck.add(curDir);
 		}
 	}
 
@@ -139,6 +139,7 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 			((MarkDirEntry) curDir).startMarkOffset.copy(markupBuck.blockIdx());
 		} else if (curDir.startBucketID.blockID != -1) {
 			curDir.startBucketID.copy(curDataBuck.blockIdx());
+			dirsStartInCurBuck.add(curDir);
 		}
 	}
 
@@ -148,7 +149,33 @@ public class InternOctreeSSTableWriter extends IOctreeSSTableWriter {
 		curDataBuck.reset();
 		curDataBuck.setBlockIdx(dataBos.currentBlockIdx());
 		// the address of current bucket is fixed now
+		if (curBuckAddressRealloc) {
+			for (DirEntry entry : dirsStartInCurBuck) {
+				dirMap.insert(entry.curKey, entry);
+			}
+			for (DirEntry entry : dirsEndInCurBuck) {
+				dirMap.insert(entry.curKey, entry);
+			}
+		}
 		dirsStartInCurBuck.clear();
 		dirsEndInCurBuck.clear();
+		curBuckAddressRealloc = false;
+	}
+
+	@Override
+	public void endWritingSSTable() throws IOException {
+		if (indexCell.size() > 0) {
+			dataBos.writeBlock(indexCell.write(-1));
+			dataBos.flushAppends();
+		}
+		if (curDataBuck.octNum() > 0) {
+			dataBos.appendBlocks(curDataBuck.toBlocks());
+			dataBos.flushAppends();
+		}
+
+		if (markupBuck != null && markupBuck.octNum() > 0) {
+			markupBos.appendBlocks(markupBuck.toBlocks());
+			markupBos.flushAppends();
+		}
 	}
 }

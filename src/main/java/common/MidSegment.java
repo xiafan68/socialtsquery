@@ -15,8 +15,7 @@ import core.commom.Point;
  * @author xiafan
  *
  */
-public class MidSegment extends Segment implements
-		WritableComparable<MidSegment> {
+public class MidSegment extends Segment implements WritableComparable<MidSegment> {
 	public long mid;
 
 	public MidSegment(long midTmp, Segment seg) {
@@ -68,7 +67,7 @@ public class MidSegment extends Segment implements
 	@Override
 	public boolean equals(Object o) {
 		MidSegment seg = (MidSegment) o;
-		return this.compareTo(seg) == 0;
+		return mid == seg.mid && this.compareTo(seg) == 0;
 	}
 
 	@Override
@@ -77,8 +76,7 @@ public class MidSegment extends Segment implements
 	}
 
 	public Point getPoint() {
-		return new Point(this.getStart(), this.getEndTime(), Math.max(
-				this.getStartCount(), this.getEndCount()));
+		return new Point(this.getStart(), this.getEndTime(), Math.max(this.getStartCount(), this.getEndCount()));
 	}
 
 	/*
@@ -88,9 +86,8 @@ public class MidSegment extends Segment implements
 	 */
 	@Override
 	public String toString() {
-		return "MidSegment [mid=" + mid + ", start=" + start + ", count="
-				+ count + ", endTime=" + endTime + ", endCount=" + endCount
-				+ "]";
+		return "MidSegment [mid=" + mid + ", start=" + start + ", count=" + count + ", endTime=" + endTime
+				+ ", endCount=" + endCount + "]";
 	}
 
 	public long getMid() {
