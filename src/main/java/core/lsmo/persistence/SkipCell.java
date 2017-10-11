@@ -91,8 +91,7 @@ public class SkipCell implements Writable {
 					}
 				});
 		if (idx < 0) {
-			idx = Math.abs(1 + idx) - 1;// 找到第一个小于key的索引项
-			idx = idx < 0 ? 0 : idx;
+			idx = Math.abs(1 + idx);// 找到第一个小于key的索引项
 		}
 		idx += start;
 		return idx;
@@ -108,11 +107,9 @@ public class SkipCell implements Writable {
 					}
 				});
 		if (idx < 0) {
-			idx = Math.abs(1 + idx);// 找到第一个小于key的索引项
+			idx = Math.abs(1 + idx) - 1;// 找到第一个小于key的索引项
 		}
 		idx += start;
-		if (idx == end)
-			idx = -1;
 		return idx;
 	}
 

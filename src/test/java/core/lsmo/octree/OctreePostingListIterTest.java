@@ -72,20 +72,21 @@ public class OctreePostingListIterTest extends InternFormatCommon {
 	@Test
 	public void testKeyword() throws IOException {
 		DefaultedMap termCounts = new DefaultedMap(0);
-		TestDataGeneratorBuilder builder = TestDataGeneratorBuilder.create().setMaxTerm(20).setMaxMidNum(500)
-				.setMaxSegNum(1000);
+		TestDataGeneratorBuilder builder = TestDataGeneratorBuilder.create().setMaxTerm(20).setMaxMidNum(100)
+				.setMaxSegNum(100000);
 		TestDataGenerator gen = builder.build();
 
 		SSTableMeta meta = new SSTableMeta(0, 0);
-		genDiskSSTable(meta, gen, termCounts, 50000);
+		genDiskSSTable(meta, gen, termCounts, 10000000);
 		ISSTableReader reader = OctreeInternFormatLSMTFactory.INSTANCE.newSSTableReader(index, meta);
 		reader.init();
 
 		Interval window = new Interval(0, 0, 100, 0);
+		int step = 300;
 		try {
-			for (int i = 0; window.getEnd() + i * 100 < builder.getMaxTime(); i++) {
-				window.setStart(i * 100);
-				window.setEnd(window.getStart() + 100);
+			for (int i = 0; window.getEnd() + i * step < builder.getMaxTime(); i++) {
+				window.setStart(i * step);
+				window.setEnd(window.getStart() + step);
 				Iterator<WritableComparable> iter = reader.keySetIter();
 				while (iter.hasNext()) {
 					WritableComparable key = iter.next();

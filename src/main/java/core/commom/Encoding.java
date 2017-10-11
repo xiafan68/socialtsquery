@@ -217,7 +217,7 @@ public class Encoding extends Point implements WritableComparable {
 	public boolean contains(Encoding curMin) {
 		if (getX() <= curMin.getX() && getX() + getEdgeLen() >= curMin.getX() + curMin.getEdgeLen()
 				&& getY() <= curMin.getY() && getY() + getEdgeLen() >= curMin.getY() + curMin.getEdgeLen()
-				&& getZ() <= curMin.getZ() && getTopZ() >= curMin.getTopZ() + curMin.getEdgeLen())
+				&& getZ() <= curMin.getZ() && getTopZ() >= curMin.getTopZ() )
 			return true;
 		return false;
 	}

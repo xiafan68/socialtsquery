@@ -81,7 +81,6 @@ public class InternPostingListIter extends OctreePostingListIter {
 		SkipCell curCell = null;
 
 		boolean hitFirst = false;
-		int preSkipBlockIdx = -1;
 		do {
 			readMetaBlockAndClearCache(curSkipBlockIdx);
 			curCell = skipMeta.get(curSkipBlockIdx);
@@ -91,52 +90,44 @@ public class InternPostingListIter extends OctreePostingListIter {
 					? DirEntry.indexOffsetInBlock(entry.indexStartOffset) : 0;
 			int end = curSkipBlockIdx == DirEntry.indexBlockIdx(entry.sampleNum)
 					? DirEntry.indexOffsetInBlock(entry.sampleNum) + 1 : curCell.size();
-			skipIdx = curCell.cellOffset(curMin, start, end);
+			skipIdx = curCell.floorOffset(curMin, start, end);
 
 			if (skipIdx == curCell.size() - 1) {
+				// 如果是当前celld的最后一个，那么比curKey小的code可能存在于下一个cell上
 				Pair<WritableComparable, BucketID> temp = curCell.getIndexEntry(skipIdx);
 				ret.setKey(temp.getKey());
 				ret.setValue(new BucketID(curCell.getBlockIdx() + temp.getValue().blockID + 1, temp.getValue().offset));
-				if (hitFirst) {
+				if (hitFirst)
 					break;
-				}
 				if (curCell.nextMetaBlockIdx != -1) {
-					preSkipBlockIdx = curSkipBlockIdx;
 					curSkipBlockIdx = curCell.nextMetaBlockIdx;
 				} else {
 					break;
 				}
-			} else if (skipIdx != 0) {
-				Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
-				assert tmp.getKey().compareTo(curMin) <= 0;
-				ret.setKey(tmp.getKey());
-				ret.setValue(new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
-				break;
-			} else {
-				Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
-				if (tmp.getKey().compareTo(curMin) <= 0) {
+			} else if (skipIdx == start - 1) {
+				if (skipIdx != -1) {
+					Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
 					ret.setKey(tmp.getKey());
 					ret.setValue(
 							new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
 					break;
 				} else {
-					// assert ret.getKey() != null;
-					hitFirst = true;
-					if (preSkipBlockIdx >= 0) {
-						// 对于这种情况下，一定是在前一个block中已经找到了
-						assert ret.getKey() != null;
-						curSkipBlockIdx = preSkipBlockIdx;
+					// read previous cell
+					if (ret.getKey() != null)
 						break;
-					} else {
-
-						if (skipMeta.lowerKey(curSkipBlockIdx - 1) != null)
-							curSkipBlockIdx = skipMeta.lowerKey(curSkipBlockIdx - 1);
-						else {
-							// 这种情况也需要返回，说明最小的都时间点都比查询的curMin大
-							break;
+					else {
+						Integer preKey = skipMeta.lowerKey(curSkipBlockIdx);
+						if (preKey != null) {
+							hitFirst = false;
+							curSkipBlockIdx = preKey;
 						}
 					}
 				}
+			} else {
+				Pair<WritableComparable, BucketID> tmp = curCell.getIndexEntry(skipIdx);
+				ret.setKey(tmp.getKey());
+				ret.setValue(new BucketID(curCell.getBlockIdx() + tmp.getValue().blockID + 1, tmp.getValue().offset));
+				break;
 			}
 		} while (true);
 		return ret;
