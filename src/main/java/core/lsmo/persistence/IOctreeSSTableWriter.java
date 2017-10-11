@@ -348,7 +348,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 		if (conf.standaloneSentinal()) {
 			tmpFile = IndexFileUtils.markFile(preDir, getMeta());
-			tmpFile.renameTo(IndexFileUtils.dataFile(dir, getMeta()));
+			tmpFile.renameTo(IndexFileUtils.markFile(dir, getMeta()));
 		}
 
 		try {
