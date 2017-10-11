@@ -224,7 +224,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 			markupBuck = new Bucket(markupBos.currentBlockIdx());
 		}
 
-		dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(conf.getIndexDir(), meta))
+		dirMap = BDBBTreeBuilder.create().setDir(IndexFileUtils.dirMetaFile(dir, meta))
 				.setKeyFactory(conf.getDirKeyFactory()).setValueFactory(conf.getDirValueFactory())
 				.setAllowDuplicates(false).setReadOnly(false).build();
 		dirMap.open();
@@ -372,9 +372,9 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 
 	@Override
 	public void delete(File indexDir, SSTableMeta meta) {
-		IndexFileUtils.dataFile(conf.getIndexDir(), meta).delete();
+		IndexFileUtils.dataFile(indexDir, meta).delete();
 		if (conf.standaloneSentinal()) {
-			IndexFileUtils.markFile(conf.getIndexDir(), meta).delete();
+			IndexFileUtils.markFile(indexDir, meta).delete();
 		}
 
 		try {
