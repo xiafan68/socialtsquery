@@ -552,6 +552,7 @@ public class LSMTInvertedIndex {
 		SSTableMetaKey delMetaKey = null;
 		while (null != (delMetaKey = (SSTableMetaKey) delMetaQueue.poll())) {
 			ISSTableReader reader = readers.remove(delMetaKey);
+			logger.info(String.format("remove reader for %s", reader.getMeta().toString()));
 			if (reader != null) {
 				try {
 					reader.close();

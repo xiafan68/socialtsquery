@@ -6,6 +6,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import core.commom.BDBBTreeBuilder;
 import core.commom.BDBBtree;
 import core.commom.IndexFileUtils;
@@ -24,6 +27,7 @@ import util.Profile;
 import util.ProfileField;
 
 public abstract class IBucketBasedSSTableReader implements ISSTableReader {
+	private static final Logger logger = LoggerFactory.getLogger(IBucketBasedSSTableReader.class);
 	protected SeekableDirectIO dataInput;
 	protected SeekableDirectIO markInput;
 	protected BDBBtree dirMap = null;
@@ -133,6 +137,7 @@ public abstract class IBucketBasedSSTableReader implements ISSTableReader {
 
 	@Override
 	public void close() throws IOException {
+		logger.info(String.format("reader for meta %s is closed", meta.toString()));
 		if (dataInput != null)
 			dataInput.close();
 

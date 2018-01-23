@@ -22,11 +22,6 @@ public class InternOctreeSSTableReader extends IBucketBasedSSTableReader {
 	}
 
 	@Override
-	protected void finalize() throws Throwable {
-		close();
-	};
-
-	@Override
 	public IPostingListIterator getPostingListIter(WritableComparable key, int start, int end) throws IOException {
 		return new InternPostingListIter(getDirEntry(key), this, start, end);
 	}

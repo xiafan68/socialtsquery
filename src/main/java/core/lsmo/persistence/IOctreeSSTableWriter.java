@@ -367,7 +367,7 @@ public abstract class IOctreeSSTableWriter extends ISSTableWriter {
 			markFile = IndexFileUtils.markFile(conf.getIndexDir(), meta);
 		}
 		File dirFile = IndexFileUtils.dirMetaFile(conf.getIndexDir(), meta);
-		return dFile.exists() && !dirFile.exists() && (markFile == null || markFile.exists());
+		return dFile.exists() && dirFile.exists() && (markFile == null || markFile.exists());
 	}
 
 	@Override
