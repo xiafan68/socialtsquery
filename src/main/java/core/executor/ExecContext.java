@@ -2,7 +2,7 @@ package core.executor;
 
 import java.util.Arrays;
 
-import core.index.TempKeywordQuery;
+import core.commom.TempKeywordQuery;
 
 /**
  * 为 @see core.index.domain.MergedMidSeg 类提供计算分值所需要的信息

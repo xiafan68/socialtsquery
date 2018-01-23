@@ -7,13 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import segmentation.Interval;
-import core.executor.domain.ISegQueue;
+import core.commom.TempKeywordQuery;
+import core.executor.domain.KeyedTopKQueue;
 import core.executor.domain.MergedMidSeg;
-import core.executor.domain.SortWorstscore;
-import core.index.IndexReader;
-import core.index.PartitionMeta;
-import core.index.TempKeywordQuery;
+import core.lsmt.LSMTInvertedIndex;
+import core.lsmt.PartitionMeta;
+import segmentation.Interval;
 
 /**
  * <p>
@@ -26,36 +25,39 @@ import core.index.TempKeywordQuery;
  */
 public class MultiPartitionExecutor extends IQueryExecutor {
 	private static final int MAX_LIFETIME = 31;
-	private IndexReader reader;
+	private LSMTInvertedIndex reader;
 
-	List<PartitionExecutor> executors = new ArrayList<PartitionExecutor>();
-	ISegQueue topk;
+	List<WeightedQueryExecutor> executors = new ArrayList<WeightedQueryExecutor>();
+	KeyedTopKQueue topk;
 	TempKeywordQuery query;
 
-	public MultiPartitionExecutor(IndexReader reader) {
+	public MultiPartitionExecutor(LSMTInvertedIndex reader) {
+		super(reader);
 		this.reader = reader;
 	}
 
 	@Override
-	public boolean advance() {
-		Iterator<PartitionExecutor> iter = executors.iterator();
+	public boolean advance() throws IOException {
+		Iterator<WeightedQueryExecutor> iter = executors.iterator();
 		while (iter.hasNext()) {
-			PartitionExecutor cur = iter.next();
-			cur.advance();
+			WeightedQueryExecutor cur = iter.next();
+			for (int i = 0; i < 1 && cur.advance(); i++)
+				;
 			if (cur.isTerminated()) {
 				iter.remove();
 			}
 		}
 		return true;
 	}
-	
+
 	@Override
 	public void query(TempKeywordQuery query) throws IOException {
 		this.query = query;
-		topk = ISegQueue.create(new SortWorstscore(), true);
+		topk = new KeyedTopKQueue();
 		Map<Long, MergedMidSeg> map = new HashMap<Long, MergedMidSeg>();
-		for (PartitionMeta meta : reader.getPartitions()) {
-			PartitionExecutor exe = new PartitionExecutor(reader);
+		for (int i = 0; i < reader.getPartitions().size(); i++) {
+			PartitionMeta meta = (PartitionMeta) reader.getPartitions().get(i);
+			WeightedQueryExecutor exe = new WeightedQueryExecutor(reader);
 			exe.query(query);
 			exe.setMaxLifeTime(meta.getLifetimeBound());
 			exe.setupQueryContext(topk, map);
@@ -73,8 +75,7 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 		Iterator<MergedMidSeg> iter = topk.iterator();
 		while (iter.hasNext()) {
 			MergedMidSeg cur = iter.next();
-			ret.add(new Interval(cur.getMid(), query.getStartTime(), query
-					.getEndTime(), cur.getWorstscore()));
+			ret.add(new Interval(cur.getMid(), query.getStartTime(), query.getEndTime(), cur.getWorstscore()));
 		}
 		return ret.iterator();
 	}
@@ -82,6 +83,12 @@ public class MultiPartitionExecutor extends IQueryExecutor {
 	@Override
 	public boolean isTerminated() {
 		return executors.isEmpty();
+	}
+
+	@Override
+	public void setupQueryContext(KeyedTopKQueue topk, Map<Long, MergedMidSeg> map) throws IOException {
+		// TODO Auto-generated method stub
+
 	}
 
 }

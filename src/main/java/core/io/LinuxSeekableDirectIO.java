@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
@@ -29,16 +30,14 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 	public static final int O_NDELAY = O_NONBLOCK;
 	public static final int O_SYNC = 010000;
 	public static final int O_ASYNC = 020000;
-	public static final int O_DIRECT = 040000;
+	public static final int O_DIRECT = 0x0100000;
 	public static final int O_DIRECTORY = 0200000;
 	public static final int O_NOFOLLOW = 0400000;
 	public static final int O_NOATIME = 01000000;
 	public static final int O_CLOEXEC = 02000000;
 
 	public LinuxSeekableDirectIO(String pathname) throws IOException {
-		this(pathname, LinuxSeekableDirectIO.O_RDWR
-				| LinuxSeekableDirectIO.O_DIRECT
-				| LinuxSeekableDirectIO.O_CREAT);
+		this(pathname, LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT);//
 	}
 
 	public LinuxSeekableDirectIO(String pathname, int flags) throws IOException {
@@ -50,28 +49,26 @@ public class LinuxSeekableDirectIO extends SeekableDirectIO {
 		bufPRef = new PointerByReference();
 		posix_memalign(bufPRef, BLOCK_SIZE, BLOCK_SIZE);
 		bufPointer = bufPRef.getValue();
-	}
-
-	public void position(long pos) throws IOException {
-		lseek(fd, pos, SEEK_SET);
+		memset(bufPointer, 0, new NativeLong(BLOCK_SIZE));
 	}
 
 	public static void main(String[] test) throws IOException {
-		SeekableDirectIO io = new LinuxSeekableDirectIO("/tmp/iotest.txt",
-				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT
-						| LinuxSeekableDirectIO.O_CREAT);
-		io.position(10);
+		SeekableDirectIO io = new LinuxSeekableDirectIO("/data/iotest.txt",
+				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
+		// io.seek(10);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream bos = new DataOutputStream(baos);
 		for (int i = 0; i < 100; i++) {
 			bos.writeInt(i);
 		}
 		io.write(baos.toByteArray());
-		io.position(10);
+		io.close();
+		io = new LinuxSeekableDirectIO("/data/iotest.txt",
+				LinuxSeekableDirectIO.O_RDWR | LinuxSeekableDirectIO.O_DIRECT | LinuxSeekableDirectIO.O_CREAT);
+		// io.seek(10);
 		byte[] bytes = new byte[baos.toByteArray().length];
-		io.read(bytes);
-		DataInputStream bis = new DataInputStream(new ByteArrayInputStream(
-				bytes));
+		io.readFully(bytes);
+		DataInputStream bis = new DataInputStream(new ByteArrayInputStream(bytes));
 		for (int i = 0; i < 100; i++) {
 			System.out.println(bis.readInt());
 		}

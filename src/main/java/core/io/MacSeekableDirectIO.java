@@ -1,5 +1,9 @@
 package core.io;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 import com.sun.jna.Native;
@@ -54,5 +58,27 @@ public class MacSeekableDirectIO extends SeekableDirectIO {
 		bufPRef = new PointerByReference();
 		posix_memalign(bufPRef, BLOCK_SIZE, BLOCK_SIZE);
 		bufPointer = bufPRef.getValue();
+	}
+
+	public static void main(String[] test) throws IOException {
+		MacSeekableDirectIO io = new MacSeekableDirectIO("/tmp/iotest.txt",
+				MacSeekableDirectIO.O_RDWR | MacSeekableDirectIO.O_CREAT);
+		// io.seek(10);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream bos = new DataOutputStream(baos);
+		for (int i = 0; i < 100; i++) {
+			bos.writeInt(i);
+		}
+		io.write(baos.toByteArray());
+		io.close();
+		io = new MacSeekableDirectIO("/tmp/iotest.txt", MacSeekableDirectIO.O_RDWR | MacSeekableDirectIO.O_CREAT);
+		// io.seek(10);
+		byte[] bytes = new byte[baos.toByteArray().length];
+		io.readFully(bytes);
+		DataInputStream bis = new DataInputStream(new ByteArrayInputStream(bytes));
+		for (int i = 0; i < 100; i++) {
+			System.out.println(bis.readInt());
+		}
+		io.close();
 	}
 }

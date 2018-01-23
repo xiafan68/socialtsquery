@@ -4,12 +4,12 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import common.MidSegment;
 import segmentation.Interval;
 import segmentation.Segment;
+import core.commom.TempKeywordQuery;
 import core.executor.ExecContext;
-import core.executor.domain.MergedMidSeg;
-import core.index.MidSegment;
-import core.index.TempKeywordQuery;
+import core.executor.domain.WeightedMergedMidSeg;
 
 /**
  * 
@@ -30,9 +30,9 @@ public class MergedMidSegTest {
 	@Test
 	public void test() {
 		ExecContext ctx = fakeContext();
-		MergedMidSeg merge = new MergedMidSeg(ctx);
+		WeightedMergedMidSeg merge = new WeightedMergedMidSeg(ctx);
 		MidSegment newSeg = new MidSegment(0, new Segment(1, 10, 3, 12));
-		MergedMidSeg newMerge = merge.addMidSeg(0, newSeg, 1f);
+		WeightedMergedMidSeg newMerge = merge.addMidSeg(0, newSeg, 1f);
 		System.out.println(merge);
 		System.out.println(newMerge);
 

@@ -9,12 +9,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
+import common.MidSegment;
+import extract.common.MRDataFormat;
+import fanxia.file.DirLineReader;
 import segmentation.Segment;
-import xiafan.file.DirLineReader;
 import xiafan.util.Pair;
 import xiafan.util.Triple;
-import core.index.MidSegment;
-import extract.common.MRDataFormat;
 
 /**
  * 计算一个term对应的所有的Segmented item在每个时间点的最大转发数序列

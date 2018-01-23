@@ -7,8 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import io.DirLineReader;
 import segmentation.Interval;
-import xiafan.file.DirLineReader;
+
 
 public class TQueryGen extends QueryGen {
 	public TQueryGen(int i) {

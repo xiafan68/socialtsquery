@@ -1,0 +1,11 @@
+index_step=32
+datadir=/home/xiafan/expr/index/lsmo_twitter_intern15
+#目前而言，tmpdir和datadir的文件系统类型必须一样，否则java自带的rename函数可能无法正常移动文件
+tmpdir=/home/xiafan/tmpintern
+memtable_size_limit=15000000
+#import core.lsmi.SortedListBasedLSMTFactory;
+#import core.lsmo.OctreeBasedLSMTFactory;
+index_factory=core.lsmo.internformat.OctreeInternFormatLSMTFactory
+debug=false
+splitRatio=2
+starttime=680480

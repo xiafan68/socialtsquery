@@ -1,10 +1,28 @@
+.DS_Store
 .classpath
 .project
 .pydevproject
 .settings/
+logs
+.pydevproject
+.gitignore~
 *.class
+*~
+script/expr
+script/expr/*
+conf/*/
+conf/log4j*.properties
+conf/log4j-server2.properties
+conf/index*.conf
 bin/
+conf/index.conf
+conf/index_twitter.conf
 target/
+.idea/
+socialtsquery.iml
+.classpath
+.project
+.settings/
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
