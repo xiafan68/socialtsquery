@@ -31,6 +31,7 @@
 								<exclude>extract/*</exclude>
 								<exclude>extract/common/*</exclude>
 								<exclude>dataserver/*</exclude>
+								<exclude>server/*</exclude>
 							</excludes>
 						</configuration>
 					</execution>

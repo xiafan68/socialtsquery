@@ -26,7 +26,6 @@ import com.codahale.metrics.Timer.Context;
 
 import casdb.CassandraConn;
 import casdb.TweetDao;
-import common.MidSegment;
 import core.lsmt.LSMTInvertedIndex;
 import dase.perf.MetricBasedPerfProfile;
 import dase.perf.ServerController;
@@ -40,8 +39,6 @@ import searchapi.TweetService;
 import searchapi.Tweets;
 import segmentation.Interval;
 import segmentation.Segment;
-import util.Configuration;
-import weibo4j.StatusSerDer;
 import weibo4j.org.json.JSONException;
 import weibo4j.org.json.JSONObject;
 
