@@ -130,6 +130,10 @@ class ExprPloter(object):
             curMethod = "TPII"
         elif "hybrid" in data:
             curMethod = "HYBRID"
+        elif "lucene" in data:
+            curMethod = "LUCENE"
+        elif "octree" in data:
+            curMethod = "octree"
         else:
             raise  NameError("no method name is found in %s" % (data))
         return curMethod
@@ -354,11 +358,11 @@ def plotAllForWeibo():
     ploter.addLines(LineDef({"width":"width", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "k", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
     # "figsize":(15, 10), 
-    config = {"figsize":(9, 7), "scalex":False, "scaley":False, "ylim":[10, 600], "leg":('upper left', 2), "legsize":20, "rotation":"vertical"}
+    config = {"figsize":(9, 7), "scalex":False, "scaley":True, "ylim":[10, 4000], "leg":('upper left', 2), "legsize":20, "rotation":"vertical"}
     ploter.plotFigures(os.path.join(outputDir, "k"), config)
 
     # query width
-    config = {"scalex":True, "scaley":False, "ylim":[10, 1200], "leg":('upper left', 2), "legsize":18}
+    config = {"scalex":True, "scaley":False, "ylim":[10, 2000], "leg":('upper left', 2), "legsize":18}
     ploter = ExprPloter("|Q.I|(hour)", ["Latency(ms)"])
     ploter.addLines(LineDef({"k":"k", "offset":"offset", "size":"size"}, {"app":"app", "type":"type"}, "width", "TOTAL_TIME", 0))
     ploter.loadFiles(inputPath)
@@ -496,7 +500,7 @@ if __name__ == "__main__":
     # dataDir+"dataset/weiboexpr/2015_12_03/raw"
     plotAllForWeibo()
     #plotLimitForWeibo()
-    # plotScaleForWeibo()
+    ##plotScaleForWeibo()
     #plotKeywordsForWeibo()
     #plotUpdateScaleForWeibo()
     #plotThroughputForWeibo()

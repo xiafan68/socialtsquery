@@ -157,7 +157,7 @@
 		<dependency>
 			<groupId>dase</groupId>
 			<artifactId>common</artifactId>
-			<version>0.0.1</version>
+			<version>1.0.1</version>
 		</dependency>
 	</dependencies>
 </project>
