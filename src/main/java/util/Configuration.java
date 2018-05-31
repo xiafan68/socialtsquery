@@ -84,7 +84,7 @@ public class Configuration {
 	}
 
 	public WritableFactory getDirValueFactory() {
-		String valueClass = props.getProperty("dir_value_fatory", "core.lsmt.WritableFactory$DirEntryFactory");
+		String valueClass = props.getProperty("dir_value_fatory", "core.commom.WritableFactory$DirEntryFactory");
 		try {
 			return (WritableFactory) Enum.valueOf(Class.forName(valueClass).asSubclass(Enum.class), "INSTANCE");
 		} catch (ClassNotFoundException e) {
