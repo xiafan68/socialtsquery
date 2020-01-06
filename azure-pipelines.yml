@@ -23,4 +23,4 @@ steps:
 - task: CmdLine@2
   inputs:
     script: |
-      echo ${message}
+      echo ${message} world
