@@ -20,4 +20,7 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'package'
-- script: echo ${message}
+- task: CmdLine@2
+  inputs:
+    script: |
+      echo ${message}
